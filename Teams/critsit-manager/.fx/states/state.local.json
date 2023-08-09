@@ -1,0 +1,23 @@
+{
+    "solution": {},
+    "fx-resource-frontend-hosting": {
+        "endpoint": "https://localhost:53000",
+        "domain": "localhost",
+        "indexPath": "/index.html#"
+    },
+    "fx-resource-aad-app-for-teams": {
+        "oauth2PermissionScopeId": "44e1f561-6d98-4fd4-a692-cf944e057dd3",
+        "objectId": "6d33e1f0-2cb4-4735-8f3d-831eb0eb22a1",
+        "clientId": "711feb8f-f99f-43bb-b294-64e01eea4769",
+        "clientSecret": "{{fx-resource-aad-app-for-teams.clientSecret}}",
+        "applicationIdUris": "api://localhost:53000/711feb8f-f99f-43bb-b294-64e01eea4769",
+        "frontendEndpoint": "https://localhost",
+        "tenantId": "f6cd3d8c-b7de-4b84-a736-446fa13aefe0",
+        "oauthHost": "https://login.microsoftonline.com",
+        "oauthAuthority": "https://login.microsoftonline.com/f6cd3d8c-b7de-4b84-a736-446fa13aefe0"
+    },
+    "fx-resource-appstudio": {
+        "teamsAppId": "2d3d77ec-f2f2-42bd-a385-f2295147b740",
+        "tenantId": "f6cd3d8c-b7de-4b84-a736-446fa13aefe0"
+    }
+}

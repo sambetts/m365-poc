@@ -1,0 +1,24 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/Graph/Archive/GraphBasicRESTConsole/GraphBasicConsole/obj
+/Graph/Archive/GraphJSApp/.vscode
+/Office/ExcelProcesses/.vs/ExcelOutOfProcess
+/Office/ExcelProcesses/Common/bin/Debug
+/Office/ExcelProcesses/Common/obj/Debug
+/Office/ExcelProcesses/Common/obj/Release
+/Office/ExcelProcesses/ExcelFunctions/obj/Debug
+/Office/ExcelProcesses/packages
+/Office/ExcelProcesses/TestServerApp/obj/Debug
+/Office/ExcelProcesses/ExcelFunctions/obj/Release
+/Office/ExcelProcesses/TestServerApp/obj/Release
+Graph/react-office-dashboard/.env.development
+Graph/Archive/GraphJSApp/node_modules/js-cookie/CONTRIBUTING.md
+Graph/Archive/GraphJSApp/node_modules/js-cookie/LICENSE
+Graph/Archive/GraphJSApp/node_modules/js-cookie/package.json
+Graph/Archive/GraphJSApp/node_modules/js-cookie/README.md
+Graph/Archive/GraphJSApp/node_modules/js-cookie/SERVER_SIDE.md
+Graph/Archive/GraphJSApp/node_modules/js-cookie/src/js.cookie.js
+Graph/react-office-dashboard/.vscode/launch.json

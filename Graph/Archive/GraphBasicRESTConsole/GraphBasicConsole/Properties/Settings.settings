@@ -1,0 +1,15 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="GraphBasicConsole.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ApplicationId" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">bbbb9258-780d-49e3-917a-8f88c837a006</Value>
+    </Setting>
+    <Setting Name="RedirectUrl" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">https://login.live.com/oauth20_desktop.srf</Value>
+    </Setting>
+    <Setting Name="DirectoryId" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">988e233f-3df7-49ca-a29b-b2fc20074711</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

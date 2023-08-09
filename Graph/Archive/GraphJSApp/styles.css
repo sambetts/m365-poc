@@ -1,0 +1,158 @@
+#divSharePointSites, #divOneDriveFiles
+{
+    font-size: 14px;
+    padding: 0;
+    padding-top: 10px;
+    overflow: visible;
+}
+#divSharePointSites a, #divOneDriveFiles a
+{
+    padding-bottom: 20px;
+}
+
+.emailContainerTable
+{
+    width: 100%;
+    vertical-align: top;
+}
+.emailContainerTable td
+{
+    vertical-align: top;
+}
+.emailContainerTable tr td:first-child {
+    
+    width: 330px;
+ }
+
+.emailListItem
+{
+    font-size: 12px;
+    border-top: 1px solid #0437603d;
+    cursor: pointer;
+    background-repeat: no-repeat;
+    background-position-y: center;
+    background-image: url(/img/email-unread.png); 
+    
+    padding-left: 30px;
+    margin-right: 20px;
+}
+ .emailListSubject
+ {
+     font-weight: 600;
+ }
+ #emailSelectedMessage
+ {
+    vertical-align: top;
+    border: 1px; 
+    border-style: #0437603d;
+ }
+ #emailFrame
+ {
+     width: 100%;
+     height: 360px;
+ }
+ .btnNewEmail
+ {
+     top: 130px;
+     left: 205px;
+ }
+
+body
+{
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-top: 5px;
+    position: relative;
+}
+.graphConsole
+{
+    font-size: 20px;
+    padding-top: 20px;
+}
+#graphLog
+{
+    margin-top: -1px;
+    height: 150px;
+}
+#graphLogContainer
+{
+    position: absolute;
+    top: 570px;
+    width: 100%;
+}
+#divAppContent
+{
+    height: 450px;
+    overflow-y: auto;
+}
+
+#userProfileGrid tr td:first-child {
+    width: 400px;
+    padding-right: 50px;
+ }
+ #headerTable tr td:first-child {
+    width: 150px;
+    height: 50px;
+ }
+#headerTable {
+    font-weight: 400;
+    font-size: 26px;
+    font-family: Tahoma, Geneva, sans-serif;
+    color: #043660;
+    margin-bottom: 20px;
+    
+} 
+
+#divPermissions
+{
+    margin-left: 20px;
+}
+
+#appLoadingContainer
+{
+    text-align: center;
+    margin-top: 100px;
+}
+#appLoadingImg{display: inline-block}
+
+#editBox {
+    position:fixed;
+    top: 50%;
+    left: 50%;
+    width:30em;
+    height:15em;
+    margin-top: -9em; /*set to a negative number 1/2 of your height*/
+    margin-left: -15em; /*set to a negative number 1/2 of your width*/
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: white;
+}
+.closeEditBox
+{
+    float:right;
+}
+.closeEditBox a:any-link
+{
+    text-decoration: none;
+    font-weight: bold;
+    color: black;
+}
+
+#currentPlanSelection
+{
+    font-weight: bold;
+}
+
+.loader {
+    border: 16px solid #f3f3f3; /* Light grey */
+    border-top: 16px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 120px;
+    height: 120px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

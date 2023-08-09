@@ -1,0 +1,318 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <!-- bootstrap reference used for styling the page -->
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <title>Office 365 Graph Demo App</title>
+    <script src="jqueryui/external/jquery/jquery.js"></script>
+    <script src="jqueryui/jquery-ui.js"></script>
+
+    <!-- This app uses cdn to reference msal.js (recommended).
+    You can also download it from: https://github.com/AzureAD/microsoft-authentication-library-for-js -->
+    <script src="https://secure.aadcdn.microsoftonline-p.com/lib/0.2.3/js/msal.min.js"></script>
+    <script type="text/javascript" src="msalconfig.js"></script>
+
+    <!-- Common app JS -->
+    <script type="text/javascript" src="js/common/auth.js"></script>
+    <script type="text/javascript" src="node_modules/js-cookie/src/js.cookie.js"></script>
+    <script type="text/javascript" src="js/common/pagefunctions.js"></script>
+
+    <link href="styles.css" rel="stylesheet">
+    <link href="jqueryui/jquery-ui.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <table id="headerTable">
+        <tr>
+            <td><img src="img/contoso.png" alt="Contoso"></td>
+            <td>My Dashboard</td>
+        </tr>
+    </table>
+
+    <!-- App loading -->
+    <div id="appLoadingContainer">
+        <div id="appLoadingImg" class="loader"></div>
+        <p>Loading application...</p>
+    </div>
+
+    <!-- Main panel. Will remain hidden until page load -->
+    <div id="appMainPanel" class="hidden">
+
+        <!-- Tabs-->
+        <ul class="nav nav-tabs" id="navMain">
+            <li><a href="#" onclick="selectTab(this);" name="divAuthentication">Authentication</a></li>
+            <li><a href="#" onclick="selectTab(this);" name="divProfile">My Profile</a></li>
+            <li><a href="#" onclick="selectTab(this);" name="divOneDrive">OneDrive</a></li>
+            <li><a href="#" onclick="selectTab(this);" name="divOutlook">Outlook</a></li>
+            <li><a href="#" onclick="selectTab(this);" name="divPlanner">Planner</a></li>
+            <li><a href="#" onclick="selectTab(this);" name="divSharePoint">SharePoint</a></li>
+        </ul>
+
+        <!--Application page content-->
+        <div id="divAppContent">
+
+            <!-- Login & Auth -->
+            <div id="divAuthentication" class="hidden">
+                <h3>Graph Authentication</h3>
+
+                <div id="divLoggedIn" class="hidden">
+                    <p>You are logged in as <span id="lblYouAre" style="font-weight: bold">lblYouAre</span>.</p>
+                    <button id="signOutButton" type="button" class="btn btn-primary" onclick="signOut();">Sign
+                        out</button>
+                    <p>&nbsp;</p>
+                    <p>If you need to change permissions, you'll need to login again.</p>
+                    <label class="control-label">Permissions Granted:</label>
+                </div>
+                <div id="divLogIn">
+                    <p>
+                        This web-app demonstrates calls to Graph impersonating a user.
+                        Login as a user to do things first - change the Azure AD client ID if needed.
+                    </p>
+                    <table>
+                        <tr>
+                            <td style="width: 300px; padding-right: 20px;">
+                                <label class="control-label">Azure AD - Client ID</label>
+                                <input type="text" class="form-control" readonly id="txtClientId">
+                            </td>
+                            <td>
+                                <label class="control-label">&nbsp;</label>
+                                <p>
+                                    This is the ID of the application registration for this example app as configured in
+                                    Azure
+                                    AD.
+                                    It can be changed in msalconfig.js</p>
+                            </td>
+                        </tr>
+                    </table>
+                    <button id="callGraphButton" type="button" class="btn btn-primary"
+                        onclick="getOAuthTokenFromUserLogin();">Sign Into Azure ADv2</button>
+
+                    
+                    <div style="padding-top: 10px;">
+                        <label class="control-label">Azure AD - Permissions to Request</label>
+                    </div>
+                </div>
+
+                <!-- Permissions matrix. Populated in auth.js -->
+                <div id="divPermissions">
+                        <table>
+                            <tbody>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><input type="text" id="txtAddPerm"></td>
+                                    <td><input type="button" class="btn btn-sm btn-info" value="Add" onclick="addPermission()">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <p><a href="#" onclick="resetConfiguredScopes()">Reset permissions</a></p>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+            </div>
+
+            <!-- Basic info -->
+            <div id="divProfile" class="hidden">
+                <h3>Your Profile</h3>
+
+                <div id="divProfileData" class="hidden">
+                    <table id="userProfileGrid">
+                        <tr>
+                            <td>
+                                <label class="control-label">Hi <span id="profileGivenName" />!</label>
+                                <form>
+                                    <div class="form-group">
+                                        <label for="txtUserEmail">Your email:</label>
+                                        <input type="text" class="form-control" id="txtUserEmail" readonly>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="txtUserMobile">Your mobile phone:</label>
+                                        <input type="tel" class="form-control" id="txtUserMobile"
+                                            placeholder="Mobile phone">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="txtOfficeLocation">Office location:</label>
+                                        <input type="text" class="form-control" id="txtOfficeLocation"
+                                            placeholder="Office location">
+                                    </div>
+
+                                    <button onclick="updateProfile(event);return false;" class="btn btn-primary">Update
+                                        Profile</button>
+                                </form>
+                            </td>
+                            <td>
+                                <label class="control-label">Your Photo</label>
+                                <div>
+                                    <img title="Your Photo" class="hidden" id="imgProfile">
+                                </div>
+                                <label class="control-label">Upload New Photo</label>
+                                <p>Note: only JPG files are supported for this PoC.</p>
+                                <div class="form-group">
+                                    <label>New Photo</label>
+                                    <input type="file" class="form-control" id="fileUpload">
+                                </div>
+                                <button onclick="uploadPhoto(event);return false;" class="btn btn-primary">Upload
+                                    Photo</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+
+                <div id="divProfileLoading">
+                    <p>
+                        <div id="imgUserInfoLoading" class="loader"></div>
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- OneDrive -->
+            <div id="divOneDrive" class="hidden">
+                <h3>Your Files</h3>
+                <p>Click a file to download it, or a folder to expand it.</p>
+                <pre id="divOneDriveFiles">
+                    <div id="imgOneDriveLoading" class="loader"></div>
+                </pre>
+            </div>
+
+            <!-- Outlook -->
+            <div id="divOutlook" class="hidden">
+
+                <!--New email-->
+                <div id="divSendEmail" title="Send Email">
+
+                    <table>
+                        <tr>
+                            <td style="width: 150px;">
+                                <label for="txtEmailFromUser">From address:</label>        
+                            </td>
+                            <td style="width: 300px;">
+                                <input type="email" class="form-control" id="txtEmailFromUser"></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="txtEmailToUser">To address:</label>
+                            </td>
+                            <td>
+                                <input type="email" class="form-control" id="txtEmailToUser">
+                            </td>
+                        </tr>
+                    </table>
+                    <div class="form-group">
+                        <label for="txtEmailSubject">Subject:</label>
+                        <input type="text" class="form-control" id="txtEmailSubject">
+                    </div>
+                    <div class="form-group">
+                        <label for="txtEmailBody">Body:</label>
+                        <textarea class="form-control" rows="5" id="txtEmailBody"></textarea>
+                    </div>
+                </div>
+
+                <!-- Email header-->
+                <table style="width: 100%">
+                    <tr>
+                        <td><h3>Inbox (Latest 10)</h3></td>
+                        <td style="text-align: right"><input type="button" value="New Email" class="btn btn-default btnNewEmail" onclick="$('#divSendEmail').dialog('open');"></td>
+                    </tr>
+                </table>
+
+                <!-- Emails -->
+                <table class="emailContainerTable"><tr>
+                    <td>
+                        <div id="divEmailList">
+                            <div id="imgOutlookLoading" class="loader"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div id="emailSelectedMessage" class="hidden">
+                            <div id="emailSelectMessage">
+                                <h3 style="text-align: center">Select an email to view contents.</h3>
+                            </div>
+                            <iframe id="emailFrame" class="emailBody hidden"></iframe>
+                        </div>
+                    </td>
+                    </tr>
+                </table>
+                
+            </div>
+
+            <!-- Planner -->
+            <div id="divPlanner" class="hidden">
+                <p>
+                    <div id="imgPlannerLoading" class="loader"></div>
+                </p>
+
+
+                <form id="editBox" class="hidden">
+                    <div class="closeEditBox"><a href="#" onclick="closeEditScreen();">X</a></div>
+                    <h3 id="editBoxHeaderPlanner">Selected Task</h3>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="form-control" id="txtTaskTitle">
+                    </div>
+                    <button onclick="saveCurrentTask(event);" class="btn">Update</button>
+                </form>
+
+
+                <div id="plansContainer" class="hidden">
+                    <h3>Groups &amp; Plans Explorer</h3>
+
+                    <p>Pick a Task from a Plan, in a group. The first level shows the groups you have access to, and under
+                        each group, the plans created already.</p>
+                    <p>Pick a plan first - then you can create tasks or edit existing tasks. Current plan selected: <span id="currentPlanSelection">none</span>.</p>
+                    <pre id="plans"></pre>
+
+                </div>
+
+            </div>
+
+            <!-- SharePoint -->
+            <div id="divSharePoint">
+                <h3>SharePoint Sites in Tenant</h3>
+                <p>Click on a site to open it in a new tab:</p>
+                <pre id="divSharePointSites">
+                    <div id="imgSharePointSitesLoading" class="loader"></div>
+
+                </pre>
+            </div>
+        
+        </div>
+    </div>
+
+    <!-- Graph Log-->
+    <div id="graphLogContainer">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#" onclick="toggleGraphLog()">Graph API Calls</a></li>
+        </ul>
+        <div id="graphLogContent">
+            <pre id="graphLog">
+                </pre>
+        </div>
+    </div>
+
+
+    </div>
+
+
+    <!-- Workload specific JS files -->
+    <script type="text/javascript" src="js/profile.js"></script>
+    <script type="text/javascript" src="js/onedrive.js"></script>
+    <script type="text/javascript" src="js/outlook.js"></script>
+    <script type="text/javascript" src="js/planner.js"></script>
+    <script type="text/javascript" src="js/sharepoint.js"></script>
+
+    <!-- The 'bluebird' and 'fetch' references below are required if you need to run this application on Internet Explorer -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.4/bluebird.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js"></script>
+
+</body>
+
+</html>
