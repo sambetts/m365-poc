@@ -1,5 +1,7 @@
 # react-office-dashboard
-This is an application to show Microsoft Graph usage in a React/JavaScript application with MSAL. It reads emails and Teams chats of the logged in user and doesn't need any backend to work.
+This is an application to show Microsoft Graph usage in a React/JavaScript application with MSAL. It reads emails and Teams chats of the logged in user and doesn't need any backend to work. 
+
+Built with Node.js v16.17.0.
 
 ## Setup Application
 [Register new Azure AD application](https://learn.microsoft.com/en-us/azure/active-directory-b2c/tutorial-register-spa#register-the-spa-application). Your application registration needs "Single Page Application" authentication configured with whatever you configure for "REACT_APP_MSAL_REDIRECT" below. No permissions need to be added to the application as we'll use delegated permissions as requested by the application. 
