@@ -1,0 +1,78 @@
+/* Provide sufficient contrast against white background */
+a {
+  color: #0366d6;
+}
+
+code {
+  color: #E01A76;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #1b6ec2;
+  border-color: #1861ac;
+}
+
+.link-button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline;
+  margin: 0;
+  padding: 0;
+  color: #0366d6;
+
+}
+
+.field {
+  width: 300px;
+}
+
+.longField {
+  width: 500px;
+}
+
+.previewWindow {
+  position: absolute;
+  top: 60px;
+  left: 65px;
+}
+
+.previewWindow iframe {
+  width: 800px;
+  height: 550px;
+}
+
+.wizardButtons {
+  margin-top: 20px;
+  position: absolute;
+  top: 650px;
+}
+
+#webPreview {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  width: 100%;
+  background-color: #F5F5F6;
+}
+
+.processInfoGraphic .description
+{
+  padding-right: 20px;
+}
+.processInfoGraphic .stepHeader
+{
+  font-weight: 600;
+}
+.processInfoGraphic .icon
+{
+  width: 42px;
+}
+
+.httpHeader
+{
+  font-size: large;
+  font-weight: 600;
+}
