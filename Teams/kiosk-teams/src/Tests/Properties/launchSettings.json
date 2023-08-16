@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "SPO.ColdStorage.Tests": {
+    "Tests": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

@@ -8,7 +8,7 @@
     }
   },
   "profiles": {
-    "SPO.ColdStorage.Web": {
+    "Web": {
       "commandName": "Project",
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7132;http://localhost:5132",
