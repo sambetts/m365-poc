@@ -5,7 +5,7 @@ import '../NavMenu.css';
 import React from 'react';
 import { ApiAppContentLoader } from '../../engine/IAppContentLoader';
 import { getTeamsMeetingDetails } from '../../engine/TeamsMeetingUrlParser';
-import { CallContainer } from './CallContainer';
+import { TeamsCallContainer } from './TeamsCallContainer';
 
 export const MainDisplay: React.FC<{}> = () => {
 
@@ -61,7 +61,7 @@ export const MainDisplay: React.FC<{}> = () => {
             <p>You are connected via {serviceConfiguration.clientLocationInfo.description}</p>
             {currentTeamsMeetingDetails ?
               <>
-                <CallContainer config={serviceConfiguration} meeting={currentTeamsMeetingDetails} />
+                <TeamsCallContainer config={serviceConfiguration} meeting={currentTeamsMeetingDetails} />
               </>
               :
               <>

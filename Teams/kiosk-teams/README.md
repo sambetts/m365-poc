@@ -8,9 +8,13 @@ This is a common screnario where a meeting is broadcast out using screens that o
 With this we can add devices that have no user control to meetings too. For this we use [Azure Communication Services](https://azure.microsoft.com/en-us/products/communication-services/)
 
 ## How it Works
+The fundamental idea is each kiosk screen has a playlist of URLs to show at certain times, and we're going to enhance that by adding a special "auto join Teams meeting" URL into that same playlist.
+
 Each display should be indentified uniquely if each screen is to play different content. For each screen, it simply requests a playlist of URLs to diplay fullscreen.
+
 ![System concept diagram](imgs/contentloading.jpg)
-If a URL is specifically a "auto-join" URL (it has a valid 'meeting' parameter), then it'll decode the meeting request and automatically join that meeting at the right time. 
+
+If a URL is specifically a "auto-join" URL (it has a valid 'meeting' parameter), then it'll decode the meeting request and automatically join that meeting at the right time instead of simply rendering the URL. 
 
 ## Solution Configuration
 The VS solution needs this configuration to run:
