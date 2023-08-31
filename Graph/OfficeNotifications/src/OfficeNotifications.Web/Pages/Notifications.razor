@@ -1,0 +1,230 @@
+﻿@page "/"
+
+<PageTitle>User Notifications</PageTitle>
+
+@using Microsoft.Graph
+@using OfficeNotifications.Engine
+@using Microsoft.Identity.Web
+@using OfficeNotifications.Engine.Models
+
+@inject Config Config
+@inject MicrosoftIdentityConsentAndConditionalAccessHandler ConsentHandler
+@inject Microsoft.Graph.GraphServiceClient GraphServiceClient
+@inject ILogger<Notifications> Logger
+
+@if (Exception != null)
+{
+    <p style="color: red">@Exception.Message</p>
+}
+
+@if (user == null)
+{
+    <p>Loading your user from Graph...</p>
+}
+else
+{
+    <h1>Notifications for @user.DisplayName</h1>
+
+    <p>Here's whats been happening in Teams/Outlook.</p>
+
+    @if (!HaveValidNotificationSubscriptions)
+    {
+        <p>
+            URL configured to receive updates from Graph:
+            <input class="textbox" style="width: 500px;" disabled value="@Config.WebhookUrlOverride" />
+        </p>
+        <button class="btn btn-primary" @onclick="StartNotifications" disabled="@CreatingSubscriptions">Start Notification Collection</button>
+    }
+    else
+    {
+        if (notifications == null)
+        {
+            <p><em>Loading notifications...</em></p>
+        }
+        else
+        {
+            if (notifications.Count() == 0)
+            {
+                <ul><li>No notifications for Teams or Outlook. When you get an email or Teams message, you'll see this change.</li></ul>
+
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Activity</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var notification in notifications)
+                        {
+                            <tr>
+                                <td>@notification.Message</td>
+                                <td>@notification.Received.ToString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <button class="btn btn-secondary" @onclick="ClearNotifications" disabled=@ClearingSubscriptions>Clear Activity</button>
+            }
+        }
+
+        <h2>Active Subscriptions</h2>
+        <p>
+            URL configured to receive updates from Graph:
+            <input class="textbox" style="width: 500px;" disabled value="@Config.WebhookUrlOverride" />
+        </p>
+        @if (Subscriptions.Count == 0)
+        {
+            <p>No subscriptions created with Graph API</p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Resource</th>
+                        <th>Change Type</th>
+                        <th>Expiration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sub in Subscriptions)
+                    {
+                        <tr>
+                            <td>@sub.Id</td>
+                            <td>@sub.Resource</td>
+                            <td>@sub.ChangeType</td>
+                            <td>@sub.ExpirationDateTime</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        <button class="btn btn-primary" @onclick="StopNotifications" disabled=@StopingNotifications>Stop Notification Collection</button>
+    }
+}
+@code {
+    IEnumerable<UserNotification>? notifications = null;
+    User? user;
+    PeriodicTimer periodicTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+    UserNotificationsManager? NotificationManager = null;
+
+    public Exception? Exception { get; set; } = null;
+    public bool HaveValidNotificationSubscriptions { get; set; } = false;
+    public bool CreatingSubscriptions { get; set; } = false;
+    public bool StopingNotifications { get; set; } = false;
+    public bool ClearingSubscriptions { get; set; } = false;
+    public List<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+
+    async void RunNotificationsRefreshTimer()
+    {
+        while (await periodicTimer.WaitForNextTickAsync())
+        {
+            await RefreshNotifications();
+        }
+    }
+
+    async Task RefreshNotifications()
+    {
+        if (user != null && NotificationManager != null)
+        {
+            notifications = await NotificationManager.GetNotifications(user.Id);
+            base.StateHasChanged();
+        }
+    }
+
+    async Task StartNotifications()
+    {
+        if (user != null && NotificationManager != null)
+        {
+            CreatingSubscriptions = true;
+            base.StateHasChanged();
+            try
+            {
+                this.Subscriptions = await NotificationManager.EnableNotifications(user.Id);
+            }
+            catch (ServiceException ex)
+            {
+                Exception = ex;
+                base.StateHasChanged();
+                CreatingSubscriptions = false;
+                return;
+            }
+
+            RunNotificationsRefreshTimer();  // fire-and-forget
+            HaveValidNotificationSubscriptions = true;
+            CreatingSubscriptions = false;
+            base.StateHasChanged();
+        }
+    }
+
+    async Task StopNotifications()
+    {
+        if (user != null && NotificationManager != null)
+        {
+            StopingNotifications = true;
+            base.StateHasChanged();
+            try
+            {
+                await NotificationManager.DisableNotifications(user.Id);
+            }
+            catch (ServiceException ex)
+            {
+                Exception = ex;
+                base.StateHasChanged();
+                StopingNotifications = false;
+                return;
+            }
+
+            this.Subscriptions = new List<Subscription>();
+            HaveValidNotificationSubscriptions = false;
+            StopingNotifications = false;
+            base.StateHasChanged();
+        }
+    }
+
+    async Task ClearNotifications()
+    {
+        if (user != null && NotificationManager != null)
+        {
+            ClearingSubscriptions = true;
+            base.StateHasChanged();
+
+            await NotificationManager.ClearNotifications(user.Id);
+            ClearingSubscriptions = false;
+            await RefreshNotifications();
+        }
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotificationManager = await UserNotificationsManager.GetNotificationManager("webhooks", Config, Logger);
+        try
+        {
+            user = await GraphServiceClient.Me.Request().Select("Id,DisplayName").GetAsync();
+        }
+        catch (Exception ex)
+        {
+            ConsentHandler.HandleException(ex);
+            return;
+        }
+
+        HaveValidNotificationSubscriptions = await NotificationManager.HaveValidSubscriptions(user.Id);
+        if (HaveValidNotificationSubscriptions)
+        {
+            this.Subscriptions = await NotificationManager.GetSubscriptions(user.Id);
+            await RefreshNotifications();
+        }
+    }
+
+
+    public void Dispose()
+    {
+        periodicTimer?.Dispose();
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ServiceBusConnectionString": "<<SB NAMESPACE CONNECTION STRING>>"
+  },
+  "ConnectionStrings": {
+    "ServiceBus": "<<SB QUEUE CONNECTION STRING>>",
+    "Redis": ""
+  },
+  "AzureAd": {
+    "Instance": "https://login.microsoftonline.com/",
+    "Domain": "",
+    "TenantId": "",
+    "ClientId": "",
+    "CallbackPath": "/signin-oidc",
+    "ClientSecret": ""
+  },
+  "WebhookUrlOverride": "",
+  "AppInsightsInstrumentationKey": ""
+}
