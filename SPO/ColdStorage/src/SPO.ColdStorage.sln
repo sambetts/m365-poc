@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Migration.Indexer", "SPO.ColdStorage.Migration.Indexer\SPO.ColdStorage.Migration.Indexer.csproj", "{3E5C3926-89BE-453B-BBF6-CC5334A0B641}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Migration.Engine", "SPO.ColdStorage.Migration.Engine\SPO.ColdStorage.Migration.Engine.csproj", "{EC85C8E9-8926-4AA5-A32F-64FDE1493B7F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Tests", "SPO.ColdStorage.Tests\SPO.ColdStorage.Tests.csproj", "{15D36889-F466-430F-89CB-65DC25DBA892}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Entities", "SPO.ColdStorage.Entities\SPO.ColdStorage.Entities.csproj", "{B94BA2EF-8BDA-4040-A725-D1B6BD5062EA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Migration.Migrator", "SPO.ColdStorage.Migration.Migrator\SPO.ColdStorage.Migration.Migrator.csproj", "{51826CB7-1095-461D-9288-2FB55B5C588E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Web", "SPO.ColdStorage.Web\SPO.ColdStorage.Web.csproj", "{01B86447-FDBB-4F7F-9884-5B5B4E3DC0CB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{CCB51D98-7F2B-4053-B69F-0ECFEE325E10}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.LoadGenerator", "SPO.ColdStorage.LoadGenerator\SPO.ColdStorage.LoadGenerator.csproj", "{3315035E-170F-478B-8F86-D41D762FC3BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Models", "SPO.ColdStorage.Models\SPO.ColdStorage.Models.csproj", "{B2AFACD8-E3A2-42B3-9E43-3EC3582F62BC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SPO.ColdStorage.Migration.SiteSnapshotBuilder", "SPO.ColdStorage.Migration.SiteSnapshotBuilder\SPO.ColdStorage.Migration.SiteSnapshotBuilder.csproj", "{622A4923-A763-4E0B-B0C8-C0ED1D47C615}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3E5C3926-89BE-453B-BBF6-CC5334A0B641}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E5C3926-89BE-453B-BBF6-CC5334A0B641}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E5C3926-89BE-453B-BBF6-CC5334A0B641}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E5C3926-89BE-453B-BBF6-CC5334A0B641}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC85C8E9-8926-4AA5-A32F-64FDE1493B7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC85C8E9-8926-4AA5-A32F-64FDE1493B7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC85C8E9-8926-4AA5-A32F-64FDE1493B7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC85C8E9-8926-4AA5-A32F-64FDE1493B7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{15D36889-F466-430F-89CB-65DC25DBA892}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{15D36889-F466-430F-89CB-65DC25DBA892}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{15D36889-F466-430F-89CB-65DC25DBA892}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{15D36889-F466-430F-89CB-65DC25DBA892}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B94BA2EF-8BDA-4040-A725-D1B6BD5062EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B94BA2EF-8BDA-4040-A725-D1B6BD5062EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B94BA2EF-8BDA-4040-A725-D1B6BD5062EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B94BA2EF-8BDA-4040-A725-D1B6BD5062EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51826CB7-1095-461D-9288-2FB55B5C588E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51826CB7-1095-461D-9288-2FB55B5C588E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51826CB7-1095-461D-9288-2FB55B5C588E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51826CB7-1095-461D-9288-2FB55B5C588E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01B86447-FDBB-4F7F-9884-5B5B4E3DC0CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01B86447-FDBB-4F7F-9884-5B5B4E3DC0CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01B86447-FDBB-4F7F-9884-5B5B4E3DC0CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01B86447-FDBB-4F7F-9884-5B5B4E3DC0CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3315035E-170F-478B-8F86-D41D762FC3BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3315035E-170F-478B-8F86-D41D762FC3BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3315035E-170F-478B-8F86-D41D762FC3BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3315035E-170F-478B-8F86-D41D762FC3BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2AFACD8-E3A2-42B3-9E43-3EC3582F62BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2AFACD8-E3A2-42B3-9E43-3EC3582F62BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2AFACD8-E3A2-42B3-9E43-3EC3582F62BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2AFACD8-E3A2-42B3-9E43-3EC3582F62BC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{622A4923-A763-4E0B-B0C8-C0ED1D47C615}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{622A4923-A763-4E0B-B0C8-C0ED1D47C615}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{622A4923-A763-4E0B-B0C8-C0ED1D47C615}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{622A4923-A763-4E0B-B0C8-C0ED1D47C615}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{15D36889-F466-430F-89CB-65DC25DBA892} = {CCB51D98-7F2B-4053-B69F-0ECFEE325E10}
+		{3315035E-170F-478B-8F86-D41D762FC3BF} = {CCB51D98-7F2B-4053-B69F-0ECFEE325E10}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B607EE11-1498-4147-837D-035FECE3A861}
+	EndGlobalSection
+EndGlobal
