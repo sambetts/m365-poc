@@ -1,0 +1,20 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ServiceBusConnectionString": "<<SB NAMESPACE CONNECTION STRING>>"
+  },
+  "ConnectionStrings": {
+    "Storage": "",
+    "ServiceBus": "<<SB QUEUE CONNECTION STRING>>"
+  },
+  "AzureAd:TenantId": "",
+  "AzureAd:Domain": "",
+  "AzureAd:Secret": "",
+  "AzureAd:ClientID": "",
+  "BlobContainerName": "files",
+  "SharePointSiteId": "",
+  "WebhookUrlOverride": "",
+  "AppInsightsInstrumentationKey": ""
+}

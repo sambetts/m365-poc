@@ -1,0 +1,22 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/src/.vs/SPOAzBlob
+/src/SPOAzBlob.Web/.gitignore
+/src/CommonUtils/bin/Debug/net6.0
+/src/CommonUtils/obj
+/src/SPOAzBlob.Utils/bin/Debug/net6.0
+/src/SPOAzBlob.Utils/obj
+/src/SPOAzBlob.Web/appsettings.Development.json
+/src/SPOAzBlob.Web/ClientApp/src/authConfig - dev.js
+/src/SPOAzBlob.Web/ClientApp/src/authConfig.js
+/src/SPOAzBlob.Web/ClientApp/.vscode
+/src/SPOAzBlob.Engine/bin/Debug/net6.0
+/src/SPOAzBlob.Engine/obj
+/src/SPOAzBlob.Tests/bin/Debug/net6.0
+/src/SPOAzBlob.Tests/obj
+/src/SPOAzBlob.Tests/appsettings.json
+/src/SPOAzBlob.Web/bin/Debug/net6.0
+/src/SPOAzBlob.Web/obj
+/src/.vs/ProjectEvaluation

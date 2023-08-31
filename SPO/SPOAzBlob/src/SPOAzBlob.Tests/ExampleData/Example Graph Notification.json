@@ -1,0 +1,13 @@
+{
+  "value": [
+    {
+      "subscriptionId": "9e01108e-5cc0-40a7-b25a-59424015bf46",
+      "clientState": null,
+      "resource": "sites/m365x352268.sharepoint.com,c266cc41-a93a-46c1-afd6-19db02ed3aac,62448650-54fd-4b16-a3a9-8d3873e9b964/drive/root",
+      "tenantId": "ffcdb539-892e-4eef-94f6-0d9851c479ba",
+      "resourceData": null,
+      "subscriptionExpirationDateTime": "2022-03-03T04:02:00.6742196-08:00",
+      "changeType": "updated"
+    }
+  ]
+}
