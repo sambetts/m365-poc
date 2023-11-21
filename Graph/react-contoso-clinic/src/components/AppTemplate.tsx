@@ -8,7 +8,7 @@ export default function AppTemplate(props: { user? : microsoftgraph.User, childr
     <>
       <div className="App">
         <div id="header">
-          <h1>Office Dashboard {props.user &&
+          <h1>Contoso Clinic {props.user &&
             <>- {props.user.displayName}</>
           }
           </h1>

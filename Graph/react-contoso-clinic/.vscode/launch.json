@@ -5,6 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "NPM Test",
+            "request": "launch",
+            "runtimeArgs": [
+                "run-script",
+                "test"
+            ],
+            "runtimeExecutable": "npm",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
