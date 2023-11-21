@@ -10,6 +10,11 @@ export class ExampleAppGraphLoader extends GraphLoader {
         return this.loadSingle<User>("/me");
     }
 
+    
+    loadUserById(id: string): Promise<User> {
+        return this.loadSingle<User>("/users/" + id);
+    }
+
     loadBookingBusinesses(): Promise<BookingBusiness[]> {
         return this.loadList<BookingBusiness[]>("/solutions/bookingBusinesses", MAX_ITEMS);
     }
