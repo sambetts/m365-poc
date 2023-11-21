@@ -1,15 +1,15 @@
 import '../App.css';
 import { AuthenticatedTemplate } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
-import Emails from './data/Emails';
-import TeamsChats from './data/TeamsChats';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
-import { ChatMessage, Message, User } from '@microsoft/microsoft-graph-types';
+import { BookingBusiness, User } from '@microsoft/microsoft-graph-types';
+import { BusinessList } from './Appointments/BusinessList';
+import { AppointmentWizard } from './Appointments/AppointmentWizard';
 
 export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userLoaded: Function }) {
 
-  const [messages, setMessages] = useState<microsoftgraph.Message[] | null>(null);
-  const [chats, setChats] = useState<microsoftgraph.ChatMessage[] | null>(null);
+  const [bookingBusinesses, setBookingBusinesses] = useState<microsoftgraph.BookingBusiness[] | null>(null);
+  const [selectedBookingBusiness, setSelectedBookingBusiness] = useState<microsoftgraph.BookingBusiness | null>(null);
 
   useEffect(() => {
 
@@ -17,12 +17,8 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
       props.userLoaded(user);
     });
 
-    props.loader.loadEmails().then((emails: Message[]) => {
-      setMessages(emails);
-    });
-
-    props.loader.loadChats().then((chats: ChatMessage[]) => {
-      setChats(chats);
+    props.loader.loadBookingBusinesses().then((r: BookingBusiness[]) => {
+      setBookingBusinesses(r);
     });
 
   }, [props.loader]);
@@ -32,20 +28,23 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
       <AuthenticatedTemplate>
 
         <div className="dashboard-item" id="email-list">
-          <h2>Latest Emails</h2>
-          {messages ?
-            <Emails messages={messages} />
+
+          {selectedBookingBusiness ?
+            <>
+              <AppointmentWizard business={selectedBookingBusiness} loader={props.loader} />
+            </>
             :
-            <p>Loading...</p>
+            <>
+              <h2>Select Business</h2>
+
+              {bookingBusinesses ?
+                <BusinessList businesses={bookingBusinesses} select={(b: BookingBusiness) => setSelectedBookingBusiness(b)} />
+                :
+                <p>Loading businesses...</p>
+              }
+            </>
           }
-        </div>
-        <div className="dashboard-item" id="teams-chat">
-          <h2>Teams Chats</h2>
-          {chats ?
-            <TeamsChats chats={chats} />
-            :
-            <p>Loading...</p>
-          }
+
         </div>
       </AuthenticatedTemplate>
     </>

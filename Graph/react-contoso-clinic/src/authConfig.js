@@ -10,4 +10,4 @@ export const msalConfig = {
   }
 };
 
-export const scopes = ['User.Read', 'Chat.Read', 'Mail.ReadBasic'];
+export const scopes = ['User.Read', 'Bookings.Read.All'];
