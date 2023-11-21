@@ -5,10 +5,14 @@ import { scopes } from './authConfig';
 import { SignInButton } from './components/SignInButton';
 import AppMainContent from './components/AppMainContent';
 import { ExampleAppGraphLoader } from './services/ExampleAppGraphLoader';
+import AppTemplate from './components/AppTemplate';
 
 function App() {
 
   const [graphLoader, setGraphLoader] = useState<ExampleAppGraphLoader | null>(null);
+  const [loginError, setLoginError] = useState<Error | null>(null);
+
+  const [user, setUser] = useState<microsoftgraph.User | undefined>(undefined);
 
   const isAuthenticated = useIsAuthenticated();
   const { instance, accounts } = useMsal();
@@ -25,7 +29,7 @@ function App() {
   }, [accounts, instance]);
 
   React.useEffect(() => {
-    
+
     // Get OAuth token
     if (isAuthenticated) {
       RefreshGraphLoader();
@@ -34,17 +38,24 @@ function App() {
 
   return (
     <>
-      <UnauthenticatedTemplate>
-        <p>Sign in to Azure AD to access Graph resources.</p>
-        <SignInButton permissions={scopes} />
-      </UnauthenticatedTemplate>
-      <AuthenticatedTemplate>
-        {isAuthenticated && graphLoader ?
-          <AppMainContent loader={graphLoader} />
-          :
-          <p>No account</p>
-        }
-      </AuthenticatedTemplate>
+      <AppTemplate user={user}>
+        <UnauthenticatedTemplate>
+          <p>Sign in to Azure AD to access Graph resources.</p>
+
+          {loginError &&
+            <pre>{JSON.stringify(loginError)}</pre>
+          }
+
+          <SignInButton permissions={scopes} onError={(er: Error) => setLoginError(er)} />
+        </UnauthenticatedTemplate>
+        <AuthenticatedTemplate>
+          {isAuthenticated && graphLoader ?
+            <AppMainContent loader={graphLoader} userLoaded={(u: microsoftgraph.User) => setUser(u)} />
+            :
+            <p>No account</p>
+          }
+        </AuthenticatedTemplate>
+      </AppTemplate>
 
     </>
   );

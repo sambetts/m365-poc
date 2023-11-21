@@ -1,7 +1,7 @@
 import { useMsal } from "@azure/msal-react";
 import { IPublicClientApplication } from "@azure/msal-browser";
 
-function handleLogin(instance: IPublicClientApplication, permissions: string[]) {
+function handleLogin(instance: IPublicClientApplication, permissions: string[], onError: Function) {
 
     const loginRequest = {
         scopes: permissions
@@ -15,10 +15,10 @@ function handleLogin(instance: IPublicClientApplication, permissions: string[]) 
 /**
  * Renders a button which, when selected, will open a popup for login
  */
-export const SignInButton = (props : {permissions: string[]}) => {
+export const SignInButton = (props : {permissions: string[], onError: Function}) => {
     const { instance } = useMsal();
 
     return (
-        <button onClick={() => handleLogin(instance, props.permissions)}>Sign into Azure AD</button>
+        <button onClick={() => handleLogin(instance, props.permissions, props.onError)}>Sign into Azure AD</button>
     );
 }

@@ -6,16 +6,15 @@ import TeamsChats from './data/TeamsChats';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
 import { ChatMessage, Message, User } from '@microsoft/microsoft-graph-types';
 
-export default function AppMainContent(props: { loader: ExampleAppGraphLoader }) {
+export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userLoaded: Function }) {
 
   const [messages, setMessages] = useState<microsoftgraph.Message[] | null>(null);
   const [chats, setChats] = useState<microsoftgraph.ChatMessage[] | null>(null);
-  const [user, setUser] = useState<microsoftgraph.User | null>(null);
 
   useEffect(() => {
 
     props.loader.loadUserProfile().then((user: User) => {
-      setUser(user);
+      props.userLoaded(user);
     });
 
     props.loader.loadEmails().then((emails: Message[]) => {
@@ -31,32 +30,22 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
   return (
     <>
       <AuthenticatedTemplate>
-        <div className="App">
-          <div id="header">
-            <h1>Office Dashboard - {user &&
-              <>{user.displayName}</>
-            }
 
-            </h1>
-          </div>
-          <div id="container">
-            <div className="dashboard-item" id="email-list">
-              <h2>Latest Emails</h2>
-              {messages ?
-                <Emails messages={messages} />
-                :
-                <p>Loading...</p>
-              }
-            </div>
-            <div className="dashboard-item" id="teams-chat">
-              <h2>Teams Chats</h2>
-              {chats ?
-                <TeamsChats chats={chats} />
-                :
-                <p>Loading...</p>
-              }
-            </div>
-          </div>
+        <div className="dashboard-item" id="email-list">
+          <h2>Latest Emails</h2>
+          {messages ?
+            <Emails messages={messages} />
+            :
+            <p>Loading...</p>
+          }
+        </div>
+        <div className="dashboard-item" id="teams-chat">
+          <h2>Teams Chats</h2>
+          {chats ?
+            <TeamsChats chats={chats} />
+            :
+            <p>Loading...</p>
+          }
         </div>
       </AuthenticatedTemplate>
     </>
