@@ -26,3 +26,5 @@ Graph/react-office-dashboard/.vscode/launch.json
 /Teams/teamsify/src/APIs/obj
 /Teams/teamsify/src/Project1/obj
 /Teams/teamsify/src/Web/Properties/ServiceDependencies/teamsifyweb - Web Deploy/profile.arm.json
+/Graph/react-contoso-clinic/.vs
+/Graph/react-contoso-clinic/.env.development
