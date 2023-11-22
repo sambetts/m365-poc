@@ -6,7 +6,7 @@ import { ExampleAppGraphLoader } from "../../services/ExampleAppGraphLoader";
 import { useEffect, useState } from "react";
 import { GetDatesBetween, GetDatesExcluding } from "../../services/DateFunctions";
 import { AppointmentsList } from "./AppointmentsList";
-import { UserLoaderCache } from "../../services/UserLoaderCache";
+import { UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 
 export function AppointmentMainContent(props: { loader: ExampleAppGraphLoader, userCache : UserLoaderCache, business: BookingBusiness }) {
 
@@ -39,11 +39,12 @@ export function AppointmentMainContent(props: { loader: ExampleAppGraphLoader, u
 
   return (
     <div>
-      <h3>{props.business.displayName}</h3>
+      <h1>Selected Org: {props.business.displayName}</h1>
 
       {appointments &&
         <>
-          <AppointmentsList data={appointments} userLoader={props.userCache} />
+        <h3>Existing Appointments</h3>
+          <AppointmentsList data={appointments} loader={props.loader} forBusiness={props.business} />
           <pre>{JSON.stringify(dateSlots)}</pre>
         </>
       }

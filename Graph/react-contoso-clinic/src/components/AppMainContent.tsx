@@ -5,7 +5,7 @@ import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
 import { BookingBusiness, User } from '@microsoft/microsoft-graph-types';
 import { BusinessList } from './Appointments/BusinessList';
 import { AppointmentMainContent } from './Appointments/AppointmentMainContent';
-import { UserLoaderCache } from '../services/UserLoaderCache';
+import { UserLoaderCache } from '../services/GraphObjectsLoaderCaches';
 
 export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userCache : UserLoaderCache, userLoaded: Function }) {
 

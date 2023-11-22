@@ -1,4 +1,4 @@
-import { GraphLoader } from "./GraphLoader";
+import { GraphLoader } from "./abstract/GraphLoader";
 import { BookingAppointment, BookingBusiness, BookingStaffMember, User } from "@microsoft/microsoft-graph-types";
 
 const MAX_ITEMS : number = 5;

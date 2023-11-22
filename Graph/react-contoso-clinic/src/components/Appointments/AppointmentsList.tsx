@@ -1,10 +1,10 @@
 
 
-import { BookingAppointment, BookingCustomerInformation } from "@microsoft/microsoft-graph-types";
-import { UserLoaderCache } from "../../services/UserLoaderCache";
-import AzureAdUser from "../AzureAdUser";
+import { BookingAppointment, BookingBusiness, BookingCustomerInformation } from "@microsoft/microsoft-graph-types";
+import StaffMember from "../StaffMember";
+import { ExampleAppGraphLoader } from "../../services/ExampleAppGraphLoader";
 
-export function AppointmentsList(props: { data: BookingAppointment[], userLoader: UserLoaderCache }) {
+export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], loader: ExampleAppGraphLoader }) {
 
   return (
     <>
@@ -30,8 +30,11 @@ export function AppointmentsList(props: { data: BookingAppointment[], userLoader
               <td>
                 {b.staffMemberIds &&
                   <>
+                  With:
                     {b.staffMemberIds.map(id => {
-                      return <AzureAdUser loader={props.userLoader} userId={id} />
+                      return <>
+                        <StaffMember loader={props.loader} staffMemberId={id} businessId={props.forBusiness.id!} />, 
+                      </>
                     })}
                   </>
                 }

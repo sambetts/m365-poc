@@ -6,7 +6,7 @@ import { SignInButton } from './components/SignInButton';
 import AppMainContent from './components/AppMainContent';
 import { ExampleAppGraphLoader } from './services/ExampleAppGraphLoader';
 import AppTemplate from './components/AppTemplate';
-import { UserLoaderCache } from './services/UserLoaderCache';
+import { UserLoaderCache } from './services/GraphObjectsLoaderCaches';
 
 function App() {
 
