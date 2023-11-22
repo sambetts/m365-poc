@@ -6,9 +6,11 @@ import { SignInButton } from './components/SignInButton';
 import AppMainContent from './components/AppMainContent';
 import { ExampleAppGraphLoader } from './services/ExampleAppGraphLoader';
 import AppTemplate from './components/AppTemplate';
+import { UserLoaderCache } from './services/UserLoaderCache';
 
 function App() {
 
+  const [userCache, setUserCache] = useState<UserLoaderCache | null>(null);
   const [graphLoader, setGraphLoader] = useState<ExampleAppGraphLoader | null>(null);
   const [loginError, setLoginError] = useState<Error | null>(null);
 
@@ -24,7 +26,9 @@ function App() {
       instance.setActiveAccount(firstAccount);
     }
 
-    setGraphLoader(new ExampleAppGraphLoader(instance, scopes));
+    const loader = new ExampleAppGraphLoader(instance, scopes);
+    setGraphLoader(loader);
+    setUserCache(new UserLoaderCache(loader))
 
   }, [accounts, instance]);
 
@@ -49,8 +53,8 @@ function App() {
           <SignInButton permissions={scopes} onError={(er: Error) => setLoginError(er)} />
         </UnauthenticatedTemplate>
         <AuthenticatedTemplate>
-          {isAuthenticated && graphLoader ?
-            <AppMainContent loader={graphLoader} userLoaded={(u: microsoftgraph.User) => setUser(u)} />
+          {isAuthenticated && graphLoader && userCache ?
+            <AppMainContent loader={graphLoader} userLoaded={(u: microsoftgraph.User) => setUser(u)} userCache={userCache} />
             :
             <p>No account</p>
           }

@@ -4,24 +4,29 @@ import { useEffect, useState } from 'react';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
 import { BookingBusiness, User } from '@microsoft/microsoft-graph-types';
 import { BusinessList } from './Appointments/BusinessList';
-import { AppointmentWizard } from './Appointments/AppointmentWizard';
+import { AppointmentMainContent } from './Appointments/AppointmentMainContent';
+import { UserLoaderCache } from '../services/UserLoaderCache';
 
-export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userLoaded: Function }) {
+export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userCache : UserLoaderCache, userLoaded: Function }) {
 
   const [bookingBusinesses, setBookingBusinesses] = useState<microsoftgraph.BookingBusiness[] | null>(null);
   const [selectedBookingBusiness, setSelectedBookingBusiness] = useState<microsoftgraph.BookingBusiness | null>(null);
 
-  useEffect(() => {
+  const userLoadedCallback = (user: User) => {
+    props.userLoaded(user);
+  };
 
+  useEffect(() => {
     props.loader.loadUserProfile().then((user: User) => {
-      props.userLoaded(user);
+      userLoadedCallback(user);
     });
 
     props.loader.loadBookingBusinesses().then((r: BookingBusiness[]) => {
       setBookingBusinesses(r);
     });
 
-  }, [props.loader]);
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <>
@@ -31,7 +36,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
 
           {selectedBookingBusiness ?
             <>
-              <AppointmentWizard business={selectedBookingBusiness} loader={props.loader} />
+              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} userCache={props.userCache} />
             </>
             :
             <>

@@ -9,7 +9,7 @@ export class UserLoaderCache {
         this._loader = loader;
     }
 
-    async loadUserProfile(id: string): Promise<User> {
+    async loadUserProfile(id: string): Promise<User | null> {
 
         let cache: User | null = null;
 
@@ -20,7 +20,11 @@ export class UserLoaderCache {
             }
         });
         if (!cache) {
-            cache = await this._loader.loadUserById(id);
+            try {
+                cache = await this._loader.loadUserById(id);
+            } catch (error) {
+                cache = null;
+            }
             this._cache.push({ id: id, user: cache });
         }
         return cache;
@@ -29,5 +33,5 @@ export class UserLoaderCache {
 
 interface UserCache {
     id: string,
-    user: User
+    user: User | null
 }

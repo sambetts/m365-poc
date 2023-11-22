@@ -1,5 +1,5 @@
 import { GraphLoader } from "./GraphLoader";
-import { BookingAppointment, BookingBusiness, Message, User } from "@microsoft/microsoft-graph-types";
+import { BookingAppointment, BookingBusiness, BookingStaffMember, User } from "@microsoft/microsoft-graph-types";
 
 const MAX_ITEMS : number = 5;
 
@@ -10,9 +10,12 @@ export class ExampleAppGraphLoader extends GraphLoader {
         return this.loadSingle<User>("/me");
     }
 
-    
     loadUserById(id: string): Promise<User> {
         return this.loadSingle<User>("/users/" + id);
+    }
+
+    loadStaffMemberById(businessId: string, staffMemberId: string): Promise<BookingStaffMember> {
+        return this.loadSingle<BookingStaffMember>(`/solutions/bookingBusinesses/${businessId}/staffMembers/${staffMemberId}`);
     }
 
     loadBookingBusinesses(): Promise<BookingBusiness[]> {

@@ -14,7 +14,7 @@ export function BusinessList(props: { businesses: BookingBusiness[], select: Fun
         </thead>
         <tbody>
           {props.businesses.map((b: BookingBusiness) => {
-            return <tr>
+            return <tr key={b.id}>
               <td>{b.displayName}</td>
               <td><Button onClick={()=> props.select(b)}>Select</Button></td>
             </tr>

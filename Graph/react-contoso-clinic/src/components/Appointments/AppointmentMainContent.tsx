@@ -5,8 +5,10 @@ import { Button } from "react-bootstrap";
 import { ExampleAppGraphLoader } from "../../services/ExampleAppGraphLoader";
 import { useEffect, useState } from "react";
 import { GetDatesBetween, GetDatesExcluding } from "../../services/DateFunctions";
+import { AppointmentsList } from "./AppointmentsList";
+import { UserLoaderCache } from "../../services/UserLoaderCache";
 
-export function AppointmentWizard(props: { loader: ExampleAppGraphLoader, business: BookingBusiness }) {
+export function AppointmentMainContent(props: { loader: ExampleAppGraphLoader, userCache : UserLoaderCache, business: BookingBusiness }) {
 
   const [appointments, setAppointments] = useState<microsoftgraph.BookingAppointment[] | null>(null);
   const [dateSlots, setDateSlots] = useState<Date[] | null>(null);
@@ -24,24 +26,26 @@ export function AppointmentWizard(props: { loader: ExampleAppGraphLoader, busine
       props.loader.loadBusinessAppointments(props.business.id).then((r: BookingAppointment[]) => {
         setAppointments(r);
 
+        // Figure out dates available
         const dayDatesAll = GetDatesBetween(dayStart, dayEnd, 1);
         const appointmentDates = r.map(a => a.startDateTime!).map(d=> new Date(d.dateTime!));
 
         setDateSlots(GetDatesExcluding(dayDatesAll, appointmentDates));
       });
     }
-  }, [props.loader]);
+    
+    // eslint-disable-next-line
+  }, []);
 
   return (
     <div>
       <h3>{props.business.displayName}</h3>
 
       {appointments &&
-
         <>
+          <AppointmentsList data={appointments} userLoader={props.userCache} />
           <pre>{JSON.stringify(dateSlots)}</pre>
         </>
-
       }
       <pre>{JSON.stringify(appointments)}</pre>
       <Button onClick={startCall}>New Appointment</Button>
