@@ -11,6 +11,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
 
   const [bookingBusinesses, setBookingBusinesses] = useState<microsoftgraph.BookingBusiness[] | null>(null);
   const [selectedBookingBusiness, setSelectedBookingBusiness] = useState<microsoftgraph.BookingBusiness | null>(null);
+  const [user, setUser] = useState<microsoftgraph.User | undefined>(undefined);
 
   const userLoadedCallback = (user: User) => {
     props.userLoaded(user);
@@ -18,6 +19,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
 
   useEffect(() => {
     props.loader.loadUserProfile().then((user: User) => {
+      setUser(user);
       userLoadedCallback(user);
     });
 
@@ -34,9 +36,9 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader, u
 
         <div className="dashboard-item" id="email-list">
 
-          {selectedBookingBusiness ?
+          {selectedBookingBusiness && user ?
             <>
-              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} userCache={props.userCache} />
+              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} userCache={props.userCache} user={user} />
             </>
             :
             <>

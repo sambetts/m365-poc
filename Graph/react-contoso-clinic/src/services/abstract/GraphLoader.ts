@@ -24,6 +24,11 @@ export class GraphLoader {
             return graphClient.api(graphRelativeUrl).get();
         });
     }
+    loadSinglePost<T>(graphRelativeUrl: string, payload: object): Promise<T> {
+        return this.getGraphClient().then(graphClient => {
+            return graphClient.api(graphRelativeUrl).post(payload);
+        });
+    }
 
     getAccessToken(): Promise<AuthenticationResult> {
 
