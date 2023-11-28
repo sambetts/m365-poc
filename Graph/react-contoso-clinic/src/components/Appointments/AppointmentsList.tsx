@@ -2,9 +2,9 @@
 
 import { BookingAppointment, BookingBusiness, BookingCustomerInformation } from "@microsoft/microsoft-graph-types";
 import StaffMember from "../StaffMember";
-import { ContosoClinicGraphLoader } from "../../services/ContosoClinicGraphLoader";
+import { StaffMemberLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 
-export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], loader: ContosoClinicGraphLoader }) {
+export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], staffLoader: StaffMemberLoaderCache }) {
 
   return (
     <>
@@ -33,7 +33,7 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
                   With:
                     {b.staffMemberIds.map(id => {
                       return <>
-                        <StaffMember loader={props.loader} staffMemberId={id} businessId={props.forBusiness.id!} />, 
+                        <StaffMember staffLoader={props.staffLoader} staffMemberId={id} businessId={props.forBusiness.id!} />, 
                       </>
                     })}
                   </>

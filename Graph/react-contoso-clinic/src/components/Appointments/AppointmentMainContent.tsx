@@ -5,7 +5,7 @@ import Tabs from 'react-bootstrap/Tabs';
 import { ContosoClinicGraphLoader } from "../../services/ContosoClinicGraphLoader";
 import { useEffect, useState } from "react";
 import { AppointmentsList } from "./AppointmentsList";
-import { UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
+import { StaffMemberLoaderCache, UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 import { NewAppointment } from "./NewAppointment";
 import { CustomersList } from "./CustomersList";
 import { AppointmentView } from "../../models";
@@ -15,6 +15,8 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
 
   const [newAppointment, setNewAppointment] = useState<BookingAppointment | undefined>(undefined);
   const [createdAppointment, setCreatedAppointment] = useState<BookingAppointment | undefined>(undefined);
+
+  const [staffMemberLoaderCache, setStaffMemberLoaderCache] = useState<StaffMemberLoaderCache | null>(null);
 
   const [appointments, setAppointments] = useState<BookingAppointment[] | null>(null);
   const [staffMembers, setStaffMembers] = useState<BookingStaffMember[] | null>(null);
@@ -26,6 +28,10 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
   // Load staff members & services
   useEffect(() => {
     if (props.business.id) {
+
+      if (!staffMemberLoaderCache) {
+        setStaffMemberLoaderCache(new StaffMemberLoaderCache(props.loader, props.business.id));
+      }
 
       // Staff members
       props.loader.loadBusinessStaffMembers(props.business.id).then((r: BookingStaffMember[]) => {
@@ -111,12 +117,12 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
         className="mb-3"
       >
         <Tab eventKey="appointments" title="Appointments">
-          {appointments &&
+          {appointments && staffMemberLoaderCache &&
             <>
               {view === AppointmentView.List &&
                 <>
                   <h3>Existing Appointments</h3>
-                  <AppointmentsList data={appointments} loader={props.loader} forBusiness={props.business} />
+                  <AppointmentsList data={appointments} staffLoader={staffMemberLoaderCache} forBusiness={props.business} />
 
                   <Button onClick={() => setView(AppointmentView.New)}>New Appointment</Button>
                 </>
