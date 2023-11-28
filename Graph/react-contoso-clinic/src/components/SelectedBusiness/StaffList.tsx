@@ -3,7 +3,7 @@
 import { BookingStaffMember } from "@microsoft/microsoft-graph-types";
 import { useEffect, useState } from "react";
 import { Button } from "react-bootstrap";
-import { StaffMemberPicker } from "../common/StaffMemberPicker";
+import { StaffMemberPicker } from "./StaffMemberPicker";
 
 export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList: Function }) {
 

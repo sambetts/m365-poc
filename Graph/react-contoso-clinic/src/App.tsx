@@ -44,7 +44,7 @@ function App() {
     <>
       <AppTemplate user={user}>
         <UnauthenticatedTemplate>
-          <p>Sign in to Azure AD to access Graph resources.</p>
+          <p>Sign in to Azure AD to access Graph resources with your user.</p>
 
           {loginError &&
             <pre>{JSON.stringify(loginError)}</pre>

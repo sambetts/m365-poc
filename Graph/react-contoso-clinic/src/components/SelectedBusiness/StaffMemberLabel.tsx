@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BookingStaffMember } from '@microsoft/microsoft-graph-types';
 
-export default function StaffMember(props: { allStaffMembers: BookingStaffMember[], staffMemberId: string }) {
+export default function StaffMemberLabel(props: { allStaffMembers: BookingStaffMember[], staffMemberId: string }) {
 
   const [loadedStaffMember, setLoadedStaffMember] = useState<BookingStaffMember | null>(null);
 

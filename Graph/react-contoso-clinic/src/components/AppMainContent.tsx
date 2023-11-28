@@ -3,9 +3,10 @@ import { AuthenticatedTemplate } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
 import { ContosoClinicGraphLoader } from '../services/ContosoClinicGraphLoader';
 import { BookingBusiness, User } from '@microsoft/microsoft-graph-types';
-import { BusinessList } from './Appointments/BusinessList';
-import { AppointmentMainContent } from './Appointments/AppointmentMainContent';
+import { BusinessList } from './BusinessList';
+import { SelectedBookingBusiness } from './SelectedBusiness/SelectedBookingBusiness';
 import { UserLoaderCache } from '../services/GraphObjectsLoaderCaches';
+
 
 export default function AppMainContent(props: { loader: ContosoClinicGraphLoader, userCache : UserLoaderCache, userLoaded: Function }) {
 
@@ -38,7 +39,7 @@ export default function AppMainContent(props: { loader: ContosoClinicGraphLoader
 
           {selectedBookingBusiness && user ?
             <>
-              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} user={user} />
+              <SelectedBookingBusiness business={selectedBookingBusiness} loader={props.loader} user={user} />
             </>
             :
             <>

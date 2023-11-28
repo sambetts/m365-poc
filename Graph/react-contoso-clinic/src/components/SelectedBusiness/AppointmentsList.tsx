@@ -1,7 +1,5 @@
-
-
 import { BookingAppointment, BookingBusiness, BookingCustomerInformation, BookingStaffMember } from "@microsoft/microsoft-graph-types";
-import StaffMember from "../StaffMember";
+import StaffMember from "./StaffMemberLabel";
 import moment from "moment";
 
 export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], allStaffMembers: BookingStaffMember[] }) {
@@ -9,6 +7,9 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
   return (
     <>
       <table className="table">
+        <thead>
+          <tr><th>Customer</th><th>When</th><th>With Medic(s)</th></tr>
+        </thead>
         <tbody>
           {props.data.map((b: BookingAppointment) => {
             return <tr key={b.id}>
@@ -30,7 +31,6 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
               <td>
                 {b.staffMemberIds &&
                   <>
-                  <span>With: </span>
                     {b.staffMemberIds.map(id => {
                       return <>
                         <StaffMember allStaffMembers={props.allStaffMembers} staffMemberId={id} />, 

@@ -1,5 +1,6 @@
 import { useMsal } from "@azure/msal-react";
 import { IPublicClientApplication } from "@azure/msal-browser";
+import { Button } from "react-bootstrap";
 
 function handleLogin(instance: IPublicClientApplication, permissions: string[], onError: Function) {
 
@@ -19,6 +20,6 @@ export const SignInButton = (props : {permissions: string[], onError: Function})
     const { instance } = useMsal();
 
     return (
-        <button onClick={() => handleLogin(instance, props.permissions, props.onError)}>Sign into Azure AD</button>
+        <Button onClick={() => handleLogin(instance, props.permissions, props.onError)}>Sign into Azure AD</Button>
     );
 }

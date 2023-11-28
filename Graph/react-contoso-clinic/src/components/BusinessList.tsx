@@ -7,8 +7,8 @@ export function BusinessList(props: { businesses: BookingBusiness[], select: Fun
 
   return (
     <>
-
-      <table>
+      <p>Where do you want to book an appointment?</p>
+      <table className="table" style={{maxWidth: 400}}>
         <thead>
           <tr><th>Name</th><th></th></tr>
         </thead>
@@ -16,7 +16,7 @@ export function BusinessList(props: { businesses: BookingBusiness[], select: Fun
           {props.businesses.map((b: BookingBusiness) => {
             return <tr key={b.id}>
               <td>{b.displayName}</td>
-              <td><Button onClick={()=> props.select(b)}>Select</Button></td>
+              <td><Button onClick={() => props.select(b)}>Select</Button></td>
             </tr>
           })
           }

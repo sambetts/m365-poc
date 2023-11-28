@@ -1,12 +1,10 @@
-
-
 import { Button } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { GetDatesBetween, GetDatesExcluding, addHour } from "../../services/DateFunctions";
 import { TimeslotPicker } from "../common/TimeslotPicker";
 import { BookingAppointment, BookingCustomer, BookingService, BookingStaffMember } from "@microsoft/microsoft-graph-types";
 import { StaffList } from "./StaffList";
-import { ServicePicker } from "../common/ServicePicker";
+import { ServicePicker } from "./ServicePicker";
 
 interface Props {
   existingAppointments: BookingAppointment[],

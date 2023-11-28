@@ -11,7 +11,7 @@ import { CustomersList } from "./CustomersList";
 import { AppointmentView } from "../../models";
 import { ServicesList } from "./ServicesList";
 
-export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader, business: BookingBusiness, user: User }) {
+export function SelectedBookingBusiness(props: { loader: ContosoClinicGraphLoader, business: BookingBusiness, user: User }) {
 
   const [newAppointment, setNewAppointment] = useState<BookingAppointment | undefined>(undefined);
   const [createdAppointment, setCreatedAppointment] = useState<BookingAppointment | undefined>(undefined);
@@ -101,8 +101,8 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
 
   return (
     <div>
-      <h1>Selected Org: {props.business.displayName}</h1>
-      <p>Your customer record with email '{props.user.mail}':</p>
+      <h1>Selected Booking Business: {props.business.displayName}</h1>
+      <p>You are registered as a customer with email '{props.user.mail}' Customers can use any email, and normally don't need an account.</p>
 
       <Tabs
         defaultActiveKey="appointments"
