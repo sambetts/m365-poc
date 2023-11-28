@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { BookingStaffMember } from '@microsoft/microsoft-graph-types';
-import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
+import { ContosoClinicGraphLoader } from '../services/ContosoClinicGraphLoader';
 
-export default function StaffMember(props: { businessId: string, staffMemberId: string, loader : ExampleAppGraphLoader }) {
+export default function StaffMember(props: { businessId: string, staffMemberId: string, loader : ContosoClinicGraphLoader }) {
 
   const [loadedStaffMember, setLoadedStaffMember] = useState<BookingStaffMember | null>(null);
 

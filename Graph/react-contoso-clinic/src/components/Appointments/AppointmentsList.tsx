@@ -2,9 +2,9 @@
 
 import { BookingAppointment, BookingBusiness, BookingCustomerInformation } from "@microsoft/microsoft-graph-types";
 import StaffMember from "../StaffMember";
-import { ExampleAppGraphLoader } from "../../services/ExampleAppGraphLoader";
+import { ContosoClinicGraphLoader } from "../../services/ContosoClinicGraphLoader";
 
-export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], loader: ExampleAppGraphLoader }) {
+export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], loader: ContosoClinicGraphLoader }) {
 
   return (
     <>

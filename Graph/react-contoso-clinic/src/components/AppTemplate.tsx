@@ -1,4 +1,5 @@
 import '../App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 export default function AppTemplate(props: { user? : microsoftgraph.User, children: React.ReactNode }) {
   

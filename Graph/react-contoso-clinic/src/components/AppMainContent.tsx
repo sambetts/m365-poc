@@ -1,13 +1,13 @@
 import '../App.css';
 import { AuthenticatedTemplate } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
-import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
+import { ContosoClinicGraphLoader } from '../services/ContosoClinicGraphLoader';
 import { BookingBusiness, User } from '@microsoft/microsoft-graph-types';
 import { BusinessList } from './Appointments/BusinessList';
 import { AppointmentMainContent } from './Appointments/AppointmentMainContent';
 import { UserLoaderCache } from '../services/GraphObjectsLoaderCaches';
 
-export default function AppMainContent(props: { loader: ExampleAppGraphLoader, userCache : UserLoaderCache, userLoaded: Function }) {
+export default function AppMainContent(props: { loader: ContosoClinicGraphLoader, userCache : UserLoaderCache, userLoaded: Function }) {
 
   const [bookingBusinesses, setBookingBusinesses] = useState<microsoftgraph.BookingBusiness[] | null>(null);
   const [selectedBookingBusiness, setSelectedBookingBusiness] = useState<microsoftgraph.BookingBusiness | null>(null);

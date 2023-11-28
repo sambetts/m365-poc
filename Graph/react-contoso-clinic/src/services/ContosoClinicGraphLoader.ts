@@ -4,7 +4,7 @@ import { BookingAppointment, BookingBusiness, BookingCustomer, BookingStaffMembe
 const MAX_ITEMS : number = 5;
 
 // App-specific implementation for GraphLoader
-export class ExampleAppGraphLoader extends GraphLoader {
+export class ContosoClinicGraphLoader extends GraphLoader {
 
     loadUserProfile(): Promise<User> {
         return this.loadSingle<User>("/me");
@@ -33,13 +33,16 @@ export class ExampleAppGraphLoader extends GraphLoader {
     loadBusinessCustomers(businessId: string): Promise<BookingCustomer[]> {
         return this.loadList<BookingStaffMember[]>(`/solutions/bookingBusinesses/${businessId}/customers`, MAX_ITEMS);
     }
-    loadBusinessCustomerByGraphUser(businessId: string, user: User): Promise<BookingCustomer | null | undefined> {
+    loadBusinessCustomerByGraphUser(businessId: string, user: User, usersLoaded? : Function): Promise<BookingCustomer | null | undefined> {
         if (!user.displayName) {
             throw new Error("Invalid user");
         }
         return this.loadBusinessCustomers(businessId).then((r: BookingStaffMember[]) => 
         {
-            return Promise.resolve(r.find(c=> c.emailAddress === user.mail));
+            if (usersLoaded) {
+                usersLoaded(r);
+            }
+            return Promise.resolve(r.find(c=> c.emailAddress === user.userPrincipalName));
         });
     }
 
@@ -47,12 +50,15 @@ export class ExampleAppGraphLoader extends GraphLoader {
         if (!user.displayName) {
             throw new Error("Invalid user");
         }
-        const newUser: BookingCustomer = 
-        {
-            emailAddress: user.mail,
-            displayName: user.displayName
-        }
-        return this.loadSinglePost<BookingCustomer>(`/solutions/bookingBusinesses/${businessId}/customers`, newUser);
+
+        const bookingCustomerBase = {
+            '@odata.type': '#microsoft.graph.bookingCustomer',
+            displayName: user.displayName,
+            emailAddress: user.userPrincipalName,
+            addresses: [],
+            phones: []
+        };
+        
+        return this.loadSinglePost<BookingCustomer>(`/solutions/bookingBusinesses/${businessId}/customers`, bookingCustomerBase);
     }
 }
-

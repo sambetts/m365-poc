@@ -4,14 +4,14 @@ import { AuthenticatedTemplate, UnauthenticatedTemplate, useIsAuthenticated, use
 import { scopes } from './authConfig';
 import { SignInButton } from './components/SignInButton';
 import AppMainContent from './components/AppMainContent';
-import { ExampleAppGraphLoader } from './services/ExampleAppGraphLoader';
+import { ContosoClinicGraphLoader } from './services/ContosoClinicGraphLoader';
 import AppTemplate from './components/AppTemplate';
 import { UserLoaderCache } from './services/GraphObjectsLoaderCaches';
 
 function App() {
 
   const [userCache, setUserCache] = useState<UserLoaderCache | null>(null);
-  const [graphLoader, setGraphLoader] = useState<ExampleAppGraphLoader | null>(null);
+  const [graphLoader, setGraphLoader] = useState<ContosoClinicGraphLoader | null>(null);
   const [loginError, setLoginError] = useState<Error | null>(null);
 
   const [user, setUser] = useState<microsoftgraph.User | undefined>(undefined);
@@ -26,7 +26,7 @@ function App() {
       instance.setActiveAccount(firstAccount);
     }
 
-    const loader = new ExampleAppGraphLoader(instance, scopes);
+    const loader = new ContosoClinicGraphLoader(instance, scopes);
     setGraphLoader(loader);
     setUserCache(new UserLoaderCache(loader))
 
