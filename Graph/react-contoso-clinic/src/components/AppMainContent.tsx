@@ -38,7 +38,7 @@ export default function AppMainContent(props: { loader: ContosoClinicGraphLoader
 
           {selectedBookingBusiness && user ?
             <>
-              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} userCache={props.userCache} user={user} />
+              <AppointmentMainContent business={selectedBookingBusiness} loader={props.loader} user={user} />
             </>
             :
             <>

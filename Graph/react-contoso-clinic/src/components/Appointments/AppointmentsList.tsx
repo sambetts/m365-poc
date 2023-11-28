@@ -2,6 +2,7 @@
 
 import { BookingAppointment, BookingBusiness, BookingCustomerInformation, BookingStaffMember } from "@microsoft/microsoft-graph-types";
 import StaffMember from "../StaffMember";
+import moment from "moment";
 
 export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], allStaffMembers: BookingStaffMember[] }) {
 
@@ -23,13 +24,13 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
               </td>
               <td>@
                 {b.startDateTime?.dateTime &&
-                  <>{new Date(b.startDateTime?.dateTime).toLocaleDateString("en-GB")}</>
+                  <>{moment(new Date(b.startDateTime?.dateTime)).format("DD/MM/YYYY HH:mm:ss")}</>
                 }
               </td>
               <td>
                 {b.staffMemberIds &&
                   <>
-                  With:
+                  <span>With: </span>
                     {b.staffMemberIds.map(id => {
                       return <>
                         <StaffMember allStaffMembers={props.allStaffMembers} staffMemberId={id} />, 

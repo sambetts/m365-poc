@@ -5,18 +5,16 @@ import Tabs from 'react-bootstrap/Tabs';
 import { ContosoClinicGraphLoader } from "../../services/ContosoClinicGraphLoader";
 import { useEffect, useState } from "react";
 import { AppointmentsList } from "./AppointmentsList";
-import { StaffMemberLoaderCache, UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
+import { UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 import { NewAppointment } from "./NewAppointment";
 import { CustomersList } from "./CustomersList";
 import { AppointmentView } from "../../models";
 import { ServicesList } from "./ServicesList";
 
-export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader, userCache: UserLoaderCache, business: BookingBusiness, user: User }) {
+export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader, business: BookingBusiness, user: User }) {
 
   const [newAppointment, setNewAppointment] = useState<BookingAppointment | undefined>(undefined);
   const [createdAppointment, setCreatedAppointment] = useState<BookingAppointment | undefined>(undefined);
-
-  const [staffMemberLoaderCache, setStaffMemberLoaderCache] = useState<StaffMemberLoaderCache | null>(null);
 
   const [appointments, setAppointments] = useState<BookingAppointment[] | null>(null);
   const [staffMembers, setStaffMembers] = useState<BookingStaffMember[] | null>(null);
@@ -29,9 +27,6 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
   useEffect(() => {
     if (props.business.id) {
 
-      if (!staffMemberLoaderCache) {
-        setStaffMemberLoaderCache(new StaffMemberLoaderCache(props.loader, props.business.id));
-      }
 
       // Staff members
       props.loader.loadBusinessStaffMembers(props.business.id).then((r: BookingStaffMember[]) => {

@@ -12,7 +12,7 @@ export function StaffMemberPicker(props: { options: BookingStaffMember[], option
     if (props.options.length > 0) {
       props.optionSelected(props.options[0]);
     }
-  }, [props.options]);
+  }, [props.options, props.optionSelected]);
 
   const newVal = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selected: BookingStaffMember = props.options[parseInt(event.target.value)];
