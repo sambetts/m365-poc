@@ -127,18 +127,29 @@ export function NewAppointment(props: Props) {
     <div>
       {dateSlots &&
         <>
-          <p>Select date:</p>
-          <TimeslotPicker options={dateSlots} optionSelected={(dt: Date) => setSelectedDate(dt)} />
+          <div className="row g-3">
+            <div className="col">
+              <label>Select date:</label>
+              <TimeslotPicker options={dateSlots} optionSelected={(dt: Date) => setSelectedDate(dt)} />
+            </div>
+            <div className="col">
+              <label>Select service:</label>
+              <ServicePicker options={props.services} optionSelected={(s: BookingService) => setSelectedService(s)} />
+            </div>
+          </div>
 
-          <p>Select service:</p>
-          <ServicePicker options={props.services} optionSelected={(s: BookingService) => setSelectedService(s)} />
+          <div className="row">
+            <div className="col">
+              <label>Select staff:</label>
+              <StaffList allStaff={props.staffMembers} newStaffList={(s: BookingStaffMember[]) => setSelectedStaff(s)} />
+            </div>
+          </div>
 
-          <p>Select staff:</p>
-          <StaffList allStaff={props.staffMembers} newStaffList={(s: BookingStaffMember[]) => setSelectedStaff(s)} />
-          <pre>{JSON.stringify(selectedStaff)}</pre>
+          <div className="col-12">
+            <Button onClick={newAppointment} className="btn btn-lg btn-primary">Create Appointment</Button>
+          </div>
         </>
       }
-      <Button onClick={newAppointment}>Create</Button>
     </div >
   );
 }

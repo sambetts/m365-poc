@@ -1,14 +1,13 @@
 
 
-import { BookingAppointment, BookingBusiness, BookingCustomerInformation } from "@microsoft/microsoft-graph-types";
+import { BookingAppointment, BookingBusiness, BookingCustomerInformation, BookingStaffMember } from "@microsoft/microsoft-graph-types";
 import StaffMember from "../StaffMember";
-import { StaffMemberLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 
-export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], staffLoader: StaffMemberLoaderCache }) {
+export function AppointmentsList(props: { forBusiness: BookingBusiness, data: BookingAppointment[], allStaffMembers: BookingStaffMember[] }) {
 
   return (
     <>
-      <table>
+      <table className="table">
         <tbody>
           {props.data.map((b: BookingAppointment) => {
             return <tr key={b.id}>
@@ -33,7 +32,7 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
                   With:
                     {b.staffMemberIds.map(id => {
                       return <>
-                        <StaffMember staffLoader={props.staffLoader} staffMemberId={id} businessId={props.forBusiness.id!} />, 
+                        <StaffMember allStaffMembers={props.allStaffMembers} staffMemberId={id} />, 
                       </>
                     })}
                   </>

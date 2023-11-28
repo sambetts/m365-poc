@@ -68,9 +68,8 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
 
         // Customer record for user not loaded yet
         props.loader.loadBusinessCustomerByGraphUser(props.business.id, props.user, (cxs: BookingCustomer[]) => setAllCustomers(cxs))
-          .then((c: BookingCustomer | null | undefined) => {
-
-            setUserCustomer(null);    // Avoid reload. Effect will rerun. 
+          .then((loggedInCustomer: BookingCustomer | null | undefined) => {
+            setUserCustomer(loggedInCustomer);
           });
       }
       else if (userCustomer === null) {
@@ -109,7 +108,6 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
     <div>
       <h1>Selected Org: {props.business.displayName}</h1>
       <p>Your customer record with email '{props.user.mail}':</p>
-      <pre>{JSON.stringify(userCustomer)}</pre>
 
       <Tabs
         defaultActiveKey="appointments"
@@ -117,12 +115,12 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
         className="mb-3"
       >
         <Tab eventKey="appointments" title="Appointments">
-          {appointments && staffMemberLoaderCache &&
+          {appointments && staffMembers &&
             <>
               {view === AppointmentView.List &&
                 <>
                   <h3>Existing Appointments</h3>
-                  <AppointmentsList data={appointments} staffLoader={staffMemberLoaderCache} forBusiness={props.business} />
+                  <AppointmentsList data={appointments} allStaffMembers={staffMembers} forBusiness={props.business} />
 
                   <Button onClick={() => setView(AppointmentView.New)}>New Appointment</Button>
                 </>
@@ -163,7 +161,7 @@ export function AppointmentMainContent(props: { loader: ContosoClinicGraphLoader
       {createdAppointment &&
         <>
           <h3>Created Appointment</h3>
-          <pre>{JSON.stringify(createdAppointment)}</pre>
+          <pre style={{maxWidth: 1200}}>{JSON.stringify(createdAppointment, null, 4)}</pre>
         </>
 
       }

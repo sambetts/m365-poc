@@ -30,34 +30,32 @@ export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList:
 
   return (
     <>
+      {selectedStaff.length > 0 ?
+        <table>
+          <tbody>
+            {selectedStaff.map((b: BookingStaffMember) => {
+              return <tr key={b.id}>
+                <td>{b.displayName}</td>
+                <td><Button onClick={() => removeMember(b)} className="btn btn-secondary btn-sm">Remove</Button></td>
+              </tr>
+            })
+            }
+          </tbody>
+        </table>
+        :
+        <ul>
+          <li>No staff members added to appointment</li>
+        </ul>
+      }
+
       <table>
-        <tbody>
-          {selectedStaff.length > 0 ?
-            <>
-              {selectedStaff.map((b: BookingStaffMember) => {
-                return <tr key={b.id}>
-                  <td>{b.displayName}</td>
-                  <td><Button onClick={() => removeMember(b)}>Remove</Button></td>
-                </tr>
-              })
-              }
-            </>
-            :
-            <tr>
-              <td>No staff members added</td>
-            </tr>
-          }
-
-          <tr>
-            <td><StaffMemberPicker options={props.allStaff} optionSelected={(s: BookingStaffMember) => setSelectedStaffToAdd(s)} /></td>
-            <td>
-              <Button onClick={addSelectedMember}>Add</Button>
-            </td>
-          </tr>
-
-        </tbody>
+        <tr>
+          <td><StaffMemberPicker options={props.allStaff} optionSelected={(s: BookingStaffMember) => setSelectedStaffToAdd(s)} /></td>
+          <td>
+            <Button onClick={addSelectedMember} className="btn btn-info btn-sm">Add</Button>
+          </td>
+        </tr>
       </table>
-
     </>
   );
 }

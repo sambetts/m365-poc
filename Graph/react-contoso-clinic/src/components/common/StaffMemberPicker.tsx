@@ -21,7 +21,7 @@ export function StaffMemberPicker(props: { options: BookingStaffMember[], option
   }
 
   return (
-    <Form.Select onChange={(event) => newVal(event)}>
+    <Form.Select onChange={(event) => newVal(event)} className='form-select'>
       {props.options.map((s, idx) => {
         return <option value={idx.toString()}>{s.displayName}</option>
       })

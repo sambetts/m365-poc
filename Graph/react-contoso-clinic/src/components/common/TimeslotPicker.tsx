@@ -20,7 +20,7 @@ export function TimeslotPicker(props: { options: Date[], optionSelected : Functi
   }
 
   return (
-    <Form.Select onChange={(event) => newVal(event)}>
+    <Form.Select onChange={(event) => newVal(event)} className='form-select'>
       {props.options.map((dt, idx) => {
         return <option value={idx.toString()}>{dt.toString()}</option>
       })

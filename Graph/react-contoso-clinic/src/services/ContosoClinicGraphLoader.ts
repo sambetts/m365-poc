@@ -50,7 +50,7 @@ export class ContosoClinicGraphLoader extends GraphLoader {
             if (usersLoaded) {
                 usersLoaded(r);
             }
-            return Promise.resolve(r.find(c=> c.emailAddress === user.userPrincipalName));
+            return Promise.resolve(r.find(c=> c.emailAddress === user.userPrincipalName) ?? null);
         });
     }
 

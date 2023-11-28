@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { BookingStaffMember } from '@microsoft/microsoft-graph-types';
-import { StaffMemberLoaderCache } from '../services/GraphObjectsLoaderCaches';
 
-export default function StaffMember(props: { businessId: string, staffMemberId: string, staffLoader : StaffMemberLoaderCache }) {
+export default function StaffMember(props: { allStaffMembers: BookingStaffMember[], staffMemberId: string }) {
 
   const [loadedStaffMember, setLoadedStaffMember] = useState<BookingStaffMember | null>(null);
 
   useEffect(() => {
-    props.staffLoader.loadFromCacheOrAPI(props.staffMemberId).then((user: BookingStaffMember | null) => {
-      setLoadedStaffMember(user);
-    });
+    props.allStaffMembers.forEach((m: BookingStaffMember) => 
+    {
+      if (m.id === props.staffMemberId) {
+        setLoadedStaffMember(m);
+      }
+    })
 
     // eslint-disable-next-line
   }, []);
