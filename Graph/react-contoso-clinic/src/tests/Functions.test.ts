@@ -21,5 +21,7 @@ test('GetDatesExcluding', () => {
   const list1 = [now, addHour(now, 1)];
 
   const list2 = [now];
-  expect(GetDatesExcluding(list1, list2).length === 1).toBeTruthy();
+
+  const list1MinusList2 = GetDatesExcluding(list1, list2)
+  expect(list1MinusList2.length === 1).toBeTruthy();
 });

@@ -25,7 +25,7 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
               </td>
               <td>@
                 {b.startDateTime?.dateTime &&
-                  <>{moment(new Date(b.startDateTime?.dateTime)).format("DD/MM/YYYY HH:mm:ss")}</>
+                  <>{moment.utc(b.startDateTime?.dateTime).local().format("DD/MM/YYYY HH:mm:ss")}</>
                 }
               </td>
               <td>

@@ -5,21 +5,29 @@ import { TimeslotPicker } from "../common/TimeslotPicker";
 import { BookingAppointment, BookingCustomer, BookingService, BookingStaffMember } from "@microsoft/microsoft-graph-types";
 import { StaffList } from "./StaffList";
 import { ServicePicker } from "./ServicePicker";
+import moment from "moment";
 
 interface Props {
   existingAppointments: BookingAppointment[],
   staffMembers: BookingStaffMember[],
   services: BookingService[],
   forCustomer: BookingCustomer,
-  newAppointment: Function
+  newAppointment: Function,
+  cancel: Function
 }
 
 export function NewAppointment(props: Props) {
 
   const [dateSlots, setDateSlots] = useState<Date[] | null>(null);
+  const [savingAppointment, setSavingAppointment] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<BookingStaffMember[] | null>(null);
+
+  const formatDate = (dt: Date) : string => {
+    const m = moment(dt);
+    return m.format("yyyy-MM-DD") + "T" + m.format("HH") + ":00:00.0000000";
+  }
 
   const newAppointment = () => {
 
@@ -27,15 +35,16 @@ export function NewAppointment(props: Props) {
       alert("Fill out form");
       return;
     }
+    setSavingAppointment(true);
 
     const bookingAppointment: BookingAppointment = {
       startDateTime: {
-        dateTime: selectedDate.toISOString(),
-        timeZone: 'UTC'
+        dateTime: formatDate(selectedDate),
+        timeZone: 'Central European Standard Time'
       },
       endDateTime: {
-        dateTime: addHour(selectedDate, 1).toISOString(),
-        timeZone: 'UTC'
+        dateTime: formatDate(addHour(selectedDate, 1)),
+        timeZone: 'Central European Standard Time'
       },
       price: 0,
       priceType: "notSet",
@@ -47,7 +56,6 @@ export function NewAppointment(props: Props) {
       reminders: [],
       serviceId: selectedService.id,
       serviceName: selectedService.displayName,
-      serviceNotes: 'Customer requires punctual service.',
       "serviceLocation": {
         "address": {
           "city": "Buffalo",
@@ -107,15 +115,16 @@ export function NewAppointment(props: Props) {
     props.newAppointment(bookingAppointment);
   }
 
-  const now = new Date();
-  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9)
-  const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18);
-
   useEffect(() => {
+
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9)
+    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18);
 
     // Figure out dates available
     const dayDatesAll = GetDatesBetween(dayStart, dayEnd, 1);
-    const appointmentDates = props.existingAppointments.map(a => a.startDateTime!).map(d => new Date(d.dateTime!));
+    
+    const appointmentDates = props.existingAppointments.map(a => a.startDateTime!).map(d => moment.utc(d.dateTime).local().toDate());
 
     setDateSlots(GetDatesExcluding(dayDatesAll, appointmentDates));
 
@@ -123,31 +132,39 @@ export function NewAppointment(props: Props) {
 
   return (
     <div>
-      {dateSlots &&
+      {!savingAppointment ?
         <>
-          <div className="row g-3">
-            <div className="col">
-              <label>Select date:</label>
-              <TimeslotPicker options={dateSlots} optionSelected={(dt: Date) => setSelectedDate(dt)} />
-            </div>
-            <div className="col">
-              <label>Select service:</label>
-              <ServicePicker options={props.services} optionSelected={(s: BookingService) => setSelectedService(s)} />
-            </div>
-          </div>
+          {dateSlots &&
+            <>
+              <div className="row g-3">
+                <div className="col">
+                  <label>Select time for today:</label>
+                  <TimeslotPicker options={dateSlots} optionSelected={(dt: Date) => setSelectedDate(dt)} />
+                </div>
+                <div className="col">
+                  <label>Select service:</label>
+                  <ServicePicker options={props.services} optionSelected={(s: BookingService) => setSelectedService(s)} />
+                </div>
+              </div>
 
-          <div className="row">
-            <div className="col">
-              <label>Select staff:</label>
-              <StaffList allStaff={props.staffMembers} newStaffList={(s: BookingStaffMember[]) => setSelectedStaff(s)} />
-            </div>
-          </div>
+              <div className="row">
+                <div className="col">
+                  <label>Select staff:</label>
+                  <StaffList allStaff={props.staffMembers} newStaffList={(s: BookingStaffMember[]) => setSelectedStaff(s)} />
+                </div>
+              </div>
 
-          <div className="col-12">
-            <Button onClick={newAppointment} className="btn btn-lg btn-primary">Create Appointment</Button>
-          </div>
+              <div className="col-12">
+                <Button onClick={newAppointment} className="btn btn-lg btn-primary">Create Appointment</Button>
+                <Button onClick={() => props.cancel()} className="btn btn-lg btn-secondary">Cancel</Button>
+              </div>
+            </>
+          }
         </>
+        :
+        <>Loading...</>
       }
+
     </div >
   );
 }

@@ -7,7 +7,7 @@ export function BusinessList(props: { businesses: BookingBusiness[], select: Fun
 
   return (
     <>
-      <p>Where do you want to book an appointment?</p>
+      <p>Where do you want to book an appointment? Office 365 bookings are partitioned into "businesses".</p>
       <table className="table" style={{maxWidth: 400}}>
         <thead>
           <tr><th>Name</th><th></th></tr>

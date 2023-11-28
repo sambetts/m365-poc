@@ -5,7 +5,6 @@ import Tabs from 'react-bootstrap/Tabs';
 import { ContosoClinicGraphLoader } from "../../services/ContosoClinicGraphLoader";
 import { useEffect, useState } from "react";
 import { AppointmentsList } from "./AppointmentsList";
-import { UserLoaderCache } from "../../services/GraphObjectsLoaderCaches";
 import { NewAppointment } from "./NewAppointment";
 import { CustomersList } from "./CustomersList";
 import { AppointmentView } from "../../models";
@@ -44,7 +43,7 @@ export function SelectedBookingBusiness(props: { loader: ContosoClinicGraphLoade
   // Load appointments...
   useEffect(() => {
 
-    if (props.business.id && !appointments) {
+    if (props.business.id) {
 
       props.loader.loadBusinessAppointments(props.business.id).then((r: BookingAppointment[]) => {
         setAppointments(r);
@@ -126,7 +125,7 @@ export function SelectedBookingBusiness(props: { loader: ContosoClinicGraphLoade
                   {staffMembers && userCustomer && services ?
                     <NewAppointment existingAppointments={appointments} forCustomer={userCustomer} staffMembers={staffMembers}
                       services={services}
-                      newAppointment={(r: BookingAppointment) => setNewAppointment(r)} />
+                      newAppointment={(r: BookingAppointment) => setNewAppointment(r)} cancel={()=> setView(AppointmentView.List)} />
                     :
                     <p>No staff members found</p>
                   }
@@ -155,10 +154,9 @@ export function SelectedBookingBusiness(props: { loader: ContosoClinicGraphLoade
 
       {createdAppointment &&
         <>
-          <h3>Created Appointment</h3>
+          <h4>Last Created Appointment</h4>
           <pre style={{maxWidth: 1200}}>{JSON.stringify(createdAppointment, null, 4)}</pre>
         </>
-
       }
 
     </div >

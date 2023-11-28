@@ -1,7 +1,7 @@
 import { GraphLoader } from "./abstract/GraphLoader";
 import { BookingAppointment, BookingBusiness, BookingCustomer, BookingService, BookingStaffMember, User } from "@microsoft/microsoft-graph-types";
 
-const MAX_ITEMS : number = 5;
+const MAX_ITEMS : number = 10;
 
 // App-specific implementation for GraphLoader
 export class ContosoClinicGraphLoader extends GraphLoader {
