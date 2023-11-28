@@ -1,5 +1,5 @@
 import { GraphLoader } from "./abstract/GraphLoader";
-import { BookingAppointment, BookingBusiness, BookingCustomer, BookingStaffMember, User } from "@microsoft/microsoft-graph-types";
+import { BookingAppointment, BookingBusiness, BookingCustomer, BookingService, BookingStaffMember, User } from "@microsoft/microsoft-graph-types";
 
 const MAX_ITEMS : number = 5;
 
@@ -25,9 +25,17 @@ export class ContosoClinicGraphLoader extends GraphLoader {
     loadBusinessAppointments(businessId: string): Promise<BookingAppointment[]> {
         return this.loadList<BookingAppointment[]>(`/solutions/bookingBusinesses/${businessId}/appointments`, MAX_ITEMS);
     }
+    
+    createAppointment(businessId: string, appointment: BookingAppointment): Promise<BookingAppointment> {
+        return this.loadSinglePost<BookingAppointment>(`/solutions/bookingBusinesses/${businessId}/appointments`, appointment);
+    }
 
     loadBusinessStaffMembers(businessId: string): Promise<BookingStaffMember[]> {
         return this.loadList<BookingStaffMember[]>(`/solutions/bookingBusinesses/${businessId}/staffMembers`, MAX_ITEMS);
+    }
+
+    loadBusinessServices(businessId: string): Promise<BookingService[]> {
+        return this.loadList<BookingService[]>(`/solutions/bookingBusinesses/${businessId}/services`, MAX_ITEMS);
     }
 
     loadBusinessCustomers(businessId: string): Promise<BookingCustomer[]> {
