@@ -18,14 +18,10 @@ export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList:
       alert('Not sure who to add?')
   }
 
-  const setSelectedStaffToAdd2 = (s: BookingStaffMember) => {
-    setSelectedStaffToAdd(s);
-  }
-
   useEffect(() => {
     // Raise event on changes
     props.newStaffList(selectedStaff);
-  }, [selectedStaff]);
+  }, [selectedStaff, props]);
 
   const removeMember = (b: BookingStaffMember) => {
     const newList = selectedStaff.filter(item => item.id !== b.id);
