@@ -18,6 +18,10 @@ export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList:
       alert('Not sure who to add?')
   }
 
+  const setSelectedStaffToAdd2 = (s: BookingStaffMember) => {
+    setSelectedStaffToAdd(s);
+  }
+
   useEffect(() => {
     // Raise event on changes
     props.newStaffList(selectedStaff);
@@ -31,7 +35,7 @@ export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList:
   return (
     <>
       {selectedStaff.length > 0 ?
-        <table>
+        <table className="table" style={{maxWidth: 400}}>
           <tbody>
             {selectedStaff.map((b: BookingStaffMember) => {
               return <tr key={b.id}>
@@ -50,9 +54,9 @@ export function StaffList(props: { allStaff: BookingStaffMember[], newStaffList:
 
       <table>
         <tr>
-          <td><StaffMemberPicker options={props.allStaff} optionSelected={(s: BookingStaffMember) => setSelectedStaffToAdd(s)} /></td>
+          <td><StaffMemberPicker options={props.allStaff} optionSelected={setSelectedStaffToAdd} /></td>
           <td>
-            <Button onClick={addSelectedMember} className="btn btn-info btn-sm">Add</Button>
+            <Button onClick={addSelectedMember} className="btn btn-sm">Add</Button>
           </td>
         </tr>
       </table>

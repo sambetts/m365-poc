@@ -6,10 +6,19 @@ body {
 }
 
 #header {
-  background-color: #333;
+  background-color: #031d36;
   color: #fff;
   text-align: center;
   padding: 1rem;
+  background-image: url(/public/ContosoClinic.jpg);
+  background-size: 80px;
+  background-repeat: no-repeat;
+}
+
+#container .btn-primary
+{
+  background-color: #031d36;
+  border-color:#010911;
 }
 
 #container {

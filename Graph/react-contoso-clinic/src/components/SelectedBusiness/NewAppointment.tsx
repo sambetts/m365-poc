@@ -32,19 +32,21 @@ export function NewAppointment(props: Props) {
   const newAppointment = () => {
 
     if (!selectedService || !selectedDate || !selectedStaff || selectedStaff?.length === 0) {
-      alert("Fill out form");
+      alert("Fill out form: pick staff members and a time-slot");
       return;
     }
     setSavingAppointment(true);
 
+    const timeZone = 'Central European Standard Time';  // Hard-coded hack for now
+
     const bookingAppointment: BookingAppointment = {
       startDateTime: {
         dateTime: formatDate(selectedDate),
-        timeZone: 'Central European Standard Time'
+        timeZone: timeZone
       },
       endDateTime: {
         dateTime: formatDate(addHour(selectedDate, 1)),
-        timeZone: 'Central European Standard Time'
+        timeZone: timeZone
       },
       price: 0,
       priceType: "notSet",
@@ -154,7 +156,7 @@ export function NewAppointment(props: Props) {
                 </div>
               </div>
 
-              <div className="col-12">
+              <div className="col-12" style={{marginTop: 20}}>
                 <Button onClick={newAppointment} className="btn btn-lg btn-primary">Create Appointment</Button>
                 <Button onClick={() => props.cancel()} className="btn btn-lg btn-secondary">Cancel</Button>
               </div>
