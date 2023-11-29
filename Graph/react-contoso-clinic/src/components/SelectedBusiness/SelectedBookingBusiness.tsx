@@ -50,7 +50,7 @@ export function SelectedBookingBusiness(props: { loader: ContosoClinicGraphLoade
       });
     }
 
-  }, [props.business.id, props.loader, props.user, newAppointment]);
+  }, [props.business.id, props.loader, props.user, createdAppointment]);
 
 
   // Business customer for logged in user

@@ -11,37 +11,48 @@ export function AppointmentsList(props: { forBusiness: BookingBusiness, data: Bo
           <tr><th>Customer</th><th>When</th><th>With Medic(s)</th></tr>
         </thead>
         <tbody>
-          {props.data.map((b: BookingAppointment) => {
-            return <tr key={b.id}>
-              <td>
-                {b.customers &&
-                  <>
-                    {b.customers.map((c: BookingCustomerInformation) => {
-                      return <div>{c.name}</div>
-                    })
-                    }
-                  </>
-                }
-              </td>
-              <td>@
-                {b.startDateTime?.dateTime &&
-                  <>{moment.utc(b.startDateTime?.dateTime).local().format("DD/MM/YYYY HH:mm:ss")}</>
-                }
-              </td>
-              <td>
-                {b.staffMemberIds &&
-                  <>
-                    {b.staffMemberIds.map(id => {
-                      return <>
-                        <StaffMember allStaffMembers={props.allStaffMembers} staffMemberId={id} />, 
-                      </>
-                    })}
-                  </>
-                }
+          {props.data.length > 0 ?
 
-              </td>
+            <>
+              {props.data.map((b: BookingAppointment) => {
+                return <tr key={b.id}>
+                  <td>
+                    {b.customers &&
+                      <>
+                        {b.customers.map((c: BookingCustomerInformation) => {
+                          return <div>{c.name}</div>
+                        })
+                        }
+                      </>
+                    }
+                  </td>
+                  <td>@
+                    {b.startDateTime?.dateTime &&
+                      <>{moment.utc(b.startDateTime?.dateTime).local().format("DD/MM/YYYY HH:mm:ss")}</>
+                    }
+                  </td>
+                  <td>
+                    {b.staffMemberIds &&
+                      <>
+                        {b.staffMemberIds.map(id => {
+                          return <>
+                            <StaffMember allStaffMembers={props.allStaffMembers} staffMemberId={id} />,
+                          </>
+                        })}
+                      </>
+                    }
+
+                  </td>
+                </tr>
+              })
+              }
+            </>
+            :
+            <>
+            <tr>
+              <td colSpan={3}>No appointments</td>
             </tr>
-          })
+            </>
           }
         </tbody>
       </table>
