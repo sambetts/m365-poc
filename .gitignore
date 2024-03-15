@@ -28,3 +28,7 @@ Graph/react-office-dashboard/.vscode/launch.json
 /Teams/teamsify/src/Web/Properties/ServiceDependencies/teamsifyweb - Web Deploy/profile.arm.json
 /Graph/react-contoso-clinic/.vs
 /Graph/react-contoso-clinic/.env.development
+/Graph/Archive/AppIdentityRESTConsole/.vs/AppIdentityRESTConsole
+/Graph/Archive/AppIdentityRESTConsole/AppIdentityRESTConsole/bin/Debug
+/Graph/Archive/AppIdentityRESTConsole/AppIdentityRESTConsole/obj/Debug
+/Graph/Archive/AppIdentityRESTConsole/packages/Newtonsoft.Json.11.0.2
