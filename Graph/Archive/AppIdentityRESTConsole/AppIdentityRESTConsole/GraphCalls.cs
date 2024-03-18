@@ -68,9 +68,9 @@ namespace AppIdentityRESTConsole
         {
             // https://docs.microsoft.com/en-us/graph/permissions-reference#mail-permissions
 
-            string graphApiCallURL = "https://graph.microsoft.com/v1.0/users/" + from  + "/sendmail";
+            var graphApiCallURL = "https://graph.microsoft.com/v1.0/users/" + from  + "/sendmail";
 
-            EmailMessage newEmail = new EmailMessage();
+            var newEmail = new EmailMessage();
             newEmail.Message.Subject = subject;
             newEmail.Message.From.EmailAddress.Address = from;
             newEmail.Message.ToRecipients.Add(new Recipient() { EmailAddress = new EmailAddress() { Address = to } });

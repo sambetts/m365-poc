@@ -32,3 +32,9 @@ Graph/react-office-dashboard/.vscode/launch.json
 /Graph/Archive/AppIdentityRESTConsole/AppIdentityRESTConsole/bin/Debug
 /Graph/Archive/AppIdentityRESTConsole/AppIdentityRESTConsole/obj/Debug
 /Graph/Archive/AppIdentityRESTConsole/packages/Newtonsoft.Json.11.0.2
+Graph/Archive/GraphJSApp/node_modules/.package-lock.json
+Graph/Archive/GraphJSApp/node_modules/js-cookie/index.js
+Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.js
+Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.min.js
+Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.min.mjs
+Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.mjs

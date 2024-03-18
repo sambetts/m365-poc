@@ -56,22 +56,6 @@ namespace AppIdentityRESTConsole
             ListsResponse lists = await GraphCalls.GetLists(token);
             OutputListsResponse(lists);
 
-            await GraphCalls.GetSites(token);
-
-            // Run the people - search example
-            Users users = await GraphCalls.GetAllUsers(token);
-            OutputUsersResponse(users);
-
-            // Send email as app
-            await GraphCalls.SendEmail(
-                token, 
-                "Email Sent with grant_type=client_credentials", 
-                "Test body",
-                from: "meganb@M365x352268.onmicrosoft.com",
-                to: "admin@M365x352268.onmicrosoft.com"
-            );
-
-
         }
 
         private static void OutputUsersResponse(Users users)
