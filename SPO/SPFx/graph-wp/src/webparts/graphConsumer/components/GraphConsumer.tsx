@@ -9,7 +9,7 @@ import { IUserItem } from './IUserItem';
 
 import { escape } from "@microsoft/sp-lodash-subset";
 
-import { AadHttpClient, MSGraphClientV3  } from "@microsoft/sp-http";
+import { AadHttpClient, MSGraphClientV3 } from "@microsoft/sp-http";
 
 
 // Configure the columns for the DetailsList component
@@ -47,50 +47,55 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
 
     // Initialize the state of the component
     this.state = {
-      users: [],
+      users: null,
       searchFor: ""
     };
-    
+
     this._search = this._search.bind(this);
   }
 
   public render(): React.ReactElement<IGraphConsumerProps> {
     return (
-      <div className={ styles.graphConsumer }>
+      <div className={styles.graphConsumer}>
         <div>
           <div>
             <div >
               <span>Search for a user!</span>
-              <p className={ styles.form }>
+              <p className={styles.form}>
                 <TextField
-                    label={ strings.SearchFor }
-                    required={ true }
-                    onChange={ this._onSearchForChanged }
-                    onGetErrorMessage={ this._getSearchForErrorMessage }
-                    value={ this.state.searchFor }
-                  />
+                  label={strings.SearchFor}
+                  required={true}
+                  onChange={this._onSearchForChanged}
+                  onGetErrorMessage={this._getSearchForErrorMessage}
+                  value={this.state.searchFor}
+                />
               </p>
-              <p className={ styles.form }>
+              <p className={styles.form}>
                 <PrimaryButton
-                    text='Search'
-                    title='Search'
-                    onClick={ this._search }
-                  />
+                  text='Search'
+                  title='Search'
+                  onClick={this._search}
+                />
               </p>
               {
-                (this.state.users !== null && this.state.users.length > 0) ?
-                  <p className={ styles.form }>
-                  <DetailsList
-                      items={ this.state.users }
-                      columns={ _usersListColumns }
-                      setKey='set'
-                      checkboxVisibility={ CheckboxVisibility.hidden }
-                      selectionMode={ SelectionMode.none }
-                      layoutMode={ DetailsListLayoutMode.fixedColumns }
-                      compact={ true }
-                  />
-                </p>
-                : null
+                (this.state.users !== null) ?
+                  <>
+                    {(this.state.users.length > 0) ?
+                      <p className={styles.form}>
+                        <DetailsList
+                          items={this.state.users}
+                          columns={_usersListColumns}
+                          setKey='set'
+                          checkboxVisibility={CheckboxVisibility.hidden}
+                          selectionMode={SelectionMode.none}
+                          layoutMode={DetailsListLayoutMode.fixedColumns}
+                          compact={true}
+                        />
+                      </p>
+                      : <p>No results</p>
+                    }
+                  </>
+                  : <p>Search for someone</p>
               }
             </div>
           </div>
@@ -98,7 +103,7 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
       </div>
     );
   }
-  
+
   private _onSearchForChanged = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
 
     // Update the component state accordingly to the current user's input
@@ -117,6 +122,10 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
   private _search = (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement | HTMLDivElement | BaseButton | Button, MouseEvent>): void => {
     console.log(this.props.clientMode);
 
+    if (this.props.clientMode === undefined) {
+      console.error("Client mode is not defined");
+      return;
+    }
     // Based on the clientMode value search users
     switch (this.props.clientMode) {
       case ClientMode.aad:
@@ -128,11 +137,11 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
     }
   }
 
-  private _searchWithGraph = () : void => {
+  private _searchWithGraph = (): void => {
 
     // Log the current operation
     console.log("Using _searchWithGraph() method");
-  
+
     this.props.context.msGraphClientFactory
       .getClient('3')
       .then((client: MSGraphClientV3) => {
@@ -143,39 +152,40 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
           .select("displayName,mail,userPrincipalName")
           .filter(`(givenName eq '${escape(this.state.searchFor)}') or (surname eq '${escape(this.state.searchFor)}') or (displayName eq '${escape(this.state.searchFor)}')`)
           .get((err, res) => {
-  
+
             if (err) {
               console.error(err);
               return;
             }
-  
+
             // Prepare the output array
-            var users: Array<IUserItem> = new Array<IUserItem>();
-  
+            const users: Array<IUserItem> = new Array<IUserItem>();
+
             // Map the JSON response to the output array
             res.value.map((item: any) => {
-              users.push( {
+              users.push({
                 displayName: item.displayName,
                 mail: item.mail,
                 userPrincipalName: item.userPrincipalName,
               });
             });
-  
+
             // Update the component state accordingly to the result
             this.setState(
               {
                 users: users,
               }
             );
-          });
-      });
+          })
+          .catch(() => alert("Error loading Graph results"));
+      })
+      .catch(() => alert("Error loading Graph client"));
   }
-
 
   private _searchWithAad = (): void => {
     // Log the current operation
     console.log("Using _searchWithAad() method");
-  
+
     // Using Graph here, but any 1st or 3rd party REST API that requires Azure AD auth can be used here.
     this.props.context.aadHttpClientFactory
       .getClient("https://graph.microsoft.com")
@@ -191,22 +201,22 @@ export default class GraphConsumer extends React.Component<IGraphConsumerProps, 
         return response.json();
       })
       .then(json => {
-  
+
         // Prepare the output array
-        var users: Array<IUserItem> = new Array<IUserItem>();
-  
+        const users: Array<IUserItem> = new Array<IUserItem>();
+
         // Log the result in the console for testing purposes
         console.log(json);
-  
+
         // Map the JSON response to the output array
         json.value.map((item: any) => {
-          users.push( {
+          users.push({
             displayName: item.displayName,
             mail: item.mail,
             userPrincipalName: item.userPrincipalName,
           });
         });
-  
+
         // Update the component state accordingly to the result
         this.setState(
           {
