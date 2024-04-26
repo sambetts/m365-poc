@@ -1,0 +1,46 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "spfx-api-scopes-tutorial-client-side-solution",
+    "id": "d9c4e244-6c71-42b1-9179-cda7529993ca",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "webApiPermissionRequests": [
+      {
+        "resource": "Microsoft Graph",
+        "scope": "User.ReadBasic.All"
+      }
+    ],
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.18.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "spfx-api-scopes-tutorial description"
+      },
+      "longDescription": {
+        "default": "spfx-api-scopes-tutorial description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "spfx-api-scopes-tutorial Feature",
+        "description": "The feature that activates elements of the spfx-api-scopes-tutorial solution.",
+        "id": "67b1002e-57fd-449d-9d57-bd9196c67541",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/spfx-api-scopes-tutorial.sppkg"
+  }
+}

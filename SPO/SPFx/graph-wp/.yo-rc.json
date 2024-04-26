@@ -1,0 +1,21 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "18.18.0",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.12.0"
+    },
+    "version": "1.18.1",
+    "libraryName": "spfx-api-scopes-tutorial",
+    "libraryId": "d9c4e244-6c71-42b1-9179-cda7529993ca",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "spfx-api-scopes-tutorial",
+    "solutionShortDescription": "spfx-api-scopes-tutorial description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}
