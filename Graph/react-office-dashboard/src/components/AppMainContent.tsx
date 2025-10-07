@@ -3,15 +3,17 @@ import { AuthenticatedTemplate } from '@azure/msal-react';
 import { useEffect, useState } from 'react';
 import Emails from './data/Emails';
 import TeamsChats from './data/TeamsChats';
+import OneDriveFiles from './data/OneDriveFiles';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
-import { ChatMessage, Message, User } from '@microsoft/microsoft-graph-types';
+import { ChatMessage, DriveItem, Message, User } from '@microsoft/microsoft-graph-types';
 
-type TabType = 'emails' | 'chats';
+type TabType = 'emails' | 'chats' | 'onedrive';
 
 export default function AppMainContent(props: { loader: ExampleAppGraphLoader }) {
 
   const [messages, setMessages] = useState<microsoftgraph.Message[] | null>(null);
   const [chats, setChats] = useState<microsoftgraph.ChatMessage[] | null>(null);
+  const [files, setFiles] = useState<microsoftgraph.DriveItem[] | null>(null);
   const [user, setUser] = useState<microsoftgraph.User | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('emails');
 
@@ -27,6 +29,10 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
 
     props.loader.loadChats().then((chats: ChatMessage[]) => {
       setChats(chats);
+    });
+
+    props.loader.loadOneDriveFiles().then((files: DriveItem[]) => {
+      setFiles(files);
     });
 
   }, [props.loader]);
@@ -50,6 +56,17 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
             <h2>Teams Chats</h2>
             {chats ?
               <TeamsChats chats={chats} />
+              :
+              <p>Loading...</p>
+            }
+          </div>
+        );
+      case 'onedrive':
+        return (
+          <div className="dashboard-item" id="onedrive-files">
+            <h2>OneDrive Files</h2>
+            {files ?
+              <OneDriveFiles files={files} />
               :
               <p>Loading...</p>
             }
@@ -85,6 +102,12 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
                   onClick={() => setActiveTab('chats')}
                 >
                   Teams Chats
+                </button>
+                <button 
+                  className={`tab-button ${activeTab === 'onedrive' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('onedrive')}
+                >
+                  OneDrive Files
                 </button>
               </div>
               <div className="tab-content">

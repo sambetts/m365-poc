@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import './App.css';
 import { AuthenticatedTemplate, UnauthenticatedTemplate, useIsAuthenticated, useMsal } from '@azure/msal-react';
-import { scopes } from './authConfig';
-import { SignInButton } from './components/SignInButton';
+import { defaultScopes } from './authConfig';
+import { ScopeSelector } from './components/ScopeSelector';
 import AppMainContent from './components/AppMainContent';
 import { ExampleAppGraphLoader } from './services/ExampleAppGraphLoader';
 
 function App() {
 
   const [graphLoader, setGraphLoader] = useState<ExampleAppGraphLoader | null>(null);
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(defaultScopes);
 
   const isAuthenticated = useIsAuthenticated();
   const { instance, accounts } = useMsal();
+
+  const handleScopesSelected = (scopes: string[]) => {
+    setSelectedScopes(scopes);
+  };
 
   const RefreshGraphLoader = React.useCallback(() => {
 
@@ -20,9 +25,9 @@ function App() {
       instance.setActiveAccount(firstAccount);
     }
 
-    setGraphLoader(new ExampleAppGraphLoader(instance, scopes));
+    setGraphLoader(new ExampleAppGraphLoader(instance, selectedScopes));
 
-  }, [accounts, instance]);
+  }, [accounts, instance, selectedScopes]);
 
   React.useEffect(() => {
     
@@ -35,8 +40,7 @@ function App() {
   return (
     <>
       <UnauthenticatedTemplate>
-        <p>Sign in to Azure AD to access Graph resources.</p>
-        <SignInButton permissions={scopes} />
+        <ScopeSelector onScopesSelected={handleScopesSelected} msalInstance={instance} />
       </UnauthenticatedTemplate>
       <AuthenticatedTemplate>
         {isAuthenticated && graphLoader ?

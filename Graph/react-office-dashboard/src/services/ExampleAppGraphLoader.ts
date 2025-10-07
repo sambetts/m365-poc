@@ -1,5 +1,5 @@
 import { GraphLoader } from "./GraphLoader";
-import { Chat, ChatMessage, Message, User } from "@microsoft/microsoft-graph-types";
+import { Chat, ChatMessage, DriveItem, Message, User } from "@microsoft/microsoft-graph-types";
 
 const MAX_ITEMS : number = 5;
 
@@ -44,5 +44,9 @@ export class ExampleAppGraphLoader extends GraphLoader {
 
     loadChatMessages(chatId: string): Promise<ChatMessage[]> {
         return this.loadList<ChatMessage[]>(`/me/chats/${chatId}/messages`, MAX_ITEMS);
+    }
+
+    loadOneDriveFiles(): Promise<DriveItem[]> {
+        return this.loadList<DriveItem[]>("/me/drive/root/children", MAX_ITEMS);
     }
 }
