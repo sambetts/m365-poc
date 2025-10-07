@@ -6,11 +6,14 @@ import TeamsChats from './data/TeamsChats';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
 import { ChatMessage, Message, User } from '@microsoft/microsoft-graph-types';
 
+type TabType = 'emails' | 'chats';
+
 export default function AppMainContent(props: { loader: ExampleAppGraphLoader }) {
 
   const [messages, setMessages] = useState<microsoftgraph.Message[] | null>(null);
   const [chats, setChats] = useState<microsoftgraph.ChatMessage[] | null>(null);
   const [user, setUser] = useState<microsoftgraph.User | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('emails');
 
   useEffect(() => {
 
@@ -28,6 +31,35 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
 
   }, [props.loader]);
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'emails':
+        return (
+          <div className="dashboard-item" id="email-list">
+            <h2>Latest Emails</h2>
+            {messages ?
+              <Emails messages={messages} />
+              :
+              <p>Loading...</p>
+            }
+          </div>
+        );
+      case 'chats':
+        return (
+          <div className="dashboard-item" id="teams-chat">
+            <h2>Teams Chats</h2>
+            {chats ?
+              <TeamsChats chats={chats} />
+              :
+              <p>Loading...</p>
+            }
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <AuthenticatedTemplate>
@@ -40,21 +72,24 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
             </h1>
           </div>
           <div id="container">
-            <div className="dashboard-item" id="email-list">
-              <h2>Latest Emails</h2>
-              {messages ?
-                <Emails messages={messages} />
-                :
-                <p>Loading...</p>
-              }
-            </div>
-            <div className="dashboard-item" id="teams-chat">
-              <h2>Teams Chats</h2>
-              {chats ?
-                <TeamsChats chats={chats} />
-                :
-                <p>Loading...</p>
-              }
+            <div className="tabs-container">
+              <div className="tab-buttons">
+                <button 
+                  className={`tab-button ${activeTab === 'emails' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('emails')}
+                >
+                  Emails
+                </button>
+                <button 
+                  className={`tab-button ${activeTab === 'chats' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('chats')}
+                >
+                  Teams Chats
+                </button>
+              </div>
+              <div className="tab-content">
+                {renderTabContent()}
+              </div>
             </div>
           </div>
         </div>
