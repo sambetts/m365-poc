@@ -26,7 +26,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
       setChats(chats);
     });
 
-  }, []);
+  }, [props.loader]);
 
   return (
     <>
