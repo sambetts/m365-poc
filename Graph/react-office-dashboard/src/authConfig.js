@@ -11,7 +11,7 @@ export const msalConfig = {
 };
 
 // Default scopes - these can be customized by the user at login
-export const defaultScopes = ['User.Read', 'Chat.Read', 'Mail.ReadBasic'];
+export const defaultScopes = ['User.Read', 'Chat.Read', 'Mail.Read'];
 
 // Available scopes with descriptions for user selection
 export const availableScopes = [

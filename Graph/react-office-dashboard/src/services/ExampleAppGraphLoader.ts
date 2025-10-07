@@ -14,6 +14,14 @@ export class ExampleAppGraphLoader extends GraphLoader {
         return this.loadList<Message[]>("/me/mailFolders/inbox/messages", MAX_ITEMS);
     }
 
+    loadFullEmail(messageId: string): Promise<Message> {
+        return this.getGraphClient().then(graphClient => {
+            return graphClient.api(`/me/messages/${messageId}`)
+                .select('id,subject,bodyPreview,body,from,sender,toRecipients,ccRecipients,sentDateTime,hasAttachments,isRead')
+                .get();
+        });
+    }
+
     loadChats(): Promise<ChatMessage[]> {
 
         return this.loadList<Chat[]>("/me/chats", MAX_ITEMS).then((chatThreads: Chat[]) => {
@@ -48,5 +56,9 @@ export class ExampleAppGraphLoader extends GraphLoader {
 
     loadOneDriveFiles(): Promise<DriveItem[]> {
         return this.loadList<DriveItem[]>("/me/drive/root/children", MAX_ITEMS);
+    }
+
+    loadFolderContents(folderId: string): Promise<DriveItem[]> {
+        return this.loadList<DriveItem[]>(`/me/drive/items/${folderId}/children`, 100);
     }
 }

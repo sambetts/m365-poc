@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Emails from './data/Emails';
 import TeamsChats from './data/TeamsChats';
 import OneDriveFiles from './data/OneDriveFiles';
+import { SignOutButton } from './SignOutButton';
 import { ExampleAppGraphLoader } from '../services/ExampleAppGraphLoader';
 import { ChatMessage, DriveItem, Message, User } from '@microsoft/microsoft-graph-types';
 
@@ -44,7 +45,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
           <div className="dashboard-item" id="email-list">
             <h2>Latest Emails</h2>
             {messages ?
-              <Emails messages={messages} />
+              <Emails messages={messages} loader={props.loader} />
               :
               <p>Loading...</p>
             }
@@ -66,7 +67,7 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
           <div className="dashboard-item" id="onedrive-files">
             <h2>OneDrive Files</h2>
             {files ?
-              <OneDriveFiles files={files} />
+              <OneDriveFiles files={files} loader={props.loader} />
               :
               <p>Loading...</p>
             }
@@ -82,11 +83,20 @@ export default function AppMainContent(props: { loader: ExampleAppGraphLoader })
       <AuthenticatedTemplate>
         <div className="App">
           <div id="header">
-            <h1>Office Dashboard - {user &&
-              <>{user.displayName}</>
-            }
-
-            </h1>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              maxWidth: '1200px',
+              margin: '0 auto'
+            }}>
+              <h1 style={{ margin: 0 }}>
+                Office Dashboard - {user &&
+                  <>{user.displayName}</>
+                }
+              </h1>
+              <SignOutButton />
+            </div>
           </div>
           <div id="container">
             <div className="tabs-container">
