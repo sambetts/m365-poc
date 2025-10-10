@@ -22,6 +22,7 @@ public class BookifyDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.MailboxUpn).IsRequired().HasMaxLength(320); // RFC max email length
             entity.Property(e => e.Amenities)
                 .HasConversion(
                     v => string.Join(',', v),
@@ -31,6 +32,7 @@ public class BookifyDbContext : DbContext
                         (c1, c2) => c1!.SequenceEqual(c2!),
                         c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
                         c => c.ToList()));
+            // Unique index on MailboxUpn intentionally removed (see migration RemoveRoomMailboxUniqueIndex)
         });
 
         // Configure Booking entity
@@ -49,62 +51,14 @@ public class BookifyDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Seed initial data matching client-side mock data
+        // Seed initial data with placeholder UPN to be overwritten at runtime from configuration
         modelBuilder.Entity<Room>().HasData(
-            new Room 
-            { 
-                Id = "1", 
-                Name = "PIXEL PALACE", 
-                Capacity = 8, 
-                Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" },
-                Available = true,
-                Floor = 2
-            },
-            new Room 
-            { 
-                Id = "2", 
-                Name = "8-BIT BOARDROOM", 
-                Capacity = 12, 
-                Amenities = new List<string> { "TV Screen", "WiFi" },
-                Available = true,
-                Floor = 3
-            },
-            new Room 
-            { 
-                Id = "3", 
-                Name = "RETRO RETREAT", 
-                Capacity = 6, 
-                Amenities = new List<string> { "WiFi", "Coffee" },
-                Available = false,
-                Floor = 2
-            },
-            new Room 
-            { 
-                Id = "4", 
-                Name = "ARCADE ARENA", 
-                Capacity = 4, 
-                Amenities = new List<string> { "TV Screen", "WiFi" },
-                Available = true,
-                Floor = 1
-            },
-            new Room 
-            { 
-                Id = "5", 
-                Name = "SPRITE SUMMIT", 
-                Capacity = 10, 
-                Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" },
-                Available = true,
-                Floor = 3
-            },
-            new Room 
-            { 
-                Id = "6", 
-                Name = "CONSOLE CHAMBER", 
-                Capacity = 6, 
-                Amenities = new List<string> { "WiFi" },
-                Available = false,
-                Floor = 1
-            }
+            new Room { Id = "1", Name = "PIXEL PALACE", Capacity = 8, Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" }, Available = true, Floor = 2, MailboxUpn = "shared@placeholder" },
+            new Room { Id = "2", Name = "8-BIT BOARDROOM", Capacity = 12, Amenities = new List<string> { "TV Screen", "WiFi" }, Available = true, Floor = 3, MailboxUpn = "shared@placeholder" },
+            new Room { Id = "3", Name = "RETRO RETREAT", Capacity = 6, Amenities = new List<string> { "WiFi", "Coffee" }, Available = false, Floor = 2, MailboxUpn = "shared@placeholder" },
+            new Room { Id = "4", Name = "ARCADE ARENA", Capacity = 4, Amenities = new List<string> { "TV Screen", "WiFi" }, Available = true, Floor = 1, MailboxUpn = "shared@placeholder" },
+            new Room { Id = "5", Name = "SPRITE SUMMIT", Capacity = 10, Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" }, Available = true, Floor = 3, MailboxUpn = "shared@placeholder" },
+            new Room { Id = "6", Name = "CONSOLE CHAMBER", Capacity = 6, Amenities = new List<string> { "WiFi" }, Available = false, Floor = 1, MailboxUpn = "shared@placeholder" }
         );
     }
 }

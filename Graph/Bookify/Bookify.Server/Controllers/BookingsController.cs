@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Bookify.Server.Data;
-using Bookify.Server.Models;
 using Bookify.Server.DTOs;
+using Bookify.Server.Services;
 
 namespace Bookify.Server.Controllers;
 
@@ -10,12 +8,12 @@ namespace Bookify.Server.Controllers;
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
 {
-    private readonly BookifyDbContext _context;
+    private readonly IBookingService _bookingService;
     private readonly ILogger<BookingsController> _logger;
 
-    public BookingsController(BookifyDbContext context, ILogger<BookingsController> logger)
+    public BookingsController(IBookingService bookingService, ILogger<BookingsController> logger)
     {
-        _context = context;
+        _bookingService = bookingService;
         _logger = logger;
     }
 
@@ -27,34 +25,7 @@ public class BookingsController : ControllerBase
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
-        var query = _context.Bookings.Include(b => b.Room).AsQueryable();
-
-        if (startDate.HasValue)
-        {
-            query = query.Where(b => b.EndTime >= startDate.Value);
-        }
-
-        if (endDate.HasValue)
-        {
-            query = query.Where(b => b.StartTime <= endDate.Value);
-        }
-
-        var bookings = await query
-            .OrderBy(b => b.StartTime)
-            .Select(b => new BookingResponse
-            {
-                Id = b.Id,
-                RoomId = b.RoomId,
-                RoomName = b.Room!.Name,
-                BookedBy = b.BookedBy,
-                BookedByEmail = b.BookedByEmail,
-                StartTime = b.StartTime,
-                EndTime = b.EndTime,
-                Purpose = b.Purpose,
-                CreatedAt = b.CreatedAt
-            })
-            .ToListAsync();
-
+        var bookings = await _bookingService.GetBookingsAsync(startDate, endDate);
         return Ok(bookings);
     }
 
@@ -64,29 +35,12 @@ public class BookingsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<BookingResponse>> GetBooking(int id)
     {
-        var booking = await _context.Bookings
-            .Include(b => b.Room)
-            .FirstOrDefaultAsync(b => b.Id == id);
-
+        var booking = await _bookingService.GetBookingAsync(id);
         if (booking == null)
         {
             return NotFound();
         }
-
-        var response = new BookingResponse
-        {
-            Id = booking.Id,
-            RoomId = booking.RoomId,
-            RoomName = booking.Room!.Name,
-            BookedBy = booking.BookedBy,
-            BookedByEmail = booking.BookedByEmail,
-            StartTime = booking.StartTime,
-            EndTime = booking.EndTime,
-            Purpose = booking.Purpose,
-            CreatedAt = booking.CreatedAt
-        };
-
-        return Ok(response);
+        return Ok(booking);
     }
 
     /// <summary>
@@ -95,64 +49,15 @@ public class BookingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<BookingResponse>> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        // Validate the request
-        if (request.StartTime >= request.EndTime)
+        var (status, response, error) = await _bookingService.CreateBookingAsync(request);
+        return status switch
         {
-            return BadRequest("End time must be after start time");
-        }
-
-        if (request.StartTime < DateTime.UtcNow)
-        {
-            return BadRequest("Cannot book a room in the past");
-        }
-
-        // Check if room exists
-        var room = await _context.Rooms.FindAsync(request.RoomId);
-        if (room == null)
-        {
-            return NotFound($"Room with ID {request.RoomId} not found");
-        }
-
-        // Check for conflicts
-        var hasConflict = await _context.Bookings
-            .AnyAsync(b => b.RoomId == request.RoomId &&
-                          b.StartTime < request.EndTime &&
-                          b.EndTime > request.StartTime);
-
-        if (hasConflict)
-        {
-            return Conflict("Room is already booked for the requested time");
-        }
-
-        // Create the booking
-        var booking = new Booking
-        {
-            RoomId = request.RoomId,
-            BookedBy = request.BookedBy,
-            BookedByEmail = request.BookedByEmail,
-            StartTime = request.StartTime,
-            EndTime = request.EndTime,
-            Purpose = request.Purpose,
-            CreatedAt = DateTime.UtcNow
+            BookingOperationStatus.Success => CreatedAtAction(nameof(GetBooking), new { id = response!.Id }, response),
+            BookingOperationStatus.BadRequest => BadRequest(error),
+            BookingOperationStatus.Conflict => Conflict(error),
+            BookingOperationStatus.NotFound => NotFound(error),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, "Unknown status")
         };
-
-        _context.Bookings.Add(booking);
-        await _context.SaveChangesAsync();
-
-        var response = new BookingResponse
-        {
-            Id = booking.Id,
-            RoomId = booking.RoomId,
-            RoomName = room.Name,
-            BookedBy = booking.BookedBy,
-            BookedByEmail = booking.BookedByEmail,
-            StartTime = booking.StartTime,
-            EndTime = booking.EndTime,
-            Purpose = booking.Purpose,
-            CreatedAt = booking.CreatedAt
-        };
-
-        return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, response);
     }
 
     /// <summary>
@@ -161,41 +66,15 @@ public class BookingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBooking(int id, [FromBody] CreateBookingRequest request)
     {
-        var booking = await _context.Bookings.FindAsync(id);
-        if (booking == null)
+        var (status, error) = await _bookingService.UpdateBookingAsync(id, request);
+        return status switch
         {
-            return NotFound();
-        }
-
-        // Validate the request
-        if (request.StartTime >= request.EndTime)
-        {
-            return BadRequest("End time must be after start time");
-        }
-
-        // Check for conflicts (excluding current booking)
-        var hasConflict = await _context.Bookings
-            .AnyAsync(b => b.Id != id &&
-                          b.RoomId == request.RoomId &&
-                          b.StartTime < request.EndTime &&
-                          b.EndTime > request.StartTime);
-
-        if (hasConflict)
-        {
-            return Conflict("Room is already booked for the requested time");
-        }
-
-        // Update the booking
-        booking.RoomId = request.RoomId;
-        booking.BookedBy = request.BookedBy;
-        booking.BookedByEmail = request.BookedByEmail;
-        booking.StartTime = request.StartTime;
-        booking.EndTime = request.EndTime;
-        booking.Purpose = request.Purpose;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+            BookingOperationStatus.Success => NoContent(),
+            BookingOperationStatus.BadRequest => BadRequest(error),
+            BookingOperationStatus.Conflict => Conflict(error),
+            BookingOperationStatus.NotFound => NotFound(error),
+            _ => StatusCode(StatusCodes.Status500InternalServerError, "Unknown status")
+        };
     }
 
     /// <summary>
@@ -204,15 +83,8 @@ public class BookingsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteBooking(int id)
     {
-        var booking = await _context.Bookings.FindAsync(id);
-        if (booking == null)
-        {
-            return NotFound();
-        }
-
-        _context.Bookings.Remove(booking);
-        await _context.SaveChangesAsync();
-
+        var deleted = await _bookingService.DeleteBookingAsync(id);
+        if (!deleted) return NotFound();
         return NoContent();
     }
 
@@ -222,24 +94,7 @@ public class BookingsController : ControllerBase
     [HttpGet("user/{email}")]
     public async Task<ActionResult<IEnumerable<BookingResponse>>> GetUserBookings(string email)
     {
-        var bookings = await _context.Bookings
-            .Include(b => b.Room)
-            .Where(b => b.BookedByEmail == email)
-            .OrderBy(b => b.StartTime)
-            .Select(b => new BookingResponse
-            {
-                Id = b.Id,
-                RoomId = b.RoomId,
-                RoomName = b.Room!.Name,
-                BookedBy = b.BookedBy,
-                BookedByEmail = b.BookedByEmail,
-                StartTime = b.StartTime,
-                EndTime = b.EndTime,
-                Purpose = b.Purpose,
-                CreatedAt = b.CreatedAt
-            })
-            .ToListAsync();
-
+        var bookings = await _bookingService.GetUserBookingsAsync(email);
         return Ok(bookings);
     }
 }
