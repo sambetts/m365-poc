@@ -35,19 +35,17 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Automatically apply migrations and create database on startup
+// Create database if it does not exist (no migrations; schema managed externally)
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<BookifyDbContext>();
-
-        // Determine if database is new (no applied migrations yet)
-        bool isNewDatabase = !context.Database.GetAppliedMigrations().Any();
-
-        context.Database.Migrate();
-        Console.WriteLine("Database migration completed successfully.");
+        bool isNewDatabase = context.Database.EnsureCreated();
+        Console.WriteLine(isNewDatabase
+            ? "Database created (EnsureCreated) successfully."
+            : "Database already exists (EnsureCreated). Skipping creation.");
 
         if (isNewDatabase)
         {
@@ -77,15 +75,11 @@ using (var scope = app.Services.CreateScope())
                 Console.WriteLine("SharedRoomMailboxUpn configuration value not found; skipping mailbox UPN assignment on new database.");
             }
         }
-        else
-        {
-            Console.WriteLine("Existing database detected; skipping shared mailbox UPN reassignment.");
-        }
     }
     catch (Exception ex)
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred while ensuring the database was created.");
         throw;
     }
 }
