@@ -38,3 +38,6 @@ Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.js
 Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.min.js
 Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.min.mjs
 Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.mjs
+/Graph/meeting-room-manager/meeting-room-manager.Server/obj
+/Graph/meeting-room-manager/.vs/meeting-room-manager
+/Graph/meeting-room-manager/meeting-room-manager.Server/meeting-room-manager.Server.csproj.user
