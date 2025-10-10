@@ -41,3 +41,8 @@ Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.mjs
 /Graph/meeting-room-manager/meeting-room-manager.Server/obj
 /Graph/meeting-room-manager/.vs/meeting-room-manager
 /Graph/meeting-room-manager/meeting-room-manager.Server/meeting-room-manager.Server.csproj.user
+/Graph/Bookify/.vs/Bookify
+/Graph/Bookify/Bookify.Server/bin/Debug/net8.0
+/Graph/Bookify/Bookify.Server/obj
+/Graph/Bookify/Bookify.Server/Bookify.Server.csproj.user
+/Graph/Bookify/bookify.client/obj/Debug
