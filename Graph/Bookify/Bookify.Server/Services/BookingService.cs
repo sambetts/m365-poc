@@ -9,11 +9,13 @@ public class BookingService : IBookingService
 {
     private readonly BookifyDbContext _context;
     private readonly ILogger<BookingService> _logger;
+    private readonly ICalendarService _calendarService;
 
-    public BookingService(BookifyDbContext context, ILogger<BookingService> logger)
+    public BookingService(BookifyDbContext context, ILogger<BookingService> logger, ICalendarService calendarService)
     {
         _context = context;
         _logger = logger;
+        _calendarService = calendarService;
     }
 
     public async Task<IEnumerable<BookingResponse>> GetBookingsAsync(DateTime? startDate, DateTime? endDate)
@@ -42,8 +44,10 @@ public class BookingService : IBookingService
                 BookedByEmail = b.BookedByEmail,
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
+                Title = b.Title,
                 Purpose = b.Purpose,
-                CreatedAt = b.CreatedAt
+                CreatedAt = b.CreatedAt,
+                CalendarEventId = b.CalendarEventId
             })
             .ToListAsync();
         _logger.LogDebug("Returning {Count} bookings", list.Count);
@@ -72,8 +76,10 @@ public class BookingService : IBookingService
             BookedByEmail = booking.BookedByEmail,
             StartTime = booking.StartTime,
             EndTime = booking.EndTime,
+            Title = booking.Title,
             Purpose = booking.Purpose,
-            CreatedAt = booking.CreatedAt
+            CreatedAt = booking.CreatedAt,
+            CalendarEventId = booking.CalendarEventId
         };
     }
 
@@ -115,6 +121,7 @@ public class BookingService : IBookingService
             BookedByEmail = request.BookedByEmail,
             StartTime = request.StartTime,
             EndTime = request.EndTime,
+            Title = request.Title,
             Purpose = request.Purpose,
             CreatedAt = DateTime.UtcNow
         };
@@ -122,6 +129,32 @@ public class BookingService : IBookingService
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync();
         _logger.LogInformation("Created booking {BookingId} for Room={RoomId}", booking.Id, booking.RoomId);
+
+        // Create calendar event (fire-and-forget with logging)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var subject = string.IsNullOrWhiteSpace(request.Title) ? (string.IsNullOrWhiteSpace(request.Purpose) ? $"Room booking - {room.Name}" : request.Purpose) : request.Title;
+                var body = request.Purpose ?? request.Title;
+                var eventId = await _calendarService.CreateRoomEventAsync(room, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body);
+                if (!string.IsNullOrEmpty(eventId))
+                {
+                    // Persist event id
+                    var tracked = await _context.Bookings.FirstOrDefaultAsync(b => b.Id == booking.Id);
+                    if (tracked != null)
+                    {
+                        tracked.CalendarEventId = eventId;
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("Linked booking {BookingId} with calendar event {EventId}", booking.Id, eventId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to link booking {BookingId} with calendar event", booking.Id);
+            }
+        });
 
         var response = new BookingResponse
         {
@@ -132,8 +165,10 @@ public class BookingService : IBookingService
             BookedByEmail = booking.BookedByEmail,
             StartTime = booking.StartTime,
             EndTime = booking.EndTime,
+            Title = booking.Title,
             Purpose = booking.Purpose,
-            CreatedAt = booking.CreatedAt
+            CreatedAt = booking.CreatedAt,
+            CalendarEventId = booking.CalendarEventId
         };
 
         return (BookingOperationStatus.Success, response, null);
@@ -177,6 +212,7 @@ public class BookingService : IBookingService
         booking.BookedByEmail = request.BookedByEmail;
         booking.StartTime = request.StartTime;
         booking.EndTime = request.EndTime;
+        booking.Title = request.Title;
         booking.Purpose = request.Purpose;
 
         await _context.SaveChangesAsync();
@@ -217,8 +253,10 @@ public class BookingService : IBookingService
                 BookedByEmail = b.BookedByEmail,
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
+                Title = b.Title,
                 Purpose = b.Purpose,
-                CreatedAt = b.CreatedAt
+                CreatedAt = b.CreatedAt,
+                CalendarEventId = b.CalendarEventId
             })
             .ToListAsync();
         _logger.LogDebug("Found {Count} bookings for user {Email}", list.Count, email);

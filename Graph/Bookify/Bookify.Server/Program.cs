@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Bookify.Server.Data;
 using Bookify.Server.Services;
+using Azure.Identity;
+using Microsoft.Graph;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +17,21 @@ builder.Services.AddDbContext<BookifyDbContext>(options =>
     )
 );
 
+// Register GraphServiceClient (application permissions)
+builder.Services.AddSingleton<GraphServiceClient>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var tenantId = config["AzureAd:TenantId"] ?? throw new InvalidOperationException("AzureAd:TenantId not configured");
+    var clientId = config["AzureAd:ClientId"] ?? throw new InvalidOperationException("AzureAd:ClientId not configured");
+    var clientSecret = config["AzureAd:ClientSecret"] ?? throw new InvalidOperationException("AzureAd:ClientSecret not configured");
+    var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+    return new GraphServiceClient(credential, new[] { "https://graph.microsoft.com/.default" });
+});
+
 // Register application services
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddSingleton<ICalendarService, GraphCalendarService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

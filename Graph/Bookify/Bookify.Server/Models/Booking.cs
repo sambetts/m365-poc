@@ -8,8 +8,10 @@ public class Booking
     public required string BookedByEmail { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public string? Title { get; set; } // Meeting title / subject
     public string? Purpose { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CalendarEventId { get; set; } // Graph event id
     
     // Navigation property
     public Room? Room { get; set; }

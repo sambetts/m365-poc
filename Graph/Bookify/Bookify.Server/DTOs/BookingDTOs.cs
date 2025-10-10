@@ -23,6 +23,7 @@ public class BookingInfo
     public required string BookedBy { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public string? Title { get; set; }
     public string? Purpose { get; set; }
 }
 
@@ -33,6 +34,7 @@ public class CreateBookingRequest
     public required string BookedByEmail { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public string? Title { get; set; }
     public string? Purpose { get; set; }
 }
 
@@ -45,6 +47,8 @@ public class BookingResponse
     public required string BookedByEmail { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
+    public string? Title { get; set; }
     public string? Purpose { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? CalendarEventId { get; set; }
 }
