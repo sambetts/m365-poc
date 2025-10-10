@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MeetingRoomCard } from "../components/MeetingRoomCard";
 import { BookingDialog } from "../components/BookingDialog";
+import { RoomBookingsDialog } from "../components/RoomBookingsDialog";
 import { Calendar, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
@@ -12,6 +13,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [bookingDialog, setBookingDialog] = useState({ open: false, roomName: "", roomId: "" });
+  const [bookingsDialog, setBookingsDialog] = useState({ open: false, roomName: "", roomId: "" });
 
   // Load meeting rooms on mount
   useEffect(() => {
@@ -53,6 +55,13 @@ const Index = () => {
     const room = meetingRooms.find((r) => r.id === roomId);
     if (room) {
       setBookingDialog({ open: true, roomName: room.name, roomId: room.id });
+    }
+  };
+
+  const handleViewBookings = (roomId: string) => {
+    const room = meetingRooms.find((r) => r.id === roomId);
+    if (room) {
+      setBookingsDialog({ open: true, roomName: room.name, roomId: room.id });
     }
   };
 
@@ -137,7 +146,12 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {meetingRooms.map((room) => (
-                <MeetingRoomCard key={room.id} room={room} onBook={handleBook} />
+                <MeetingRoomCard 
+                  key={room.id} 
+                  room={room} 
+                  onBook={handleBook}
+                  onViewBookings={handleViewBookings}
+                />
               ))}
             </div>
           )}
@@ -149,6 +163,13 @@ const Index = () => {
         onOpenChange={(open) => setBookingDialog({ ...bookingDialog, open })}
         roomName={bookingDialog.roomName}
         roomId={bookingDialog.roomId}
+      />
+
+      <RoomBookingsDialog
+        open={bookingsDialog.open}
+        onOpenChange={(open) => setBookingsDialog({ ...bookingsDialog, open })}
+        roomName={bookingsDialog.roomName}
+        roomId={bookingsDialog.roomId}
       />
     </div>
   );

@@ -49,7 +49,9 @@ export const api = {
     try {
       // Parse date and time to create DateTime values
       const startDateTime = new Date(`${booking.date}T${booking.time}`);
-      const durationMinutes = parseInt(booking.duration);
+      // Parse duration (comes as "1H", "2H", etc.) and convert to minutes
+      const durationHours = parseFloat(booking.duration.replace('H', ''));
+      const durationMinutes = durationHours * 60;
       const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
 
       const bookingRequest = {
