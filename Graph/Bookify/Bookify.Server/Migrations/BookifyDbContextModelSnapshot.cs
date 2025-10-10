@@ -50,8 +50,10 @@ namespace Bookify.Server.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int>("RoomId")
-                        .HasColumnType("int");
+                    b.Property<string>("RoomId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
@@ -65,23 +67,22 @@ namespace Bookify.Server.Migrations
 
             modelBuilder.Entity("Bookify.Server.Models.Room", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                    b.Property<string>("Amenities")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Available")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Capacity")
                         .HasColumnType("int");
 
-                    b.Property<string>("Equipment")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                    b.Property<int>("Floor")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -95,33 +96,57 @@ namespace Bookify.Server.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 1,
-                            Capacity = 10,
-                            Location = "Floor 1, Building A",
-                            Name = "Conference Room A"
+                            Id = "1",
+                            Amenities = "TV Screen,WiFi,Coffee",
+                            Available = true,
+                            Capacity = 8,
+                            Floor = 2,
+                            Name = "PIXEL PALACE"
                         },
                         new
                         {
-                            Id = 2,
+                            Id = "2",
+                            Amenities = "TV Screen,WiFi",
+                            Available = true,
+                            Capacity = 12,
+                            Floor = 3,
+                            Name = "8-BIT BOARDROOM"
+                        },
+                        new
+                        {
+                            Id = "3",
+                            Amenities = "WiFi,Coffee",
+                            Available = false,
                             Capacity = 6,
-                            Location = "Floor 2, Building A",
-                            Name = "Conference Room B"
+                            Floor = 2,
+                            Name = "RETRO RETREAT"
                         },
                         new
                         {
-                            Id = 3,
-                            Capacity = 20,
-                            Equipment = "Projector, Video Conferencing",
-                            Location = "Floor 3, Building A",
-                            Name = "Board Room"
+                            Id = "4",
+                            Amenities = "TV Screen,WiFi",
+                            Available = true,
+                            Capacity = 4,
+                            Floor = 1,
+                            Name = "ARCADE ARENA"
                         },
                         new
                         {
-                            Id = 4,
-                            Capacity = 30,
-                            Equipment = "Whiteboard, Projector",
-                            Location = "Floor 1, Building B",
-                            Name = "Training Room"
+                            Id = "5",
+                            Amenities = "TV Screen,WiFi,Coffee",
+                            Available = true,
+                            Capacity = 10,
+                            Floor = 3,
+                            Name = "SPRITE SUMMIT"
+                        },
+                        new
+                        {
+                            Id = "6",
+                            Amenities = "WiFi",
+                            Available = false,
+                            Capacity = 6,
+                            Floor = 1,
+                            Name = "CONSOLE CHAMBER"
                         });
                 });
 

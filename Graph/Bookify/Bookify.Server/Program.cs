@@ -30,6 +30,24 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Automatically apply migrations and create database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<BookifyDbContext>();
+        context.Database.Migrate();
+        Console.WriteLine("Database migration completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+        throw;
+    }
+}
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

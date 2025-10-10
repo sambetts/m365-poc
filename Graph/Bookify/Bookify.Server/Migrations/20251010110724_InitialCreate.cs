@@ -17,12 +17,12 @@ namespace Bookify.Server.Migrations
                 name: "Rooms",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Capacity = table.Column<int>(type: "int", nullable: false),
-                    Equipment = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                    Amenities = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Available = table.Column<bool>(type: "bit", nullable: false),
+                    Floor = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -35,7 +35,7 @@ namespace Bookify.Server.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    RoomId = table.Column<int>(type: "int", nullable: false),
+                    RoomId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     BookedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     BookedByEmail = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -56,13 +56,15 @@ namespace Bookify.Server.Migrations
 
             migrationBuilder.InsertData(
                 table: "Rooms",
-                columns: new[] { "Id", "Capacity", "Equipment", "Location", "Name" },
+                columns: new[] { "Id", "Amenities", "Available", "Capacity", "Floor", "Name" },
                 values: new object[,]
                 {
-                    { 1, 10, null, "Floor 1, Building A", "Conference Room A" },
-                    { 2, 6, null, "Floor 2, Building A", "Conference Room B" },
-                    { 3, 20, "Projector, Video Conferencing", "Floor 3, Building A", "Board Room" },
-                    { 4, 30, "Whiteboard, Projector", "Floor 1, Building B", "Training Room" }
+                    { "1", "TV Screen,WiFi,Coffee", true, 8, 2, "PIXEL PALACE" },
+                    { "2", "TV Screen,WiFi", true, 12, 3, "8-BIT BOARDROOM" },
+                    { "3", "WiFi,Coffee", false, 6, 2, "RETRO RETREAT" },
+                    { "4", "TV Screen,WiFi", true, 4, 1, "ARCADE ARENA" },
+                    { "5", "TV Screen,WiFi,Coffee", true, 10, 3, "SPRITE SUMMIT" },
+                    { "6", "WiFi", false, 6, 1, "CONSOLE CHAMBER" }
                 });
 
             migrationBuilder.CreateIndex(

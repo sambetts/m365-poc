@@ -20,15 +20,24 @@ public class BookifyDbContext : DbContext
         modelBuilder.Entity<Room>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).IsRequired().HasMaxLength(50);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
-            entity.Property(e => e.Location).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Equipment).HasMaxLength(500);
+            entity.Property(e => e.Amenities)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
+                .Metadata.SetValueComparer(
+                    new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+                        (c1, c2) => c1!.SequenceEqual(c2!),
+                        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                        c => c.ToList()));
         });
 
         // Configure Booking entity
         modelBuilder.Entity<Booking>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.RoomId).IsRequired().HasMaxLength(50);
             entity.Property(e => e.BookedBy).IsRequired().HasMaxLength(100);
             entity.Property(e => e.BookedByEmail).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Purpose).HasMaxLength(500);
@@ -40,12 +49,62 @@ public class BookifyDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Seed initial data
+        // Seed initial data matching client-side mock data
         modelBuilder.Entity<Room>().HasData(
-            new Room { Id = 1, Name = "Conference Room A", Location = "Floor 1, Building A", Capacity = 10 },
-            new Room { Id = 2, Name = "Conference Room B", Location = "Floor 2, Building A", Capacity = 6 },
-            new Room { Id = 3, Name = "Board Room", Location = "Floor 3, Building A", Capacity = 20, Equipment = "Projector, Video Conferencing" },
-            new Room { Id = 4, Name = "Training Room", Location = "Floor 1, Building B", Capacity = 30, Equipment = "Whiteboard, Projector" }
+            new Room 
+            { 
+                Id = "1", 
+                Name = "PIXEL PALACE", 
+                Capacity = 8, 
+                Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" },
+                Available = true,
+                Floor = 2
+            },
+            new Room 
+            { 
+                Id = "2", 
+                Name = "8-BIT BOARDROOM", 
+                Capacity = 12, 
+                Amenities = new List<string> { "TV Screen", "WiFi" },
+                Available = true,
+                Floor = 3
+            },
+            new Room 
+            { 
+                Id = "3", 
+                Name = "RETRO RETREAT", 
+                Capacity = 6, 
+                Amenities = new List<string> { "WiFi", "Coffee" },
+                Available = false,
+                Floor = 2
+            },
+            new Room 
+            { 
+                Id = "4", 
+                Name = "ARCADE ARENA", 
+                Capacity = 4, 
+                Amenities = new List<string> { "TV Screen", "WiFi" },
+                Available = true,
+                Floor = 1
+            },
+            new Room 
+            { 
+                Id = "5", 
+                Name = "SPRITE SUMMIT", 
+                Capacity = 10, 
+                Amenities = new List<string> { "TV Screen", "WiFi", "Coffee" },
+                Available = true,
+                Floor = 3
+            },
+            new Room 
+            { 
+                Id = "6", 
+                Name = "CONSOLE CHAMBER", 
+                Capacity = 6, 
+                Amenities = new List<string> { "WiFi" },
+                Available = false,
+                Floor = 1
+            }
         );
     }
 }

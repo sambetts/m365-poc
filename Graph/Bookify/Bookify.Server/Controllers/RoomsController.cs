@@ -32,7 +32,7 @@ public class RoomsController : ControllerBase
     /// Get a specific room by ID
     /// </summary>
     [HttpGet("{id}")]
-    public async Task<ActionResult<Room>> GetRoom(int id)
+    public async Task<ActionResult<Room>> GetRoom(string id)
     {
         var room = await _context.Rooms.FindAsync(id);
 
@@ -79,10 +79,10 @@ public class RoomsController : ControllerBase
             {
                 Id = room.Id,
                 Name = room.Name,
-                Location = room.Location,
                 Capacity = room.Capacity,
-                Equipment = room.Equipment,
+                Amenities = room.Amenities,
                 IsAvailable = overlappingBookings.Count == 0,
+                Floor = room.Floor,
                 ExistingBookings = overlappingBookings
             };
         }).ToList();
@@ -95,7 +95,7 @@ public class RoomsController : ControllerBase
     /// </summary>
     [HttpGet("{id}/bookings")]
     public async Task<ActionResult<IEnumerable<BookingInfo>>> GetRoomBookings(
-        int id,
+        string id,
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {

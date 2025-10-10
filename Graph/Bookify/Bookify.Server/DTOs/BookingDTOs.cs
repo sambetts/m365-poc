@@ -8,12 +8,12 @@ public class RoomAvailabilityRequest
 
 public class RoomAvailabilityResponse
 {
-    public int Id { get; set; }
+    public required string Id { get; set; }
     public required string Name { get; set; }
-    public required string Location { get; set; }
     public int Capacity { get; set; }
-    public string? Equipment { get; set; }
+    public List<string> Amenities { get; set; } = new List<string>();
     public bool IsAvailable { get; set; }
+    public int Floor { get; set; }
     public List<BookingInfo> ExistingBookings { get; set; } = new();
 }
 
@@ -28,7 +28,7 @@ public class BookingInfo
 
 public class CreateBookingRequest
 {
-    public int RoomId { get; set; }
+    public required string RoomId { get; set; }
     public required string BookedBy { get; set; }
     public required string BookedByEmail { get; set; }
     public DateTime StartTime { get; set; }
@@ -39,7 +39,7 @@ public class CreateBookingRequest
 public class BookingResponse
 {
     public int Id { get; set; }
-    public int RoomId { get; set; }
+    public required string RoomId { get; set; }
     public required string RoomName { get; set; }
     public required string BookedBy { get; set; }
     public required string BookedByEmail { get; set; }
