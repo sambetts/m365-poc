@@ -50,6 +50,30 @@ public class GraphCalendarService : ICalendarService
         }
     }
 
+    public async Task<bool> UpdateRoomEventAsync(Bookify.Server.Models.Room room, string eventId, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
+    {
+        try
+        {
+            _logger.LogInformation("Updating Graph event {EventId} for room {RoomId} Start={Start} End={End}", eventId, room.Id, startUtc, endUtc);
+            var update = new Event
+            {
+                Subject = subject,
+                Body = new ItemBody { ContentType = BodyType.Text, Content = body ?? subject },
+                Start = new DateTimeTimeZone { DateTime = startUtc.ToString("o"), TimeZone = "UTC" },
+                End = new DateTimeTimeZone { DateTime = endUtc.ToString("o"), TimeZone = "UTC" },
+                Location = new Location { DisplayName = room.Name }
+            };
+
+            await _graph.Users[room.MailboxUpn].Events[eventId].PatchAsync(update, cancellationToken: ct);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update calendar event {EventId} for room {RoomId}", eventId, room.Id);
+            return false;
+        }
+    }
+
     public async Task<bool> DeleteRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
     {
         try

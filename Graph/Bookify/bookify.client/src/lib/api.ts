@@ -12,9 +12,15 @@ export interface MeetingRoom {
 export interface Booking {
   roomId: string;
   roomName: string;
-  date: string;
-  time: string;
-  duration: string;
+  date: string; // ISO date part (YYYY-MM-DD)
+  time: string; // HH:mm
+  duration: string; // e.g. "1H", "2H"
+  title?: string;
+  purpose?: string;
+}
+
+export interface BookingUpdate extends Booking {
+  id: number; // Existing booking id
 }
 
 // API base URL - adjust based on your environment
@@ -35,6 +41,10 @@ async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> 
     throw new Error(`API Error: ${response.status} - ${errorText}`);
   }
 
+  // Some endpoints (PUT/DELETE) may return no content
+  if (response.status === 204) {
+    return undefined as unknown as T;
+  }
   return response.json();
 }
 
@@ -44,26 +54,39 @@ export const api = {
     return fetchApi<MeetingRoom[]>('/rooms');
   },
 
-  // Book a meeting room
+  // Get a single booking (for editing scenarios)
+  async getBooking(id: number): Promise<{
+    id: number;
+    roomId: string;
+    roomName: string;
+    bookedBy: string;
+    bookedByEmail: string;
+    startTime: string;
+    endTime: string;
+    title?: string;
+    purpose?: string;
+    createdAt: string;
+    calendarEventId?: string;
+  }> {
+    return fetchApi(`/bookings/${id}`);
+  },
+
+  // Book a meeting room (create)
   async bookRoom(booking: Booking): Promise<{ success: boolean; message: string }> {
     try {
-      // Parse date and time to create DateTime values
-      const startDateTime = new Date(`${booking.date}T${booking.time}`);
-      // Parse duration (comes as "1H", "2H", etc.) and convert to minutes
-      const durationHours = parseFloat(booking.duration.replace('H', ''));
-      const durationMinutes = durationHours * 60;
-      const endDateTime = new Date(startDateTime.getTime() + durationMinutes * 60000);
+      const { startDateTime, endDateTime } = computeDateTimes(booking.date, booking.time, booking.duration);
 
       const bookingRequest = {
         roomId: booking.roomId,
-        bookedBy: 'Current User', // TODO: Get from authentication
-        bookedByEmail: 'user@example.com', // TODO: Get from authentication
+        bookedBy: 'Current User', // TODO: Replace with authenticated user name
+        bookedByEmail: 'user@example.com', // TODO: Replace with authenticated user email
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
-        purpose: 'Meeting', // Optional: could be added to the booking interface
+        title: booking.title,
+        purpose: booking.purpose ?? 'Meeting',
       };
 
-      const response = await fetchApi('/bookings', {
+      await fetchApi('/bookings', {
         method: 'POST',
         body: JSON.stringify(bookingRequest),
       });
@@ -73,16 +96,55 @@ export const api = {
         message: `ROOM BOOKED! ${booking.roomName} - ${booking.date} at ${booking.time}`,
       };
     } catch (error) {
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'BOOKING FAILED! TRY AGAIN',
-      };
+      return formatError(error, 'BOOKING FAILED! TRY AGAIN');
     }
+  },
+
+  // Update an existing booking
+  async updateRoomBooking(update: BookingUpdate): Promise<{ success: boolean; message: string }> {
+    try {
+      const { startDateTime, endDateTime } = computeDateTimes(update.date, update.time, update.duration);
+
+      const bookingRequest = {
+        roomId: update.roomId,
+        bookedBy: 'Current User', // TODO: Replace with authenticated user name
+        bookedByEmail: 'user@example.com', // TODO: Replace with authenticated user email
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        title: update.title,
+        purpose: update.purpose ?? 'Meeting',
+      };
+
+      await fetchApi(`/bookings/${update.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(bookingRequest),
+      });
+
+      return {
+        success: true,
+        message: `BOOKING UPDATED! ${update.roomName} - ${update.date} at ${update.time}`,
+      };
+    } catch (error) {
+      return formatError(error, 'UPDATE FAILED! TRY AGAIN');
+    }
+  },
+
+  // Raw update (if caller already has ISO start/end times)
+  async updateBookingRaw(id: number, data: { roomId: string; startTime: string; endTime: string; title?: string; purpose?: string; }): Promise<void> {
+    const bookingRequest = {
+      roomId: data.roomId,
+      bookedBy: 'Current User', // TODO: Replace with authenticated user name
+      bookedByEmail: 'user@example.com', // TODO: Replace with authenticated user email
+      startTime: data.startTime,
+      endTime: data.endTime,
+      title: data.title,
+      purpose: data.purpose,
+    };
+    await fetchApi(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(bookingRequest) });
   },
 
   // Refresh room availability
   async refreshRooms(): Promise<MeetingRoom[]> {
-    // Simply fetch the latest room data from the server
     return this.getMeetingRooms();
   },
 
@@ -107,7 +169,6 @@ export const api = {
         endTime: string;
         purpose?: string;
       }>;
-/******/
     }
 
     const availabilityData = await fetchApi<AvailabilityResponse[]>('/rooms/availability', {
@@ -115,7 +176,6 @@ export const api = {
       body: JSON.stringify(request),
     });
 
-    // Transform to MeetingRoom format
     return availabilityData.map(room => ({
       id: room.id,
       name: room.name,
@@ -140,18 +200,9 @@ export const api = {
   }>> {
     let endpoint = `/rooms/${roomId}/bookings`;
     const params = new URLSearchParams();
-    
-    if (startDate) {
-      params.append('startDate', startDate.toISOString());
-    }
-    if (endDate) {
-      params.append('endDate', endDate.toISOString());
-    }
-    
-    if (params.toString()) {
-      endpoint += `?${params.toString()}`;
-    }
-
+    if (startDate) params.append('startDate', startDate.toISOString());
+    if (endDate) params.append('endDate', endDate.toISOString());
+    if (params.toString()) endpoint += `?${params.toString()}`;
     return fetchApi(endpoint);
   },
 
@@ -172,25 +223,30 @@ export const api = {
   }>> {
     let endpoint = '/bookings';
     const params = new URLSearchParams();
-    
-    if (startDate) {
-      params.append('startDate', startDate.toISOString());
-    }
-    if (endDate) {
-      params.append('endDate', endDate.toISOString());
-    }
-    
-    if (params.toString()) {
-      endpoint += `?${params.toString()}`;
-    }
-
+    if (startDate) params.append('startDate', startDate.toISOString());
+    if (endDate) params.append('endDate', endDate.toISOString());
+    if (params.toString()) endpoint += `?${params.toString()}`;
     return fetchApi(endpoint);
   },
 
   // Cancel a booking
   async cancelBooking(bookingId: number): Promise<void> {
-    await fetchApi(`/bookings/${bookingId}`, {
-      method: 'DELETE',
-    });
+    await fetchApi(`/bookings/${bookingId}`, { method: 'DELETE' });
   },
 };
+
+// Utility: compute start & end datetimes from form inputs
+function computeDateTimes(date: string, time: string, duration: string) {
+  const startDateTime = new Date(`${date}T${time}`);
+  const durationHours = parseFloat(duration.replace('H', ''));
+  const endDateTime = new Date(startDateTime.getTime() + durationHours * 60 * 60000);
+  return { startDateTime, endDateTime };
+}
+
+// Utility: standard error formatting
+function formatError(error: unknown, fallback: string) {
+  return {
+    success: false,
+    message: error instanceof Error ? error.message : fallback,
+  };
+}

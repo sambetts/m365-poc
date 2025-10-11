@@ -218,7 +218,31 @@ public class BookingService : IBookingService
         await _context.SaveChangesAsync();
         _logger.LogInformation("Updated booking {Id}", id);
 
+        // Fire-and-forget calendar update via helper
+        _ = UpdateCalendarEventAsync(booking, room);
+
         return (BookingOperationStatus.Success, null);
+    }
+
+    private async Task UpdateCalendarEventAsync(Booking booking, Room room)
+    {
+        if (string.IsNullOrEmpty(booking.CalendarEventId)) return;
+        try
+        {
+            var subject = string.IsNullOrWhiteSpace(booking.Title)
+                ? (string.IsNullOrWhiteSpace(booking.Purpose) ? $"Room booking - {room.Name}" : booking.Purpose)
+                : booking.Title;
+            var body = booking.Purpose ?? booking.Title;
+            var success = await _calendarService.UpdateRoomEventAsync(room, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject!, booking.BookedBy, booking.BookedByEmail, body);
+            if (success)
+            {
+                _logger.LogInformation("Updated calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update calendar event for booking {BookingId}", booking.Id);
+        }
     }
 
     public async Task<bool> DeleteBookingAsync(int id)

@@ -12,7 +12,7 @@ const Index = () => {
   const [meetingRooms, setMeetingRooms] = useState<MeetingRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [bookingDialog, setBookingDialog] = useState({ open: false, roomName: "", roomId: "" });
+  const [bookingDialog, setBookingDialog] = useState<{ open: boolean; roomName: string; roomId: string; bookingToEdit: any | null }>({ open: false, roomName: "", roomId: "", bookingToEdit: null });
   const [bookingsDialog, setBookingsDialog] = useState({ open: false, roomName: "", roomId: "" });
 
   // Load meeting rooms on mount
@@ -52,17 +52,25 @@ const Index = () => {
   };
 
   const handleBook = (roomId: string) => {
-    const room = meetingRooms.find((r) => r.id === roomId);
-    if (room) {
-      setBookingDialog({ open: true, roomName: room.name, roomId: room.id });
-    }
+    const room = meetingRooms.find(r => r.id === roomId);
+    if (!room) return;
+    setBookingDialog({ open: true, roomName: room.name, roomId: room.id, bookingToEdit: null });
   };
 
   const handleViewBookings = (roomId: string) => {
-    const room = meetingRooms.find((r) => r.id === roomId);
-    if (room) {
-      setBookingsDialog({ open: true, roomName: room.name, roomId: room.id });
-    }
+    const room = meetingRooms.find(r => r.id === roomId);
+    if (!room) return;
+    setBookingsDialog({ open: true, roomName: room.name, roomId: room.id });
+  };
+
+  const handleEditFromDialog = (booking: any) => {
+    // Convert booking start time to date/time/duration for dialog prefill handled inside dialog
+    setBookingDialog(prev => ({ open: true, roomName: bookingsDialog.roomName, roomId: bookingsDialog.roomId, bookingToEdit: booking }));
+  };
+
+  const handleSaved = async () => {
+    // After save close any open dialogs and refresh bookings list & rooms
+    await loadRooms();
   };
 
   return (
@@ -109,13 +117,13 @@ const Index = () => {
             </div>
             <div className="pixel-border bg-card p-4 text-center">
               <div className="text-2xl text-secondary font-bold">
-                {meetingRooms.filter((r) => r.available).length}
+                {meetingRooms.filter(r => r.available).length}
               </div>
               <div className="text-[10px] text-muted-foreground mt-1">AVAILABLE</div>
             </div>
             <div className="pixel-border bg-card p-4 text-center">
               <div className="text-2xl text-accent font-bold">
-                {meetingRooms.filter((r) => !r.available).length}
+                {meetingRooms.filter(r => !r.available).length}
               </div>
               <div className="text-[10px] text-muted-foreground mt-1">IN USE</div>
             </div>
@@ -145,7 +153,7 @@ const Index = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {meetingRooms.map((room) => (
+              {meetingRooms.map(room => (
                 <MeetingRoomCard 
                   key={room.id} 
                   room={room} 
@@ -160,9 +168,11 @@ const Index = () => {
 
       <BookingDialog
         open={bookingDialog.open}
-        onOpenChange={(open) => setBookingDialog({ ...bookingDialog, open })}
+        onOpenChange={(open) => setBookingDialog(prev => ({ ...prev, open }))}
         roomName={bookingDialog.roomName}
         roomId={bookingDialog.roomId}
+        bookingToEdit={bookingDialog.bookingToEdit}
+        onSaved={handleSaved}
       />
 
       <RoomBookingsDialog
@@ -170,6 +180,10 @@ const Index = () => {
         onOpenChange={(open) => setBookingsDialog({ ...bookingsDialog, open })}
         roomName={bookingsDialog.roomName}
         roomId={bookingsDialog.roomId}
+        onEditBooking={(booking) => {
+          setBookingsDialog(prev => ({ ...prev, open: false }));
+          handleEditFromDialog(booking);
+        }}
       />
     </div>
   );
