@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { api, type MeetingRoom } from "../lib/api";
 import { toast } from "sonner";
+import { Link } from "react-router-dom"; // added
 
 const Index = () => {
   const [meetingRooms, setMeetingRooms] = useState<MeetingRoom[]>([]);
@@ -77,7 +78,7 @@ const Index = () => {
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <header className="text-center space-y-4 pb-8 border-b-4 border-primary">
+        <header className="text-center space-y-4 pb-8 border-b-4 border-primary relative">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Calendar className="h-8 w-8 text-primary" />
             <h1 className="text-2xl md:text-4xl text-primary leading-relaxed">
@@ -87,16 +88,19 @@ const Index = () => {
           <p className="text-xs md:text-sm text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             BOOK YOUR MEETING SPACE • RETRO STYLE
           </p>
-          <Button
-            onClick={handleRefresh}
-            disabled={refreshing || loading}
-            variant="outline"
-            size="sm"
-            className="text-[10px]"
-          >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? "LOADING..." : "REFRESH"}
-          </Button>
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              variant="outline"
+              size="sm"
+              className="text-[10px]"
+            >
+              <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? "LOADING..." : "REFRESH"}
+            </Button>
+            <Link to="/subscriptions" className="text-[10px] underline text-muted-foreground hover:text-primary">Subscriptions</Link>
+          </div>
         </header>
 
         {/* Stats */}
