@@ -8,6 +8,11 @@ public class GraphCalendarService : ICalendarService
     private readonly GraphServiceClient _graph;
     private readonly ILogger<GraphCalendarService> _logger;
 
+    // Open extension name used to tag events created by Bookify
+    private const string BookifyExtensionName = "com.bookify.metadata";
+    private const string BookifyExtensionSourceKey = "source";
+    private const string BookifyExtensionSourceValue = "bookify";
+
     public GraphCalendarService(GraphServiceClient graph, ILogger<GraphCalendarService> logger)
     {
         _graph = graph;
@@ -36,7 +41,20 @@ public class GraphCalendarService : ICalendarService
                     }
                 },
                 IsAllDay = false,
-                TransactionId = Guid.NewGuid().ToString()
+                TransactionId = Guid.NewGuid().ToString(),
+                // Tag event so we can safely identify it later
+                Extensions = new List<Extension>
+                {
+                    new OpenTypeExtension
+                    {
+                        ExtensionName = BookifyExtensionName,
+                        AdditionalData = new Dictionary<string, object>
+                        {
+                            { BookifyExtensionSourceKey, BookifyExtensionSourceValue },
+                            { "roomId", room.Id }
+                        }
+                    }
+                }
             };
 
             var created = await _graph.Users[room.MailboxUpn].Events.PostAsync(@event, cancellationToken: ct);
@@ -55,6 +73,22 @@ public class GraphCalendarService : ICalendarService
         try
         {
             _logger.LogInformation("Updating Graph event {EventId} for room {RoomId} Start={Start} End={End}", eventId, room.Id, startUtc, endUtc);
+
+            // Fetch event first and ensure it is a Bookify managed event
+            var existing = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
+            {
+                rc.QueryParameters.Expand = new[] { $"extensions($filter=id eq '{BookifyExtensionName}')" };
+            }, cancellationToken: ct);
+
+            var isBookify = existing?.Extensions?.OfType<OpenTypeExtension>()
+                .Any(e => e.ExtensionName == BookifyExtensionName && e.AdditionalData?.TryGetValue(BookifyExtensionSourceKey, out var v) == true && (v?.ToString() ?? "") == BookifyExtensionSourceValue) == true;
+
+            if (!isBookify)
+            {
+                _logger.LogWarning("Refusing to update event {EventId} in room {RoomId} because it is not tagged as a Bookify event", eventId, room.Id);
+                return false;
+            }
+
             var update = new Event
             {
                 Subject = subject,
@@ -79,6 +113,22 @@ public class GraphCalendarService : ICalendarService
         try
         {
             _logger.LogInformation("Deleting Graph event {EventId} for room {RoomId}", eventId, room.Id);
+
+            // Fetch event first and ensure it is a Bookify managed event
+            var existing = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
+            {
+                rc.QueryParameters.Expand = new[] { $"extensions($filter=id eq '{BookifyExtensionName}')" };
+            }, cancellationToken: ct);
+
+            var isBookify = existing?.Extensions?.OfType<OpenTypeExtension>()
+                .Any(e => e.ExtensionName == BookifyExtensionName && e.AdditionalData?.TryGetValue(BookifyExtensionSourceKey, out var v) == true && (v?.ToString() ?? "") == BookifyExtensionSourceValue) == true;
+
+            if (!isBookify)
+            {
+                _logger.LogWarning("Refusing to delete event {EventId} in room {RoomId} because it is not tagged as a Bookify event", eventId, room.Id);
+                return false;
+            }
+
             await _graph.Users[room.MailboxUpn].Events[eventId].DeleteAsync(cancellationToken: ct);
             return true;
         }
