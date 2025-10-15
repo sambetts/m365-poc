@@ -3,7 +3,7 @@ using Microsoft.Graph.Models;
 
 namespace Bookify.Server.Services;
 
-public class GraphCalendarService : ICalendarService
+public class GraphCalendarService : IExternalCalendarService
 {
     private readonly GraphServiceClient _graph;
     private readonly ILogger<GraphCalendarService> _logger;
@@ -136,6 +136,32 @@ public class GraphCalendarService : ICalendarService
         {
             _logger.LogError(ex, "Failed to delete calendar event {EventId} for room {RoomId}", eventId, room.Id);
             return false;
+        }
+    }
+
+    public async Task<(bool success, DateTime? startUtc, DateTime? endUtc, string? subject)> GetRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
+    {
+        try
+        {
+            var evt = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(cancellationToken: ct);
+            if (evt == null) return (false, null, null, null);
+            DateTime? Parse(DateTimeTimeZone? dtz)
+            {
+                if (dtz?.DateTime == null) return null;
+                if (DateTime.TryParse(dtz.DateTime, out var dt))
+                {
+                    if (dt.Kind == DateTimeKind.Unspecified && string.Equals(dtz.TimeZone, "UTC", StringComparison.OrdinalIgnoreCase))
+                        dt = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                    return dt.ToUniversalTime();
+                }
+                return null;
+            }
+            return (true, Parse(evt.Start), Parse(evt.End), evt.Subject);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch event {EventId} for room {RoomId}", eventId, room.Id);
+            return (false, null, null, null);
         }
     }
 }

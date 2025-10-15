@@ -52,6 +52,7 @@ public class RoomService : IRoomService
                     BookedBy = b.BookedBy,
                     StartTime = b.StartTime,
                     EndTime = b.EndTime,
+                    Title = b.Title, // include title so client can display / edit
                     Purpose = b.Purpose
                 })
                 .ToList();
@@ -95,6 +96,7 @@ public class RoomService : IRoomService
                 BookedBy = b.BookedBy,
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
+                Title = b.Title, // include title so edit dialog pre-fills correctly
                 Purpose = b.Purpose
             })
             .ToListAsync();

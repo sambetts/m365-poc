@@ -31,7 +31,7 @@ builder.Services.AddSingleton<GraphServiceClient>(sp =>
 // Register application services
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
-builder.Services.AddSingleton<ICalendarService, GraphCalendarService>();
+builder.Services.AddSingleton<IExternalCalendarService, GraphCalendarService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

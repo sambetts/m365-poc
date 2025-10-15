@@ -18,4 +18,8 @@ public interface IBookingService
     Task<(BookingOperationStatus status, string? errorMessage)> UpdateBookingAsync(int id, CreateBookingRequest request);
     Task<bool> DeleteBookingAsync(int id);
     Task<IEnumerable<BookingResponse>> GetUserBookingsAsync(string email);
+
+    // Calendar sync operations invoked by webhook notifications
+    Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default);
+    Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default);
 }

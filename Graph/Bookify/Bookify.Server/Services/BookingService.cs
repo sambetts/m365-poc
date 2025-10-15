@@ -9,9 +9,9 @@ public class BookingService : IBookingService
 {
     private readonly BookifyDbContext _context;
     private readonly ILogger<BookingService> _logger;
-    private readonly ICalendarService _calendarService;
+    private readonly IExternalCalendarService _calendarService;
 
-    public BookingService(BookifyDbContext context, ILogger<BookingService> logger, ICalendarService calendarService)
+    public BookingService(BookifyDbContext context, ILogger<BookingService> logger, IExternalCalendarService calendarService)
     {
         _context = context;
         _logger = logger;
@@ -177,12 +177,16 @@ public class BookingService : IBookingService
     public async Task<(BookingOperationStatus status, string? errorMessage)> UpdateBookingAsync(int id, CreateBookingRequest request)
     {
         _logger.LogInformation("Updating booking {Id} Room={RoomId} Start={Start} End={End}", id, request.RoomId, request.StartTime, request.EndTime);
-        var booking = await _context.Bookings.FindAsync(id);
+
+        // Load booking with original room to detect room change
+        var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.Id == id);
         if (booking == null)
         {
             _logger.LogInformation("Booking {Id} not found for update", id);
             return (BookingOperationStatus.NotFound, null);
         }
+        var originalRoom = booking.Room; // may be null if not found, but should exist
+        var originalRoomId = booking.RoomId;
 
         if (request.StartTime >= request.EndTime)
         {
@@ -190,8 +194,8 @@ public class BookingService : IBookingService
             return (BookingOperationStatus.BadRequest, "End time must be after start time");
         }
 
-        var room = await _context.Rooms.FindAsync(request.RoomId);
-        if (room == null)
+        var newRoom = await _context.Rooms.FindAsync(request.RoomId);
+        if (newRoom == null)
         {
             _logger.LogWarning("Room {RoomId} not found when updating booking {BookingId}", request.RoomId, id);
             return (BookingOperationStatus.NotFound, $"Room with ID {request.RoomId} not found");
@@ -207,6 +211,9 @@ public class BookingService : IBookingService
             return (BookingOperationStatus.Conflict, "Room is already booked for the requested time");
         }
 
+        var roomChanged = originalRoomId != request.RoomId;
+
+        // Apply changes
         booking.RoomId = request.RoomId;
         booking.BookedBy = request.BookedBy;
         booking.BookedByEmail = request.BookedByEmail;
@@ -218,8 +225,58 @@ public class BookingService : IBookingService
         await _context.SaveChangesAsync();
         _logger.LogInformation("Updated booking {Id}", id);
 
-        // Fire-and-forget calendar update via helper
-        _ = UpdateCalendarEventAsync(booking, room);
+        // Calendar sync (await so caller knows update attempt occurred)
+        if (!string.IsNullOrEmpty(booking.CalendarEventId))
+        {
+            try
+            {
+                if (roomChanged && originalRoom != null)
+                {
+                    // Need to move the event: delete from old room then create in new room
+                    _logger.LogInformation("Room changed for booking {BookingId} from {OldRoom} to {NewRoom} - recreating calendar event", booking.Id, originalRoomId, request.RoomId);
+                    var deleted = await _calendarService.DeleteRoomEventAsync(originalRoom, booking.CalendarEventId!);
+                    if (!deleted)
+                    {
+                        _logger.LogWarning("Failed to delete old calendar event {EventId} for booking {BookingId} during room move", booking.CalendarEventId, booking.Id);
+                    }
+                    var subject = string.IsNullOrWhiteSpace(booking.Title)
+                        ? (string.IsNullOrWhiteSpace(booking.Purpose) ? $"Room booking - {newRoom.Name}" : booking.Purpose)
+                        : booking.Title;
+                    var body = booking.Purpose ?? booking.Title;
+                    var newEventId = await _calendarService.CreateRoomEventAsync(newRoom, booking.StartTime, booking.EndTime, subject!, booking.BookedBy, booking.BookedByEmail, body);
+                    if (!string.IsNullOrEmpty(newEventId))
+                    {
+                        booking.CalendarEventId = newEventId;
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("Recreated calendar event {EventId} for booking {BookingId}", newEventId, booking.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Failed to recreate calendar event for booking {BookingId} after room change", booking.Id);
+                    }
+                }
+                else
+                {
+                    var subject = string.IsNullOrWhiteSpace(booking.Title)
+                        ? (string.IsNullOrWhiteSpace(booking.Purpose) ? $"Room booking - {newRoom.Name}" : booking.Purpose)
+                        : booking.Title;
+                    var body = booking.Purpose ?? booking.Title;
+                    var updated = await _calendarService.UpdateRoomEventAsync(newRoom, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject!, booking.BookedBy, booking.BookedByEmail, body);
+                    if (updated)
+                    {
+                        _logger.LogInformation("Updated calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Calendar update failed for booking {BookingId} Event {EventId}", booking.Id, booking.CalendarEventId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error synchronising calendar event for booking {BookingId}", booking.Id);
+            }
+        }
 
         return (BookingOperationStatus.Success, null);
     }
@@ -285,5 +342,46 @@ public class BookingService : IBookingService
             .ToListAsync();
         _logger.LogDebug("Found {Count} bookings for user {Email}", list.Count, email);
         return list;
+    }
+
+    // Invoked by webhook when calendar event was updated externally
+    public async Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default)
+    {
+        var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
+        if (booking?.Room == null) return false;
+        var (success, startUtc, endUtc, subject) = await _calendarService.GetRoomEventAsync(booking.Room, eventId, ct);
+        if (!success) return false;
+        var changed = false;
+        if (startUtc.HasValue && endUtc.HasValue)
+        {
+            if (booking.StartTime != startUtc.Value || booking.EndTime != endUtc.Value)
+            {
+                booking.StartTime = startUtc.Value;
+                booking.EndTime = endUtc.Value;
+                changed = true;
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(subject) && booking.Title != subject)
+        {
+            booking.Title = subject;
+            changed = true;
+        }
+        if (changed)
+        {
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("Applied external event update to booking {BookingId}", booking.Id);
+        }
+        return changed;
+    }
+
+    // Invoked by webhook when calendar event was deleted externally
+    public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
+    {
+        var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
+        if (booking == null) return false;
+        _context.Bookings.Remove(booking);
+        await _context.SaveChangesAsync(ct);
+        _logger.LogInformation("Removed booking {BookingId} due to external calendar event deletion", booking.Id);
+        return true;
     }
 }

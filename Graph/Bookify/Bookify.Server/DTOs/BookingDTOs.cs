@@ -23,7 +23,7 @@ public class BookingInfo
     public required string BookedBy { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
-    public string? Title { get; set; }
+    public string? Title { get; set; } // added title to support edit prefill
     public string? Purpose { get; set; }
 }
 
