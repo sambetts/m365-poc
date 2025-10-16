@@ -1,6 +1,7 @@
 using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Serialization;
@@ -80,54 +81,60 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
                 var updates = 0; var deletions = 0; var skipped = 0;
                 foreach (var n in payload.Value)
                 {
-                    // Decrypt resource data if present
-                    if (n.EncryptedContent != null)
-                    {
-                        var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent, contentDecryptingCert);
 
-                        var eventUpdate = JsonSerializer.Deserialize<Microsoft.Graph.Models.Event>(notificationContentJson, new JsonSerializerOptions
+                    // Extract event id: prefer resourceData.id then last segment of resource path
+                    var eventId = string.Empty;
+                    if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
+                    {
+                        var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        if (parts.Length > 0)
                         {
-                            PropertyNameCaseInsensitive = true,
-                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-                        });
+                            eventId = parts[^1];
+                        }
                     }
-                    else
+                    if (string.IsNullOrWhiteSpace(eventId))
                     {
-                        // No encrypted content - load event by id if needed
-                        logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
+                        logger.LogDebug("Skipping notification with no resolvable event id.");
+                        skipped++;
+                        continue;
+                    }
 
-                        // Extract event id: prefer resourceData.id then last segment of resource path
-                        var eventId = n.AdditionalData["resourceData:id"]?.ToString();
-                        if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
-                        {
-                            var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                            if (parts.Length > 0)
+                    // Process change notification via BookingService
+                    switch (n.ChangeType)
+                    {
+                        case Microsoft.Graph.Models.ChangeType.Deleted:
+                            if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
+                            break;
+                        case Microsoft.Graph.Models.ChangeType.Updated:
+
+                            // Decrypt resource data if present
+                            if (n.EncryptedContent != null)
                             {
-                                eventId = parts[^1];
+                                var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent, contentDecryptingCert);
+
+                                var eventUpdate = JsonSerializer.Deserialize<Microsoft.Graph.Models.Event>(notificationContentJson, new JsonSerializerOptions
+                                {
+                                    PropertyNameCaseInsensitive = true,
+                                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                                });
+
+                                if (await bookingService.ApplyCalendarEventUpdateFromFragmentAsync(eventId, eventUpdate, ct)) updates++; else skipped++;
+
                             }
-                        }
-                        if (string.IsNullOrWhiteSpace(eventId))
-                        {
-                            logger.LogDebug("Skipping notification with no resolvable event id.");
-                            skipped++;
-                            continue;
-                        }
+                            else
+                            {
+                                // No encrypted content - load event by id if needed
+                                logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
 
-                        // Process change notification via BookingService
-                        switch (n.ChangeType)
-                        {
-                            case Microsoft.Graph.Models.ChangeType.Deleted:
-                                if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
-                                break;
-                            case Microsoft.Graph.Models.ChangeType.Updated:
+
                                 if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
-                                break;
-                            default:
-                                skipped++;
-                                break;
-                        }
-                    }
+                            }
 
+                            break;
+                        default:
+                            skipped++;
+                            break;
+                    }
                     
                 }
                 logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);

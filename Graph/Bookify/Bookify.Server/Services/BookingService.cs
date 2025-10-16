@@ -355,6 +355,53 @@ public class BookingService : IBookingService
         return list;
     }
 
+
+    public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
+    {
+        var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
+        if (booking == null) return false;
+        _context.Bookings.Remove(booking);
+        await _context.SaveChangesAsync(ct);
+        _logger.LogInformation("Removed booking {BookingId} due to external calendar event deletion", booking.Id);
+        return true;
+    }
+
+    public async Task<bool> ApplyCalendarEventUpdateFromFragmentAsync(string eventId, Microsoft.Graph.Models.Event eventUpdate, CancellationToken ct)
+    {
+        var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
+        if (booking?.Room == null) return false;
+        var changed = false;
+        if (eventUpdate.Start != null && DateTime.TryParse(eventUpdate.Start.DateTime, out var start))
+        {
+            var startUtc = start.Kind == DateTimeKind.Utc ? start : DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            if (booking.StartTime != startUtc)
+            {
+                booking.StartTime = startUtc;
+                changed = true;
+            }
+        }
+        if (eventUpdate.End != null && DateTime.TryParse(eventUpdate.End.DateTime, out var end))
+        {
+            var endUtc = end.Kind == DateTimeKind.Utc ? end : DateTime.SpecifyKind(end, DateTimeKind.Utc);
+            if (booking.EndTime != endUtc)
+            {
+                booking.EndTime = endUtc;
+                changed = true;
+            }
+        }
+        if (!string.IsNullOrWhiteSpace(eventUpdate.Subject) && booking.Title != eventUpdate.Subject)
+        {
+            booking.Title = eventUpdate.Subject;
+            changed = true;
+        }
+        if (changed)
+        {
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("Applied external event update to booking {BookingId}", booking.Id);
+        }
+        return changed;
+    }
+
     public async Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default)
     {
         var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
@@ -382,15 +429,5 @@ public class BookingService : IBookingService
             _logger.LogInformation("Applied external event update to booking {BookingId}", booking.Id);
         }
         return changed;
-    }
-
-    public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
-    {
-        var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
-        if (booking == null) return false;
-        _context.Bookings.Remove(booking);
-        await _context.SaveChangesAsync(ct);
-        _logger.LogInformation("Removed booking {BookingId} due to external calendar event deletion", booking.Id);
-        return true;
     }
 }
