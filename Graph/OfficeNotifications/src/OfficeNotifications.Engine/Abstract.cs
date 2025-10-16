@@ -36,11 +36,6 @@ namespace OfficeNotifications.Engine
             var clientSecretCredential = new ClientSecretCredential(config.AzureAdConfig.TenantId, config.AzureAdConfig.ClientID, config.AzureAdConfig.ClientSecret, options);
             _client = new GraphServiceClient(clientSecretCredential, scopes);
 
-            if (UseBetaEndpoint)
-            {
-                _client.BaseUrl = "https://graph.microsoft.com/beta";
-            }
-
         }
 
     }

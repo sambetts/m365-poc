@@ -1,5 +1,6 @@
 @page "/showprofile"
 
+@using Microsoft.Graph.Models
 @using Microsoft.Identity.Web
 @using Microsoft.Graph
 @inject Microsoft.Graph.GraphServiceClient GraphServiceClient
@@ -34,7 +35,7 @@ else
     {
         try
         {
-            user = await GraphServiceClient.Me.Request().GetAsync();
+            user = await GraphServiceClient.Me.GetAsync();
         }
         catch (Exception ex)
         {

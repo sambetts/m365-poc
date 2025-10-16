@@ -4,6 +4,7 @@ using OfficeNotifications.Engine.Models;
 using OfficeNotifications.Engine;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph.Models;
 
 namespace OfficeNotifications.Engine.Webhooks
 {
@@ -81,7 +82,7 @@ namespace OfficeNotifications.Engine.Webhooks
             // Delete everything with this URL & recreate
             foreach (var existingSub in subs)
             {
-                await _client.Subscriptions[existingSub.Id].Request().DeleteAsync();
+                await _client.Subscriptions[existingSub.Id].DeleteAsync();
             }
 
             subsCache = null;
@@ -101,7 +102,7 @@ namespace OfficeNotifications.Engine.Webhooks
                 {
                     ExpirationDateTime = MaxNotificationAgeFromToday
                 };
-                returnSub = await _client.Subscriptions[existingSub.Id].Request().UpdateAsync(subscription);
+                returnSub = await _client.Subscriptions[existingSub.Id].PatchAsync(subscription);
             }
             else
             {
@@ -147,7 +148,7 @@ namespace OfficeNotifications.Engine.Webhooks
                     };
                 }
 
-                returnSub = await _client.Subscriptions.Request().AddAsync(sub);
+                returnSub = await _client.Subscriptions.PostAsync(sub);
             }
 
             return returnSub;
@@ -157,8 +158,8 @@ namespace OfficeNotifications.Engine.Webhooks
         {
             if (subsCache == null)
             {
-                var subs = await _client.Subscriptions.Request().GetAsync();
-                subsCache = subs.Where(s => s.ChangeType == ChangeType && s.NotificationUrl == WebhookUrl && s.Resource == Resource).ToList();
+                var subs = await _client.Subscriptions.GetAsync();
+                subsCache = subs.Value.Where(s => s.ChangeType == ChangeType && s.NotificationUrl == WebhookUrl && s.Resource == Resource).ToList();
             }
             return subsCache;
         }

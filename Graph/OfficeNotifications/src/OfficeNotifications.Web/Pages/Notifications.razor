@@ -3,6 +3,7 @@
 <PageTitle>User Notifications</PageTitle>
 
 @using Microsoft.Graph
+@using Microsoft.Graph.Models
 @using OfficeNotifications.Engine
 @using Microsoft.Identity.Web
 @using OfficeNotifications.Engine.Models
@@ -206,7 +207,7 @@ else
         NotificationManager = await UserNotificationsManager.GetNotificationManager("webhooks", Config, Logger);
         try
         {
-            user = await GraphServiceClient.Me.Request().Select("Id,DisplayName").GetAsync();
+            user = await GraphServiceClient.Me.GetAsync(op=> op.QueryParameters.Select = ["Id", "DisplayName"]);
         }
         catch (Exception ex)
         {

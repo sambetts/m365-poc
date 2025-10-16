@@ -1,6 +1,7 @@
 ﻿using CommonUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Microsoft.Graph.Models;
 
 namespace OfficeNotifications.Engine
 {
@@ -15,7 +16,7 @@ namespace OfficeNotifications.Engine
 
         public async Task<User> GetUserByEmail(string email)
         {
-            var searchResults = await _client.Users[email].Request().GetAsync();
+            var searchResults = await _client.Users[email].GetAsync();
             return searchResults;
         }
 

@@ -1,6 +1,7 @@
 ﻿using CommonUtils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
+using Microsoft.Graph.Models;
 using OfficeNotifications.Engine.Models;
 using OfficeNotifications.Engine.Webhooks;
 using StackExchange.Redis;
