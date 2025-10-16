@@ -2,13 +2,16 @@ using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Graph;
+using Microsoft.Graph.Models;
+using Microsoft.Kiota.Abstractions.Serialization;
+using System.Text;
 using System.Text.Json;
 
 namespace Bookify.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NotificationsController(GraphServiceClient client, AppConfig config, ILogger<NotificationsController> logger, ILogger<WebhookContentManager> webhookLogger, IBookingService bookingService) : ControllerBase
+public class NotificationsController(GraphServiceClient client, AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService) : ControllerBase
 {
 
     // Microsoft Graph validation handshake (GET with validationToken) per docs:
@@ -30,24 +33,6 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
         return Ok("Notifications endpoint");
     }
 
-    // Record types for deserializing Graph change notifications (simplified)
-    public record GraphNotificationCollection(List<GraphChangeNotification> Value);
-
-    public record GraphChangeNotification(
-        string? SubscriptionId,
-        string? ClientState,
-        string? ChangeType,
-        string? Resource,
-        DateTimeOffset? SubscriptionExpirationDateTime,
-        GraphResourceData? ResourceData
-    );
-
-    public record GraphResourceData(
-        string? ODataType,
-        string? ODataId,
-        string? Id,
-        string? ETag
-    );
 
     [HttpPost]
     public async Task<IActionResult> Post(CancellationToken ct)
@@ -73,11 +58,15 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
                 logger.LogWarning("Received empty notification payload");
                 return Ok();
             }
-            GraphNotification? payload = null;
+
+            Microsoft.Graph.Models.ChangeNotificationCollection? payload = null;
             try
             {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                payload = JsonSerializer.Deserialize<GraphNotification>(raw, options);
+                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(raw));
+                var root = await ParseNodeFactoryRegistry.DefaultInstance.GetRootParseNodeAsync("application/json", stream);
+
+                // For a specific type:
+                payload = root.GetObjectValue(ChangeNotificationCollection.CreateFromDiscriminatorValue);
             }
             catch (Exception dex)
             {
@@ -85,52 +74,61 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
             }
 
             var contentDecryptingCert = await AuthUtils.RetrieveKeyVaultCertificate("webhooks", config.AzureAdConfig.TenantId, config.AzureAdConfig.ClientId, config.AzureAdConfig.ClientSecret, config.KeyVaultUrl);
-            var webhookContentManager = new WebhookContentManager(client, contentDecryptingCert, webhookLogger, config);
 
-
-            if (payload != null && payload.IsValid)
+            if (payload != null)
             {
                 var updates = 0; var deletions = 0; var skipped = 0;
-                foreach (var n in payload.Notifications)
+                foreach (var n in payload.Value)
                 {
-                    if (n.EncryptedResourceDataContent != null)
+                    // Decrypt resource data if present
+                    if (n.EncryptedContent != null)
                     {
-                        var notificationContentJson = n.EncryptedResourceDataContent.DecryptResourceDataContent(contentDecryptingCert);
-                    }
+                        var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent, contentDecryptingCert);
 
-                    logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-
-                    // Extract event id: prefer resourceData.id then last segment of resource path
-                    var eventId = n.AdditionalData["resourceData:id"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
-                    {
-                        var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        if (parts.Length > 0)
+                        var eventUpdate = JsonSerializer.Deserialize<Microsoft.Graph.Models.Event>(notificationContentJson, new JsonSerializerOptions
                         {
-                            eventId = parts[^1];
+                            PropertyNameCaseInsensitive = true,
+                            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+                        });
+                    }
+                    else
+                    {
+                        // No encrypted content - load event by id if needed
+                        logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
+
+                        // Extract event id: prefer resourceData.id then last segment of resource path
+                        var eventId = n.AdditionalData["resourceData:id"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
+                        {
+                            var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            if (parts.Length > 0)
+                            {
+                                eventId = parts[^1];
+                            }
+                        }
+                        if (string.IsNullOrWhiteSpace(eventId))
+                        {
+                            logger.LogDebug("Skipping notification with no resolvable event id.");
+                            skipped++;
+                            continue;
+                        }
+
+                        // Process change notification via BookingService
+                        switch (n.ChangeType)
+                        {
+                            case Microsoft.Graph.Models.ChangeType.Deleted:
+                                if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
+                                break;
+                            case Microsoft.Graph.Models.ChangeType.Updated:
+                                if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
+                                break;
+                            default:
+                                skipped++;
+                                break;
                         }
                     }
-                    if (string.IsNullOrWhiteSpace(eventId))
-                    {
-                        logger.LogDebug("Skipping notification with no resolvable event id.");
-                        skipped++;
-                        continue;
-                    }
 
-                    // Process change notification via BookingService
-                    var type = n.ChangeType ?? Microsoft.Graph.Models.ChangeType.Deleted;
-                    switch (type)
-                    {
-                        case Microsoft.Graph.Models.ChangeType.Deleted:
-                            if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
-                            break;
-                        case Microsoft.Graph.Models.ChangeType.Updated:
-                            if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
-                            break;
-                        default:
-                            skipped++;
-                            break;
-                    }
+                    
                 }
                 logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
             }

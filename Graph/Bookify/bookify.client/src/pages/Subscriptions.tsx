@@ -5,9 +5,7 @@ import { Link } from 'react-router-dom';
 interface Subscription {
   id: string;
   resource: string;
-  changeType: string;
   expirationDateTime?: string;
-  notificationUrl?: string;
   clientState?: string;
 }
 
@@ -17,13 +15,6 @@ export default function SubscriptionsPage() {
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [upn, setUpn] = useState('');
-  const [changeType, setChangeType] = useState('created,updated,deleted');
-  const [notificationUrl, setNotificationUrl] = useState<string>('');
-
-  useEffect(() => {
-    // default notification URL to current origin (assuming backend served same host)
-    setNotificationUrl(`${window.location.origin}/api/notifications`);
-  }, []);
 
   const load = async () => {
     try {
@@ -32,7 +23,7 @@ export default function SubscriptionsPage() {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       setSubs(data);
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('FAILED TO LOAD', { description: e.message });
     } finally {
       setLoading(false);
@@ -48,13 +39,13 @@ export default function SubscriptionsPage() {
       const res = await fetch('/api/subscriptions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upn, changeType, notificationUrl })
+        body: JSON.stringify({ upn })
       });
       if (!res.ok) throw new Error(await res.text());
       toast.success('SUBSCRIPTION CREATED');
       setUpn('');
       await load();
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('CREATE FAILED', { description: e.message });
     } finally {
       setCreating(false);
@@ -69,7 +60,7 @@ export default function SubscriptionsPage() {
       if (!res.ok) throw new Error(await res.text());
       toast.success('DELETED');
       setSubs(prev => prev.filter(s => s.id !== id));
-    } catch (e:any) {
+    } catch (e: any) {
       toast.error('DELETE FAILED', { description: e.message });
     } finally {
       setDeletingId(null);
@@ -88,15 +79,7 @@ export default function SubscriptionsPage() {
         <div className='space-y-2'>
           <div>
             <label className='block text-xs'>User UPN</label>
-            <input className='border px-2 py-1 w-full text-sm bg-white text-black dark:bg-neutral-800 dark:text-white placeholder:text-neutral-400' value={upn} onChange={e=>setUpn(e.target.value)} placeholder='user@contoso.com' />
-          </div>
-          <div>
-            <label className='block text-xs'>Change Type (comma separated)</label>
-            <input className='border px-2 py-1 w-full text-sm bg-white text-black dark:bg-neutral-800 dark:text-white placeholder:text-neutral-400' value={changeType} onChange={e=>setChangeType(e.target.value)} placeholder='created,updated,deleted' />
-          </div>
-          <div>
-            <label className='block text-xs'>Notification URL</label>
-            <input className='border px-2 py-1 w-full text-sm bg-white text-black dark:bg-neutral-800 dark:text-white placeholder:text-neutral-400' value={notificationUrl} onChange={e=>setNotificationUrl(e.target.value)} />
+            <input className='border px-2 py-1 w-full text-sm bg-white text-black dark:bg-neutral-800 dark:text-white placeholder:text-neutral-400' value={upn} onChange={e => setUpn(e.target.value)} placeholder='user@contoso.com' />
           </div>
           <button disabled={creating} onClick={create} className='bg-blue-600 text-white text-xs px-3 py-1 disabled:opacity-50'>
             {creating ? 'Creating...' : 'Create'}
@@ -117,7 +100,6 @@ export default function SubscriptionsPage() {
               <tr className='bg-gray-100 dark:bg-neutral-800'>
                 <th className='p-2 border'>Id</th>
                 <th className='p-2 border'>Resource</th>
-                <th className='p-2 border'>ChangeType</th>
                 <th className='p-2 border'>Expires</th>
                 <th className='p-2 border'>Actions</th>
               </tr>
@@ -127,7 +109,6 @@ export default function SubscriptionsPage() {
                 <tr key={s.id} className={idx % 2 === 0 ? 'bg-white dark:bg-neutral-900' : 'bg-gray-50 dark:bg-neutral-800'}>
                   <td className='p-2 border'>{s.id}</td>
                   <td className='p-2 border'>{s.resource}</td>
-                  <td className='p-2 border'>{s.changeType}</td>
                   <td className='p-2 border'>{s.expirationDateTime ? new Date(s.expirationDateTime).toLocaleString() : ''}</td>
                   <td className='p-2 border'>
                     <button onClick={() => deleteSub(s.id)} disabled={deletingId === s.id} className='text-red-600 hover:underline disabled:opacity-50'>

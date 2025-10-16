@@ -1,178 +1,87 @@
-﻿using System.Security.Cryptography;
+﻿using Microsoft.Graph.Models;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GraphNotifications
+namespace GraphNotifications;
+
+public static class EncryptedContentUtils
 {
-    public class GraphNotification
-    {
-        [JsonPropertyName("value")]
-        public List<ChangeNotificationForUserId> Notifications { get; set; } = new List<ChangeNotificationForUserId>();
-
-        [JsonIgnore]
-        public bool IsValid => Notifications.Any() && Notifications.Where(n => n.IsValid).Count() == Notifications.Count;
-    }
 
     /// <summary>
-    /// Base Graph implementation
+    /// This process: https://docs.microsoft.com/en-us/graph/webhooks-with-resource-data#decrypt-the-symmetric-key
     /// </summary>
-    public class ChangeNotification : Microsoft.Graph.Models.ChangeNotification
+    /// <param name="cert">Cert the Graph subscription was created with</param>
+    public static string DecryptResourceDataContent(ChangeNotificationEncryptedContent encryptedResourceDataContent, X509Certificate2 cert)
     {
-
-        [JsonPropertyName("encryptedContent")]
-        public EncryptedGraphResourceDataContent? EncryptedResourceDataContent { get; set; } = null;
-
-        public NotificationContext? NotificationContext
+        // https://www.pkisolutions.com/accessing-and-using-certificate-private-keys-in-net-framework-net-core/
+        const string RSA = "1.2.840.113549.1.1.1";
+        RSA rsa;
+        switch (cert.PublicKey.Oid.Value)
         {
-            get
-            {
-                NotificationContext? notificationContext = null;
-                if (!string.IsNullOrEmpty(ClientState))
-                {
-                    try
-                    {
-                        notificationContext = JsonSerializer.Deserialize<NotificationContext>(ClientState);
-                    }
-                    catch (JsonException)
-                    {
-                        // Ignore
-                    }
-                }
-                return notificationContext;
-            }
+            case RSA:
+                rsa = cert.GetRSAPrivateKey() ?? throw new ArgumentOutOfRangeException(nameof(cert), "No private key");
+                break;
+
+            default:
+                throw new NotSupportedException("Unsupported algorithm group");
         }
 
-        [JsonIgnore]
-        public bool IsValid => ResourceData != null && NotificationContext != null;
-    }
+        // Initialize with the private key that matches the encryptionCertificateId.
+        var encryptedSymmetricKey = Convert.FromBase64String(encryptedResourceDataContent.DataKey);
 
-    /// <summary>
-    /// Extracted user ID from context field
-    /// </summary>
-    public class ChangeNotificationForUserId : ChangeNotification
-    {
-        private string? _userId = null;
-        public string UserId
+        // Decrypt using OAEP padding.
+        var decryptedSymmetricKey = rsa.Decrypt(encryptedSymmetricKey, RSAEncryptionPadding.OaepSHA1);
+
+        // Can now use decryptedSymmetricKey with the AES algorithm.
+        var encryptedPayload = Convert.FromBase64String(encryptedResourceDataContent.Data);
+        var expectedSignature = Convert.FromBase64String(encryptedResourceDataContent.DataSignature);
+
+        using (var hmac = new HMACSHA256(decryptedSymmetricKey))
         {
-            get
+            var actualSignature = hmac.ComputeHash(encryptedPayload);
+            if (actualSignature.SequenceEqual(expectedSignature))
             {
-                if (_userId == null)
-                {
-                    if (!string.IsNullOrEmpty(ClientState))
-                    {
-                        var s = JsonSerializer.Deserialize<NotificationContext>(ClientState);
-                        _userId = s?.ForUserId ?? string.Empty;
-                    }
-                    if (_userId == null)
-                    {
-                        _userId = string.Empty;
-                    }
-                }
-                return _userId;
+                // Continue with decryption of the encryptedPayload.
+                return DecryptPayload(encryptedResourceDataContent, decryptedSymmetricKey);
+            }
+            else
+            {
+                // Do not attempt to decrypt encryptedPayload. Assume notification payload has been tampered with and investigate.
+                throw new InvalidDataException("Invalid payload");
             }
         }
     }
 
-    public class ResourceData
+    private static string DecryptPayload(ChangeNotificationEncryptedContent encryptedResourceDataContent, byte[] decryptedSymmetricKey)
     {
-        [JsonPropertyName("@odata.type")]
-        public string OdataType { get; set; } = string.Empty;
-    }
+        var aesProvider = Aes.Create();
+        aesProvider.Key = decryptedSymmetricKey;
+        aesProvider.Padding = PaddingMode.PKCS7;
+        aesProvider.Mode = CipherMode.CBC;
 
-    public class EncryptedGraphResourceDataContent
-    {
-        [JsonPropertyName("data")]
-        public string Data { get; set; } = string.Empty;
+        // Obtain the intialization vector from the symmetric key itself.
+        int vectorSize = 16;
+        var iv = new byte[vectorSize];
+        Array.Copy(decryptedSymmetricKey, iv, vectorSize);
+        aesProvider.IV = iv;
 
-        [JsonPropertyName("dataSignature")]
-        public string DataSignature { get; set; } = string.Empty;
+        var encryptedPayload = Convert.FromBase64String(encryptedResourceDataContent.Data);
 
-        [JsonPropertyName("dataKey")]
-        public string DataKey { get; set; } = string.Empty;
-
-        [JsonPropertyName("encryptionCertificateId")]
-        public string EncryptionCertificateId { get; set; } = string.Empty;
-
-        [JsonPropertyName("encryptionCertificateThumbprint")]
-        public string EncryptionCertificateThumbprint { get; set; } = string.Empty;
-
-        /// <summary>
-        /// This process: https://docs.microsoft.com/en-us/graph/webhooks-with-resource-data#decrypt-the-symmetric-key
-        /// </summary>
-        /// <param name="cert">Cert the Graph subscription was created with</param>
-        public string DecryptResourceDataContent(X509Certificate2 cert)
+        // Decrypt the resource data content.
+        using (var decryptor = aesProvider.CreateDecryptor())
         {
-            // https://www.pkisolutions.com/accessing-and-using-certificate-private-keys-in-net-framework-net-core/
-            const string RSA = "1.2.840.113549.1.1.1";
-            RSA rsa;
-            switch (cert.PublicKey.Oid.Value)
+            using (var msDecrypt = new MemoryStream(encryptedPayload))
             {
-                case RSA:
-                    rsa = cert.GetRSAPrivateKey() ?? throw new ArgumentOutOfRangeException(nameof(cert), "No private key");
-                    break;
-
-                default:
-                    throw new NotSupportedException("Unsupported algorithm group");
-            }
-
-            // Initialize with the private key that matches the encryptionCertificateId.
-            var encryptedSymmetricKey = Convert.FromBase64String(DataKey);
-
-            // Decrypt using OAEP padding.
-            var decryptedSymmetricKey = rsa.Decrypt(encryptedSymmetricKey, RSAEncryptionPadding.OaepSHA1);
-
-            // Can now use decryptedSymmetricKey with the AES algorithm.
-            var encryptedPayload = Convert.FromBase64String(Data);
-            var expectedSignature = Convert.FromBase64String(DataSignature);
-
-            using (var hmac = new HMACSHA256(decryptedSymmetricKey))
-            {
-                var actualSignature = hmac.ComputeHash(encryptedPayload);
-                if (actualSignature.SequenceEqual(expectedSignature))
+                using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
                 {
-                    // Continue with decryption of the encryptedPayload.
-                    return DecryptPayload(decryptedSymmetricKey);
-                }
-                else
-                {
-                    // Do not attempt to decrypt encryptedPayload. Assume notification payload has been tampered with and investigate.
-                    throw new InvalidDataException("Invalid payload");
-                }
-            }
-        }
-
-        private string DecryptPayload(byte[] decryptedSymmetricKey)
-        {
-            var aesProvider = Aes.Create();
-            aesProvider.Key = decryptedSymmetricKey;
-            aesProvider.Padding = PaddingMode.PKCS7;
-            aesProvider.Mode = CipherMode.CBC;
-
-            // Obtain the intialization vector from the symmetric key itself.
-            int vectorSize = 16;
-            var iv = new byte[vectorSize];
-            Array.Copy(decryptedSymmetricKey, iv, vectorSize);
-            aesProvider.IV = iv;
-
-            var encryptedPayload = Convert.FromBase64String(Data);
-
-            // Decrypt the resource data content.
-            using (var decryptor = aesProvider.CreateDecryptor())
-            {
-                using (var msDecrypt = new MemoryStream(encryptedPayload))
-                {
-                    using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    using (var srDecrypt = new StreamReader(csDecrypt))
                     {
-                        using (var srDecrypt = new StreamReader(csDecrypt))
-                        {
-                            return srDecrypt.ReadToEnd();
-                        }
+                        return srDecrypt.ReadToEnd();
                     }
                 }
             }
         }
     }
-
-
 }

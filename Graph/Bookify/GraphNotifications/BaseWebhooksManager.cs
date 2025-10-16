@@ -5,38 +5,6 @@ using System.Text.Json;
 
 namespace GraphNotifications;
 
-
-/// <summary>
-/// Webhook manager for a user
-/// </summary>
-public abstract class UserBaseWebhooksManager : BaseWebhooksManager
-{
-    protected readonly string _userId;
-
-    public UserBaseWebhooksManager(GraphServiceClient client, string userId, IWebhookConfig config, ILogger logger) : base(client, config, logger)
-    {
-        if (string.IsNullOrEmpty(userId))
-        {
-            throw new ArgumentException($"'{nameof(userId)}' cannot be null or empty.", nameof(userId));
-        }
-
-        _userId = userId;
-    }
-
-    public override NotificationContext? ClientStateModel => new NotificationContext { ForUserId = _userId };
-
-    public static async Task<T> LoadFromKeyvault<T>(string certName, string userId, IWebhookConfig config, ILogger trace)
-        where T : UserBaseWebhooksManager
-    {
-
-        var cert = await AuthUtils.RetrieveKeyVaultCertificate(certName, config.AzureAdConfig.TenantId, config.AzureAdConfig.ClientId, config.AzureAdConfig.ClientSecret, config.KeyVaultUrl);
-        var instance = Activator.CreateInstance(typeof(T), [userId, cert, config, trace]);
-
-        return (T)instance!;
-    }
-}
-
-
 /// <summary>
 /// Manages webhooks for update subscriptions.
 /// https://learn.microsoft.com/en-us/graph/change-notifications-with-resource-data
@@ -148,7 +116,7 @@ public abstract class BaseWebhooksManager
             returnSub = await _client.Subscriptions.PostAsync(sub);
         }
 
-        return returnSub;
+        return returnSub ?? throw new InvalidOperationException("Failed to create or update subscription.");
     }
 
     public async Task<List<Subscription>> GetInScopeSubscriptions()
