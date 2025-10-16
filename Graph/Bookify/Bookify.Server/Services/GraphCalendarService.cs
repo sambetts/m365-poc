@@ -77,7 +77,7 @@ public class GraphCalendarService : IExternalCalendarService
             // Fetch event first and ensure it is a Bookify managed event
             var existing = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
             {
-                rc.QueryParameters.Expand = new[] { $"extensions($filter=id eq '{BookifyExtensionName}')" };
+                rc.QueryParameters.Expand = [$"extensions($filter=id eq '{BookifyExtensionName}')"];
             }, cancellationToken: ct);
 
             var isBookify = existing?.Extensions?.OfType<OpenTypeExtension>()
