@@ -32,8 +32,22 @@ const baseTimeSlots = [
   "13:00", "14:00", "15:00", "16:00", "17:00"
 ];
 
+// Format a Date to an input[type=date] value using LOCAL date parts (avoid UTC shift)
+function localDateInputValue(d: Date) {
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseServerDate(value: string): Date {
+  if (!value) return new Date(NaN);
+  if (/Z|[+\-]\d{2}:?\d{2}$/.test(value)) return new Date(value);
+  return new Date(value + 'Z');
+}
+
 export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToEdit, onSaved }: BookingDialogProps) => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(localDateInputValue(new Date()));
   const [selectedTime, setSelectedTime] = useState("");
   const [duration, setDuration] = useState("1"); // hours as string (e.g. 1, 1.5)
   const [title, setTitle] = useState("");
@@ -43,7 +57,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
   // Derive time slots (include the edit time if custom e.g. 09:30)
   const timeSlots = useMemo(() => {
     if (bookingToEdit) {
-      const editDate = new Date(bookingToEdit.startTime);
+      const editDate = parseServerDate(bookingToEdit.startTime);
       const hh = editDate.getHours().toString().padStart(2, '0');
       const mm = editDate.getMinutes().toString().padStart(2, '0');
       const slot = `${hh}:${mm}`;
@@ -55,10 +69,10 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
   // Populate state when opening for edit
   useEffect(() => {
     if (open && bookingToEdit) {
-      const start = new Date(bookingToEdit.startTime);
-      const end = new Date(bookingToEdit.endTime);
+      const start = parseServerDate(bookingToEdit.startTime); // treat as UTC then display local
+      const end = parseServerDate(bookingToEdit.endTime);
       const diffHours = (end.getTime() - start.getTime()) / 3600000; // ms -> hours
-      setSelectedDate(start.toISOString().split('T')[0]);
+      setSelectedDate(localDateInputValue(start)); // use local date
       const hh = start.getHours().toString().padStart(2, '0');
       const mm = start.getMinutes().toString().padStart(2, '0');
       setSelectedTime(`${hh}:${mm}`);
@@ -67,8 +81,8 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
       setPurpose(bookingToEdit.purpose || "");
     }
     if (open && !bookingToEdit) {
-      // reset for create
-      setSelectedDate(new Date().toISOString().split('T')[0]);
+      const now = new Date();
+      setSelectedDate(localDateInputValue(now));
       setSelectedTime("");
       setDuration("1");
       setTitle("");
@@ -89,7 +103,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
           id: bookingToEdit.id,
           roomId,
           roomName,
-          date: selectedDate,
+          date: selectedDate, // local date string
           time: selectedTime,
           duration: `${duration}H`,
           title: title || undefined,
@@ -151,7 +165,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full px-3 py-2 bg-input border-2 border-border text-xs font-pixel"
-              min={new Date().toISOString().split('T')[0]}
+              min={localDateInputValue(new Date())}
             />
           </div>
 

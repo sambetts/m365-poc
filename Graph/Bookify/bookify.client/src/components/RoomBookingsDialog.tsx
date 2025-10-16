@@ -29,6 +29,15 @@ interface RoomBookingsDialogProps {
   onEditBooking?: (booking: Booking) => void;
 }
 
+// Parse server date string. If no timezone info, treat as UTC (server stores UTC but may serialize without 'Z').
+function parseServerDate(value: string): Date {
+  if (!value) return new Date(NaN);
+  // If already has Z or offset, normal parse
+  if (/Z|[+\-]\d{2}:?\d{2}$/.test(value)) return new Date(value);
+  // Append Z to force UTC interpretation
+  return new Date(value + "Z");
+}
+
 export const RoomBookingsDialog = ({
   open,
   onOpenChange,
@@ -61,7 +70,7 @@ export const RoomBookingsDialog = ({
   };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseServerDate(dateString);
     return {
       date: date.toLocaleDateString(),
       time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -69,8 +78,8 @@ export const RoomBookingsDialog = ({
   };
 
   const getDuration = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    const start = parseServerDate(startTime);
+    const end = parseServerDate(endTime);
     const diffMs = end.getTime() - start.getTime();
     const diffMins = Math.round(diffMs / 60000);
     const hours = Math.floor(diffMins / 60);
@@ -129,7 +138,7 @@ export const RoomBookingsDialog = ({
                 const start = formatDateTime(booking.startTime);
                 const end = formatDateTime(booking.endTime);
                 const duration = getDuration(booking.startTime, booking.endTime);
-                const isPast = new Date(booking.endTime) < new Date();
+                const isPast = parseServerDate(booking.endTime) < new Date();
 
                 return (
                   <div
