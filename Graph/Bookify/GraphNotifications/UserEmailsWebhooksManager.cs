@@ -14,9 +14,6 @@ public class UserEmailsWebhooksManager : UserBaseWebhooksManager
         EncryptionCertificateId = cert.Subject;
     }
 
-    // Email notifications with resources only support beta endpoint
-    protected override bool UseBetaEndpoint => true;
-
     /// <summary>
     /// We want the chat info back with the notification
     /// </summary>
@@ -69,9 +66,13 @@ public abstract class UserBaseWebhooksManager : BaseWebhooksManager
 /// https://docs.microsoft.com/en-us/graph/webhooks
 /// https://docs.microsoft.com/en-us/graph/webhooks-with-resource-data
 /// </summary>
-public abstract class BaseWebhooksManager : AbstractGraphManager
+public abstract class BaseWebhooksManager
 {
     private List<Subscription>? subsCache = null;
+
+    protected GraphServiceClient _client;
+    private readonly IWebhookConfig _config;
+    private readonly ILogger _logger;
 
     public abstract string ChangeType { get; }
     public abstract string Resource { get; }
@@ -83,14 +84,12 @@ public abstract class BaseWebhooksManager : AbstractGraphManager
     public virtual NotificationContext? ClientStateModel { get; } = null;
     public abstract DateTime MaxNotificationAgeFromToday { get; }
 
-    public BaseWebhooksManager(GraphServiceClient client, IWebhookConfig config, ILogger logger) : base(client, logger)
+    public BaseWebhooksManager(GraphServiceClient client, IWebhookConfig config, ILogger logger)
     {
-        if (logger is null)
-        {
-            throw new ArgumentNullException(nameof(logger));
-        }
-
         WebhookUrl = config.WebhookUrlOverride;
+        _client = client;
+        _config = config;
+        _logger = logger;
     }
 
     public async Task<bool> HaveValidSubscription()
@@ -185,26 +184,6 @@ public abstract class BaseWebhooksManager : AbstractGraphManager
             subsCache = subs?.Value?.Where(s => s.ChangeType == ChangeType && s.NotificationUrl == WebhookUrl && s.Resource == Resource).ToList() ?? new List<Subscription>();
         }
         return subsCache;
-    }
-}
-
-
-
-/// <summary>
-/// Something that interacts with Graph
-/// </summary>
-public abstract class AbstractGraphManager 
-{
-
-    protected GraphServiceClient _client;
-    protected readonly ILogger _trace;
-
-    protected virtual bool UseBetaEndpoint => false;
-
-    public AbstractGraphManager(GraphServiceClient client, ILogger trace)
-    {
-        _client = client;
-        _trace = trace;
     }
 }
 
