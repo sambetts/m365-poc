@@ -1,6 +1,4 @@
-﻿using CommonUtils;
-using Microsoft.Extensions.Logging;
-using Microsoft.Graph;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Models;
 
 namespace OfficeNotifications.Engine
@@ -10,7 +8,7 @@ namespace OfficeNotifications.Engine
     /// </summary>
     public class GraphUserManager : AbstractGraphManager
     {
-        public GraphUserManager(Config config, ILogger trace) :base (config, trace)
+        public GraphUserManager(Config config, ILogger trace) : base(config, trace)
         {
         }
 

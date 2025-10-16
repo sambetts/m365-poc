@@ -1,10 +1,8 @@
 ﻿using CommonUtils;
-using Microsoft.Graph;
-using OfficeNotifications.Engine.Models;
-using OfficeNotifications.Engine;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Models;
+using OfficeNotifications.Engine.Models;
+using System.Text.Json;
 
 namespace OfficeNotifications.Engine.Webhooks
 {

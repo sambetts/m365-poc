@@ -1,14 +1,12 @@
-﻿using CommonUtils;
-using Microsoft.Extensions.Azure;
+﻿using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OfficeNotifications.Engine;
-using System.Threading.Tasks;
 
 namespace OfficeNotifications.Functions
 {
-    public class Program 
+    public class Program
     {
         static async Task Main(string[] args)
         {
@@ -22,7 +20,6 @@ namespace OfficeNotifications.Functions
                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
                     c.Build();
                 })
-                .ConfigureFunctionsWorkerDefaults()
                 .ConfigureServices((context, services) =>
                 {
 

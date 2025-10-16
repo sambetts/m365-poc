@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace OfficeNotifications.Engine
+﻿namespace OfficeNotifications.Engine
 {
     /// <summary>
     /// Base for all logical exceptions
     /// </summary>
-    public abstract class SPOAzBlobException: Exception
+    public abstract class SPOAzBlobException : Exception
     {
     }
 
@@ -22,8 +16,8 @@ namespace OfficeNotifications.Engine
 
     public abstract class UpdateConflictAgainstOtherUserException : UpdateConflictException
     {
-        public UpdateConflictAgainstOtherUserException(string otherUser) :base()
-        { 
+        public UpdateConflictAgainstOtherUserException(string otherUser) : base()
+        {
             OtherUser = otherUser;
         }
 

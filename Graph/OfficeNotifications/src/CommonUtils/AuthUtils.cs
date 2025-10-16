@@ -9,7 +9,7 @@ namespace CommonUtils
         // Ensure threadsafe
         static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
-        private static Dictionary<string, X509Certificate2> _cachedCerts = new ();
+        private static Dictionary<string, X509Certificate2> _cachedCerts = new();
         public static async Task<X509Certificate2> RetrieveKeyVaultCertificate(string name, string tenantId, string clientId, string clientSecret, string keyVaultUrl)
         {
             await semaphoreSlim.WaitAsync();
@@ -27,9 +27,9 @@ namespace CommonUtils
             }
             finally
             {
-                semaphoreSlim.Release();    
+                semaphoreSlim.Release();
             }
-            
+
             return _cachedCerts[name];
 
         }

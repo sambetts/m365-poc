@@ -1,11 +1,9 @@
-using System;
-using System.Text.Json;
-using System.Threading.Tasks;
 using CommonUtils;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using OfficeNotifications.Engine;
 using OfficeNotifications.Engine.Models;
+using System.Text.Json;
 
 namespace OfficeNotifications.Functions
 {
@@ -40,7 +38,7 @@ namespace OfficeNotifications.Functions
             {
                 _tracer.LogError(ex.Message, ex);
             }
-            
+
             if (update != null && update.IsValid)
             {
                 foreach (var n in update.Notifications)

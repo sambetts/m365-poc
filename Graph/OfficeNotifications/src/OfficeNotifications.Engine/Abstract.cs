@@ -25,7 +25,7 @@ namespace OfficeNotifications.Engine
 
         protected virtual bool UseBetaEndpoint => false;
 
-        public AbstractGraphManager(Config config, ILogger trace) :base(config, trace)
+        public AbstractGraphManager(Config config, ILogger trace) : base(config, trace)
         {
             var options = new TokenCredentialOptions
             {

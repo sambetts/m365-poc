@@ -42,7 +42,7 @@ namespace OfficeNotifications.Engine
         {
             var db = redis.GetDatabase();
             var results = await db.ListRangeAsync(GetKey(userId), 0, -1);
-            var content = results.Where(r=> r.HasValue).Select(r => r.ToString());
+            var content = results.Where(r => r.HasValue).Select(r => r.ToString());
 
             var notifications = new List<UserNotification>();
             foreach (var c in content)
@@ -187,7 +187,7 @@ namespace OfficeNotifications.Engine
             }
 
             // Check all subs are valid
-            return results != null && results.All(r=> r);
+            return results != null && results.All(r => r);
         }
 
         #region Private Functions

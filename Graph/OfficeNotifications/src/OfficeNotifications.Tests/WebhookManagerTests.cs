@@ -1,6 +1,4 @@
-using CommonUtils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using OfficeNotifications.Engine;
 using OfficeNotifications.Engine.Webhooks;
 using System.Threading.Tasks;
 
@@ -46,7 +44,7 @@ namespace OfficeNotifications.Tests
         public async Task DoubleCreateWebhooksManagerTests()
         {
             var webhooksManager = await UserBaseWebhooksManager.LoadFromKeyvault<UserEmailsWebhooksManager>("webhooks", _config!.TestUserId, _config!, _tracer!);
-            
+
 
             await webhooksManager.CreateOrUpdateSubscription();
             var webHooksCreatedValidResult = await webhooksManager.HaveValidSubscription();

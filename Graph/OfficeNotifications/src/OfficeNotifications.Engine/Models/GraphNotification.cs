@@ -11,7 +11,7 @@ namespace OfficeNotifications.Engine.Models
         public List<ChangeNotificationForUserId> Notifications { get; set; } = new List<ChangeNotificationForUserId>();
 
         [JsonIgnore]
-        public bool IsValid => Notifications.Any() && Notifications.Where(n=> n.IsValid).Count() == Notifications.Count;
+        public bool IsValid => Notifications.Any() && Notifications.Where(n => n.IsValid).Count() == Notifications.Count;
     }
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace OfficeNotifications.Engine.Models
 
         public NotificationContext? NotificationContext
         {
-            get 
+            get
             {
                 NotificationContext? notificationContext = null;
                 if (!string.IsNullOrEmpty(ClientState))
@@ -71,9 +71,9 @@ namespace OfficeNotifications.Engine.Models
     public class ChangeNotificationForUserId : ChangeNotification
     {
         private string? _userId = null;
-        public string UserId 
+        public string UserId
         {
-            get 
+            get
             {
                 if (_userId == null)
                 {
@@ -87,7 +87,7 @@ namespace OfficeNotifications.Engine.Models
                         _userId = string.Empty;
                     }
                 }
-                return _userId; 
+                return _userId;
             }
         }
     }

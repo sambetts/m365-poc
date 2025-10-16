@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using OfficeNotifications.Engine;
 using OfficeNotifications.Engine.Models;
-using System;
 
 namespace OfficeNotifications.Tests
 {
@@ -45,10 +44,10 @@ namespace OfficeNotifications.Tests
 
         internal EncryptedGraphResourceDataContent ToEncryptedContent()
         {
-            return new EncryptedGraphResourceDataContent 
+            return new EncryptedGraphResourceDataContent
             {
-                Data = Data, 
-                DataKey = DataKey, 
+                Data = Data,
+                DataKey = DataKey,
                 EncryptionCertificateId = EncryptionCertificateId,
                 EncryptionCertificateThumbprint = EncryptionCertificateThumbprint,
                 DataSignature = DataSignature

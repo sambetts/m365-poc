@@ -1,14 +1,11 @@
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using OfficeNotifications.Engine;
 using OfficeNotifications.Engine.Models;
+using System.Net;
+using System.Text.Json;
 
 namespace OfficeNotifications.Functions
 {

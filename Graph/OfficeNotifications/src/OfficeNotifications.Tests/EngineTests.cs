@@ -1,9 +1,9 @@
+using Microsoft.Graph.Models;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using OfficeNotifications.Engine;
-using System.Threading.Tasks;
-using Microsoft.Graph;
-using System.Text.Json;
 using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace OfficeNotifications.Tests
 {
@@ -21,7 +21,7 @@ namespace OfficeNotifications.Tests
             // Chat message test
             var c = new ChatMessage
             {
-                From = new ChatMessageFromIdentitySet { User = new Identity { Id = _config!.TestUserId  } }
+                From = new ChatMessageFromIdentitySet { User = new Identity { Id = _config!.TestUserId } }
             };
             await manager.ProcessWebhookMessage(new Engine.Models.ChangeNotificationForUserId
             {
