@@ -3,8 +3,22 @@ using Bookify.Server.Data;
 using Bookify.Server.Services;
 using Azure.Identity;
 using Microsoft.Graph;
+using Bookify.Server; // For AppConfig
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Create AppConfig from IConfiguration explicitly so it self-populates
+var appConfig = new AppConfig(builder.Configuration);
+
+// Validate required settings
+if (string.IsNullOrWhiteSpace(appConfig.ConnectionStrings?.DefaultConnection))
+    throw new InvalidOperationException("ConnectionStrings:DefaultConnection is not configured");
+if (string.IsNullOrWhiteSpace(appConfig.AzureAd?.TenantId) ||
+    string.IsNullOrWhiteSpace(appConfig.AzureAd.ClientId) ||
+    string.IsNullOrWhiteSpace(appConfig.AzureAd.ClientSecret))
+    throw new InvalidOperationException("AzureAd configuration (TenantId / ClientId / ClientSecret) is incomplete");
+
+builder.Services.AddSingleton(appConfig);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -12,7 +26,7 @@ builder.Services.AddControllers();
 // Configure Entity Framework Core with SQL Server
 builder.Services.AddDbContext<BookifyDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        appConfig.ConnectionStrings.DefaultConnection,
         sqlOptions => sqlOptions.EnableRetryOnFailure()
     )
 );
@@ -20,12 +34,9 @@ builder.Services.AddDbContext<BookifyDbContext>(options =>
 // Register GraphServiceClient (application permissions)
 builder.Services.AddSingleton<GraphServiceClient>(sp =>
 {
-    var config = sp.GetRequiredService<IConfiguration>();
-    var tenantId = config["AzureAd:TenantId"] ?? throw new InvalidOperationException("AzureAd:TenantId not configured");
-    var clientId = config["AzureAd:ClientId"] ?? throw new InvalidOperationException("AzureAd:ClientId not configured");
-    var clientSecret = config["AzureAd:ClientSecret"] ?? throw new InvalidOperationException("AzureAd:ClientSecret not configured");
-    var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-    return new GraphServiceClient(credential, new[] { "https://graph.microsoft.com/.default" });
+    var cfg = sp.GetRequiredService<AppConfig>();
+    var credential = new ClientSecretCredential(cfg.AzureAd.TenantId, cfg.AzureAd.ClientId, cfg.AzureAd.ClientSecret);
+    return new GraphServiceClient(credential, ["https://graph.microsoft.com/.default"]);
 });
 
 // Register application services
@@ -64,7 +75,7 @@ using (var scope = app.Services.CreateScope())
         if (isNewDatabase)
         {
             // Assign single configured mailbox UPN to all rooms only for a newly created database
-            var sharedUpn = builder.Configuration["SharedRoomMailboxUpn"];
+            var sharedUpn = appConfig.SharedRoomMailboxUpn;
             if (!string.IsNullOrWhiteSpace(sharedUpn))
             {
                 sharedUpn = sharedUpn.Trim();
