@@ -1,34 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 
 namespace GraphNotifications;
 
-public class UserEmailsWebhooksManager : UserBaseWebhooksManager
-{
-    public UserEmailsWebhooksManager(GraphServiceClient client, string userId, X509Certificate2 cert, IWebhookConfig config, ILogger<UserEmailsWebhooksManager> logger) : base(client, userId, config, logger)
-    {
-        EncryptionCertificate = Convert.ToBase64String(cert.Export(X509ContentType.Cert));
-        EncryptionCertificateId = cert.Subject;
-    }
-
-    /// <summary>
-    /// We want the chat info back with the notification
-    /// </summary>
-    public override bool IncludeResourceData { get => true; }
-
-    public override string ChangeType => "created";
-
-    /// <summary>
-    /// Graph won't let us create webhooks with resource-data for messages without specifying fields
-    /// </summary>
-    public override string Resource => $"/users/{_userId}/messages?$select=From";
-
-    public override DateTime MaxNotificationAgeFromToday => DateTime.Now.AddMinutes(55);
-
-}
 
 /// <summary>
 /// Webhook manager for a user
@@ -52,7 +28,7 @@ public abstract class UserBaseWebhooksManager : BaseWebhooksManager
     public static async Task<T> LoadFromKeyvault<T>(string certName, string userId, IWebhookConfig config, ILogger trace)
         where T : UserBaseWebhooksManager
     {
-        
+
         var cert = await AuthUtils.RetrieveKeyVaultCertificate(certName, config.AzureAdConfig.TenantId, config.AzureAdConfig.ClientId, config.AzureAdConfig.ClientSecret, config.KeyVaultUrl);
         var instance = Activator.CreateInstance(typeof(T), [userId, cert, config, trace]);
 
@@ -63,8 +39,7 @@ public abstract class UserBaseWebhooksManager : BaseWebhooksManager
 
 /// <summary>
 /// Manages webhooks for update subscriptions.
-/// https://docs.microsoft.com/en-us/graph/webhooks
-/// https://docs.microsoft.com/en-us/graph/webhooks-with-resource-data
+/// https://learn.microsoft.com/en-us/graph/change-notifications-with-resource-data
 /// </summary>
 public abstract class BaseWebhooksManager
 {
@@ -187,9 +162,3 @@ public abstract class BaseWebhooksManager
     }
 }
 
-
-public class NotificationContext
-{
-    public string ForUserId { get; set; } = string.Empty;
-
-}

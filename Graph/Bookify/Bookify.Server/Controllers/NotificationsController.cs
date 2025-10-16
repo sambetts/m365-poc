@@ -1,21 +1,15 @@
-using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using Bookify.Server.Services;
+using GraphNotifications;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Graph;
+using System.Text.Json;
 
 namespace Bookify.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NotificationsController : ControllerBase
+public class NotificationsController(GraphServiceClient client, AppConfig config, ILogger<NotificationsController> logger, ILogger<WebhookContentManager> webhookLogger, IBookingService bookingService) : ControllerBase
 {
-    private readonly ILogger<NotificationsController> _logger;
-    private readonly IBookingService _bookingService;
-
-    public NotificationsController(ILogger<NotificationsController> logger, IBookingService bookingService)
-    {
-        _logger = logger;
-        _bookingService = bookingService;
-    }
 
     // Microsoft Graph validation handshake (GET with validationToken) per docs:
     // https://learn.microsoft.com/graph/webhooks#notification-endpoint-validation
@@ -24,7 +18,7 @@ public class NotificationsController : ControllerBase
     {
         if (!string.IsNullOrEmpty(validationToken))
         {
-            _logger.LogInformation("Graph validation handshake received. Returning validation token (length {Length}).", validationToken.Length);
+            logger.LogInformation("Graph validation handshake received. Returning validation token (length {Length}).", validationToken.Length);
             // MUST return the raw token string as plain text within 10 seconds.
             return new ContentResult
             {
@@ -61,7 +55,7 @@ public class NotificationsController : ControllerBase
         // Defensive: handle a (misrouted) validationToken on POST too.
         if (Request.Query.TryGetValue("validationToken", out var vt) && !string.IsNullOrEmpty(vt))
         {
-            _logger.LogInformation("Graph validation token received on POST (unusual). Returning token.");
+            logger.LogInformation("Graph validation token received on POST (unusual). Returning token.");
             return new ContentResult
             {
                 Content = vt!,
@@ -76,30 +70,38 @@ public class NotificationsController : ControllerBase
             var raw = await reader.ReadToEndAsync();
             if (string.IsNullOrWhiteSpace(raw))
             {
-                _logger.LogWarning("Received empty notification payload");
+                logger.LogWarning("Received empty notification payload");
                 return Ok();
             }
-
-            GraphNotificationCollection? payload = null;
+            GraphNotification? payload = null;
             try
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                payload = JsonSerializer.Deserialize<GraphNotificationCollection>(raw, options);
+                payload = JsonSerializer.Deserialize<GraphNotification>(raw, options);
             }
             catch (Exception dex)
             {
-                _logger.LogError(dex, "Failed to deserialize Graph notification payload. Raw: {Raw}", raw);
+                logger.LogError(dex, "Failed to deserialize Graph notification payload. Raw: {Raw}", raw);
             }
 
-            if (payload?.Value != null && payload.Value.Count > 0)
+            var contentDecryptingCert = await AuthUtils.RetrieveKeyVaultCertificate("webhooks", config.AzureAdConfig.TenantId, config.AzureAdConfig.ClientId, config.AzureAdConfig.ClientSecret, config.KeyVaultUrl);
+            var webhookContentManager = new WebhookContentManager(client, contentDecryptingCert, webhookLogger, config);
+
+
+            if (payload != null && payload.IsValid)
             {
                 var updates = 0; var deletions = 0; var skipped = 0;
-                foreach (var n in payload.Value)
+                foreach (var n in payload.Notifications)
                 {
-                    _logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
+                    if (n.EncryptedResourceDataContent != null)
+                    {
+                        var notificationContentJson = n.EncryptedResourceDataContent.DecryptResourceDataContent(contentDecryptingCert);
+                    }
+
+                    logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
 
                     // Extract event id: prefer resourceData.id then last segment of resource path
-                    var eventId = n.ResourceData?.Id;
+                    var eventId = n.AdditionalData["resourceData:id"]?.ToString();
                     if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
                     {
                         var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -110,35 +112,36 @@ public class NotificationsController : ControllerBase
                     }
                     if (string.IsNullOrWhiteSpace(eventId))
                     {
-                        _logger.LogDebug("Skipping notification with no resolvable event id.");
+                        logger.LogDebug("Skipping notification with no resolvable event id.");
                         skipped++;
                         continue;
                     }
 
                     // Process change notification via BookingService
-                    switch (n.ChangeType?.ToLowerInvariant())
+                    var type = n.ChangeType ?? Microsoft.Graph.Models.ChangeType.Deleted;
+                    switch (type)
                     {
-                        case "deleted":
-                            if (await _bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
+                        case Microsoft.Graph.Models.ChangeType.Deleted:
+                            if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
                             break;
-                        case "updated":
-                            if (await _bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
+                        case Microsoft.Graph.Models.ChangeType.Updated:
+                            if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
                             break;
                         default:
                             skipped++;
                             break;
                     }
                 }
-                _logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
+                logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
             }
             else
             {
-                _logger.LogWarning("Graph notification payload had no value array. Raw: {Raw}", raw);
+                logger.LogWarning("Graph notification payload had no value array. Raw: {Raw}", raw);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling Graph notifications POST");
+            logger.LogError(ex, "Error handling Graph notifications POST");
         }
 
         // Always respond 200 quickly per webhook contract
