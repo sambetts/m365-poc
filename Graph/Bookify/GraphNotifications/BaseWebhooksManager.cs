@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using System.Text.Json;
 
 namespace GraphNotifications;
 
@@ -9,31 +8,20 @@ namespace GraphNotifications;
 /// Manages webhooks for update subscriptions.
 /// https://learn.microsoft.com/en-us/graph/change-notifications-with-resource-data
 /// </summary>
-public abstract class BaseWebhooksManager
+public abstract class BaseWebhooksManager(GraphServiceClient client, IWebhookConfig config, ILogger logger)
 {
     private List<Subscription>? subsCache = null;
 
-    protected GraphServiceClient _client;
-    private readonly IWebhookConfig _config;
-    private readonly ILogger _logger;
+    protected GraphServiceClient _client = client;
 
     public abstract string ChangeType { get; }
     public abstract string Resource { get; }
 
     public virtual bool IncludeResourceData { get; } = false;
     public string EncryptionCertificate { get; set; } = string.Empty;
-    public string WebhookUrl { get; set; } = string.Empty;
+    public string WebhookUrl { get; set; } = config.WebhookUrlOverride;
     public string EncryptionCertificateId { get; set; } = string.Empty;
-    public virtual NotificationContext? ClientStateModel { get; } = null;
     public abstract DateTime MaxNotificationAgeFromToday { get; }
-
-    public BaseWebhooksManager(GraphServiceClient client, IWebhookConfig config, ILogger logger)
-    {
-        WebhookUrl = config.WebhookUrlOverride;
-        _client = client;
-        _config = config;
-        _logger = logger;
-    }
 
     public async Task<bool> HaveValidSubscription()
     {
@@ -74,16 +62,6 @@ public abstract class BaseWebhooksManager
             // Delete everything with this URL & recreate
             await DeleteWebhooks();
 
-            var state = string.Empty;
-
-            if (ClientStateModel != null)
-            {
-                state = JsonSerializer.Serialize(ClientStateModel);
-                if (state != null && state.Length > 128)        // Max len for this field
-                {
-                    throw new InvalidOperationException("Client state too long");
-                }
-            }
 
             Subscription sub;
             if (IncludeResourceData)
@@ -96,8 +74,7 @@ public abstract class BaseWebhooksManager
                     NotificationUrl = WebhookUrl,
                     IncludeResourceData = true,
                     EncryptionCertificate = EncryptionCertificate,
-                    EncryptionCertificateId = EncryptionCertificateId,
-                    ClientState = state
+                    EncryptionCertificateId = EncryptionCertificateId
                 };
             }
             else
@@ -105,7 +82,6 @@ public abstract class BaseWebhooksManager
                 sub = new Subscription
                 {
                     Resource = Resource,
-                    ClientState = state,
                     ChangeType = ChangeType,
                     ExpirationDateTime = MaxNotificationAgeFromToday,
                     NotificationUrl = WebhookUrl,

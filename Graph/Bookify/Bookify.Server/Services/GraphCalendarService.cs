@@ -20,7 +20,7 @@ public class GraphCalendarService : IExternalCalendarService
         _logger = logger;
     }
 
-    public async Task<string?> CreateRoomEventAsync(Bookify.Server.Models.Room room, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
+    public async Task<string?> CreateEventAsync(Bookify.Server.Models.Room room, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
         try
@@ -72,7 +72,7 @@ public class GraphCalendarService : IExternalCalendarService
         }
     }
 
-    public async Task<bool> UpdateRoomEventAsync(Bookify.Server.Models.Room room, string eventId, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
+    public async Task<bool> UpdateEventAsync(Bookify.Server.Models.Room room, string eventId, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
         try
@@ -153,18 +153,21 @@ public class GraphCalendarService : IExternalCalendarService
         }
     }
 
-    public async Task<(bool success, DateTime? startUtc, DateTime? endUtc, string? subject)> GetRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
+    public async Task<(bool success, DateTime? startUtc, DateTime? endUtc, string? subject, List<string> attendees)> GetRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
         try
         {
             _logger.LogDebug(ServiceLogEvents.ExternalFetch, "Fetching Graph event {EventId} for room {RoomId}", eventId, room.Id);
-            var evt = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(cancellationToken: ct);
+            var evt = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
+            {
+                rc.QueryParameters.Select = new[] { "subject", "start", "end", "attendees" };
+            }, cancellationToken: ct);
             sw.Stop();
             if (evt == null)
             {
                 _logger.LogWarning(ServiceLogEvents.ExternalFetch, "Event {EventId} for room {RoomId} not found (Elapsed {ElapsedMs}ms)", eventId, room.Id, sw.ElapsedMilliseconds);
-                return (false, null, null, null);
+                return (false, null, null, null, new List<string>());
             }
             DateTime? Parse(DateTimeTimeZone? dtz)
             {
@@ -177,14 +180,19 @@ public class GraphCalendarService : IExternalCalendarService
                 }
                 return null;
             }
-            _logger.LogInformation(ServiceLogEvents.ExternalFetch, "Fetched event {EventId} for room {RoomId} in {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
-            return (true, Parse(evt.Start), Parse(evt.End), evt.Subject);
+            var attendeeEmails = evt.Attendees?.Select(a => a.EmailAddress?.Address)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a!.Trim().ToLowerInvariant())
+                .Distinct()
+                .ToList() ?? new List<string>();
+            _logger.LogInformation(ServiceLogEvents.ExternalFetch, "Fetched event {EventId} for room {RoomId} in {ElapsedMs}ms (Attendees={AttendeeCount})", eventId, room.Id, sw.ElapsedMilliseconds, attendeeEmails.Count);
+            return (true, Parse(evt.Start), Parse(evt.End), evt.Subject, attendeeEmails);
         }
         catch (Exception ex)
         {
             sw.Stop();
             _logger.LogWarning(ex, "Failed to fetch event {EventId} for room {RoomId} after {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
-            return (false, null, null, null);
+            return (false, null, null, null, new List<string>());
         }
     }
 }

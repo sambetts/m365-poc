@@ -12,6 +12,7 @@ public class Booking
     public string? Body { get; set; } // Meeting body / description (renamed from Purpose)
     public DateTime CreatedAt { get; set; }
     public string? CalendarEventId { get; set; } // Graph event id
+    public List<string> Attendees { get; set; } = new(); // Mirrored attendee email addresses from calendar event (excluding room resource)
 
     // Navigation property
     public Room? Room { get; set; }

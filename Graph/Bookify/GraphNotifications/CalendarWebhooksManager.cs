@@ -35,9 +35,3 @@ public class CalendarWebhooksManager : BaseWebhooksManager
     public override DateTime MaxNotificationAgeFromToday => DateTime.Now.AddMinutes(55);
 
 }
-
-public class NotificationContext
-{
-    public string ForUserId { get; set; } = string.Empty;
-
-}

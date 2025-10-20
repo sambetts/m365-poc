@@ -9,9 +9,21 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
 {
     private static DateTime AsUtc(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
+    private void LogUpdate(string action, Booking booking)
+    {
+        context.UpdateLogs.Add(new UpdateLog
+        {
+            BookingId = booking.Id,
+            CalendarEventId = booking.CalendarEventId,
+            OccurredAtUtc = DateTime.UtcNow,
+            Source = "notification",
+            Action = action
+        });
+    }
+
     // Centralized comparison & application logic for updating a Booking from Graph event data.
-    // Applies provided (nullable) UTC start/end times and subject, returning true if any field changed.
-    private static bool ApplyEventDataToBooking(Booking booking, DateTime? startUtc, DateTime? endUtc, string? subject)
+    // Applies provided (nullable) UTC start/end times, subject and attendees, returning true if any field changed.
+    private static bool ApplyEventDataToBooking(Booking booking, DateTime? startUtc, DateTime? endUtc, string? subject, List<string>? attendees)
     {
         var changed = false;
         if (startUtc.HasValue && booking.StartTime != startUtc.Value)
@@ -29,6 +41,17 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             booking.Title = subject;
             changed = true;
         }
+        if (attendees != null)
+        {
+            // Normalise incoming list
+            var normalisedIncoming = attendees.Select(a => a.Trim().ToLowerInvariant()).Distinct().OrderBy(a => a).ToList();
+            var normalisedExisting = booking.Attendees.Select(a => a.Trim().ToLowerInvariant()).Distinct().OrderBy(a => a).ToList();
+            if (!normalisedIncoming.SequenceEqual(normalisedExisting))
+            {
+                booking.Attendees = normalisedIncoming; // replace
+                changed = true;
+            }
+        }
         return changed;
     }
 
@@ -43,6 +66,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
         context.Bookings.Remove(booking);
+        LogUpdate("CalendarEventDeleted", booking);
         await context.SaveChangesAsync(ct);
         sw.Stop();
         logger.LogInformation(ServiceLogEvents.ExternalDelete, "Removed booking {BookingId} due to external calendar event deletion {EventId} in {ElapsedMs}ms", booking.Id, eventId, sw.ElapsedMilliseconds);
@@ -72,16 +96,29 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         }
         var subject = eventUpdateFragment.Subject;
 
-        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject);
+        // Fragment may include attendees (depends on subscription shape). Extract if present.
+        List<string>? attendees = null;
+        if (eventUpdateFragment.Attendees?.Count > 0)
+        {
+            attendees = eventUpdateFragment.Attendees
+                .Select(a => a.EmailAddress?.Address)
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a!.Trim().ToLowerInvariant())
+                .Distinct()
+                .ToList();
+        }
+
+        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject, attendees);
 
         if (changed)
         {
+            LogUpdate("CalendarEventUpdated", booking);
             await context.SaveChangesAsync(ct);
             logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from fragment {EventId}", booking.Id, eventId);
         }
         else
         {
-            logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from fragment {EventId} - no changes detected", booking.Id, eventId);
+            logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from fragment {EventId} - no changes detected", booking.Id, eventId);
         }
         sw.Stop();
         logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed fragment update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);
@@ -99,7 +136,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
-        var (success, startUtc, endUtc, subject) = await calendarService.GetRoomEventAsync(booking.Room, eventId, ct);
+        var (success, startUtc, endUtc, subject, attendees) = await calendarService.GetRoomEventAsync(booking.Room, eventId, ct);
         if (!success)
         {
             sw.Stop();
@@ -107,16 +144,17 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
-        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject);
+        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject, attendees);
 
         if (changed)
         {
+            LogUpdate("CalendarEventUpdated", booking);
             await context.SaveChangesAsync(ct);
             logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from full fetch {EventId}", booking.Id, eventId);
         }
         else
         {
-            logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from full fetch {EventId} - no changes detected", booking.Id, eventId);
+            logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from full fetch {EventId} - no changes detected", booking.Id, eventId);
         }
         sw.Stop();
         logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed full update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);

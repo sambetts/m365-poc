@@ -45,18 +45,32 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
                                                      b.EndTime > startUtc);
     }
 
+    private async Task LogAsync(string action, Booking booking, string source)
+    {
+        context.UpdateLogs.Add(new UpdateLog
+        {
+            BookingId = booking.Id,
+            CalendarEventId = booking.CalendarEventId,
+            OccurredAtUtc = DateTime.UtcNow,
+            Source = source,
+            Action = action
+        });
+        await context.SaveChangesAsync();
+    }
+
     // --- Calendar operations (internal create/update/delete) ----------------
     private async Task LinkCalendarEventAsync(Booking booking, Room room, CancellationToken ct = default)
     {
         try
         {
             var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, room.Name);
-            var eventId = await calendarService.CreateRoomEventAsync(room, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
+            var eventId = await calendarService.CreateEventAsync(room, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
             if (!string.IsNullOrEmpty(eventId))
             {
                 booking.CalendarEventId = eventId;
                 await context.SaveChangesAsync(ct);
                 logger.LogInformation(ServiceLogEvents.ExternalCreate, "Linked booking {BookingId} with calendar event {EventId}", booking.Id, eventId);
+                await LogAsync("CalendarEventCreated", booking, "web-app");
             }
             else
             {
@@ -83,13 +97,18 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
                 {
                     logger.LogWarning(ServiceLogEvents.ExternalDelete, "Failed to delete old calendar event {EventId} for booking {BookingId} during room move", booking.CalendarEventId, booking.Id);
                 }
+                else
+                {
+                    await LogAsync("CalendarEventDeleted", booking, "web-app");
+                }
                 var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, newRoom.Name);
-                var newEventId = await calendarService.CreateRoomEventAsync(newRoom, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
+                var newEventId = await calendarService.CreateEventAsync(newRoom, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
                 if (!string.IsNullOrEmpty(newEventId))
                 {
                     booking.CalendarEventId = newEventId;
                     await context.SaveChangesAsync(ct);
                     logger.LogInformation(ServiceLogEvents.ExternalCreate, "Recreated calendar event {EventId} for booking {BookingId}", newEventId, booking.Id);
+                    await LogAsync("CalendarEventCreated", booking, "web-app");
                 }
                 else
                 {
@@ -99,10 +118,11 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
             else
             {
                 var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, newRoom.Name);
-                var updated = await calendarService.UpdateRoomEventAsync(newRoom, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
+                var updated = await calendarService.UpdateEventAsync(newRoom, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
                 if (updated)
                 {
                     logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Updated calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+                    await LogAsync("CalendarEventUpdated", booking, "web-app");
                 }
                 else
                 {
@@ -125,6 +145,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
             if (deletedEvent)
             {
                 logger.LogInformation(ServiceLogEvents.ExternalDelete, "Deleted calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+                await LogAsync("CalendarEventDeleted", booking, "web-app");
             }
             else
             {
@@ -222,6 +243,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         logger.LogInformation(ServiceLogEvents.Create, "Created booking {BookingId} for Room={RoomId}", booking.Id, booking.RoomId);
+        await LogAsync("BookingCreated", booking, "web-app");
 
         await LinkCalendarEventAsync(booking, room);
         sw.Stop();
@@ -283,6 +305,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
 
         await context.SaveChangesAsync();
         logger.LogInformation(ServiceLogEvents.Update, "Updated booking {Id}", id);
+        await LogAsync("BookingUpdated", booking, "web-app");
 
         await SyncCalendarEventOnUpdateAsync(booking, newRoom, roomChanged, originalRoom);
 
@@ -308,6 +331,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
 
         context.Bookings.Remove(booking);
         await context.SaveChangesAsync();
+        await LogAsync("BookingDeleted", booking, "web-app");
         sw.Stop();
         logger.LogInformation(ServiceLogEvents.Delete, "Deleted booking {Id} in {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
         return true;

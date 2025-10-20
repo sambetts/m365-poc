@@ -8,12 +8,16 @@ namespace GraphNotifications;
 public class AuthUtils
 {
     // Ensure threadsafe
-    static SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+    static SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
 
     private static Dictionary<string, X509Certificate2> _cachedCerts = new();
+
+    /// <summary>
+    /// Load certificate from Azure Key Vault
+    /// </summary>
     public static async Task<X509Certificate2> RetrieveKeyVaultCertificate(string name, string tenantId, string clientId, string clientSecret, string keyVaultUrl)
     {
-        await semaphoreSlim.WaitAsync();
+        await _semaphoreSlim.WaitAsync();
         try
         {
             if (!_cachedCerts.ContainsKey(name))
@@ -28,10 +32,9 @@ public class AuthUtils
         }
         finally
         {
-            semaphoreSlim.Release();
+            _semaphoreSlim.Release();
         }
 
         return _cachedCerts[name];
-
     }
 }

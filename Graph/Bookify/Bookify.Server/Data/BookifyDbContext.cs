@@ -11,6 +11,7 @@ public class BookifyDbContext : DbContext
 
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Booking> Bookings { get; set; }
+    public DbSet<UpdateLog> UpdateLogs { get; set; } // New table
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,12 +46,30 @@ public class BookifyDbContext : DbContext
             entity.Property(e => e.Body).HasMaxLength(500); // Body replaces Purpose
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.CalendarEventId).HasMaxLength(200);
+            entity.Property(e => e.Attendees)
+                .HasConversion(
+                    v => string.Join(',', v),
+                    v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Trim()).Where(a => a.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList())
+                .Metadata.SetValueComparer(
+                    new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+                        (c1, c2) => c1!.SequenceEqual(c2!),
+                        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                        c => c.ToList()));
 
             // Configure relationship
             entity.HasOne(e => e.Room)
                   .WithMany(r => r.Bookings)
                   .HasForeignKey(e => e.RoomId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure UpdateLog entity
+        modelBuilder.Entity<UpdateLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Source).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.CalendarEventId).HasMaxLength(200);
         });
 
         // Seed initial data with placeholder UPN to be overwritten at runtime from configuration
