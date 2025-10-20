@@ -9,6 +9,29 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
 {
     private static DateTime AsUtc(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
+    // Centralized comparison & application logic for updating a Booking from Graph event data.
+    // Applies provided (nullable) UTC start/end times and subject, returning true if any field changed.
+    private static bool ApplyEventDataToBooking(Booking booking, DateTime? startUtc, DateTime? endUtc, string? subject)
+    {
+        var changed = false;
+        if (startUtc.HasValue && booking.StartTime != startUtc.Value)
+        {
+            booking.StartTime = startUtc.Value;
+            changed = true;
+        }
+        if (endUtc.HasValue && booking.EndTime != endUtc.Value)
+        {
+            booking.EndTime = endUtc.Value;
+            changed = true;
+        }
+        if (!string.IsNullOrWhiteSpace(subject) && booking.Title != subject)
+        {
+            booking.Title = subject;
+            changed = true;
+        }
+        return changed;
+    }
+
     public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -37,30 +60,19 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
-        var changed = false;
+        DateTime? startUtc = null;
         if (eventUpdateFragment.Start != null && DateTime.TryParse(eventUpdateFragment.Start.DateTime, out var start))
         {
-            var startUtc = AsUtc(start);
-            if (booking.StartTime != startUtc)
-            {
-                booking.StartTime = startUtc;
-                changed = true;
-            }
+            startUtc = AsUtc(start);
         }
+        DateTime? endUtc = null;
         if (eventUpdateFragment.End != null && DateTime.TryParse(eventUpdateFragment.End.DateTime, out var end))
         {
-            var endUtc = AsUtc(end);
-            if (booking.EndTime != endUtc)
-            {
-                booking.EndTime = endUtc;
-                changed = true;
-            }
+            endUtc = AsUtc(end);
         }
-        if (!string.IsNullOrWhiteSpace(eventUpdateFragment.Subject) && booking.Title != eventUpdateFragment.Subject)
-        {
-            booking.Title = eventUpdateFragment.Subject;
-            changed = true;
-        }
+        var subject = eventUpdateFragment.Subject;
+
+        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject);
 
         if (changed)
         {
@@ -95,18 +107,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
-        var changed = false;
-        if (startUtc.HasValue && endUtc.HasValue && (booking.StartTime != startUtc.Value || booking.EndTime != endUtc.Value))
-        {
-            booking.StartTime = startUtc.Value;
-            booking.EndTime = endUtc.Value;
-            changed = true;
-        }
-        if (!string.IsNullOrWhiteSpace(subject) && booking.Title != subject)
-        {
-            booking.Title = subject;
-            changed = true;
-        }
+        var changed = ApplyEventDataToBooking(booking, startUtc, endUtc, subject);
 
         if (changed)
         {
