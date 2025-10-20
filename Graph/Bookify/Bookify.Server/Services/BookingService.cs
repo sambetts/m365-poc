@@ -435,6 +435,10 @@ public class BookingService : IBookingService
             await _context.SaveChangesAsync(ct);
             _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from fragment {EventId}", booking.Id, eventId);
         }
+        else
+        {
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from fragment {EventId} - no changes detected", booking.Id, eventId);
+        }
         sw.Stop();
         _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed fragment update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);
         return changed;
@@ -476,6 +480,10 @@ public class BookingService : IBookingService
         {
             await _context.SaveChangesAsync(ct);
             _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from full fetch {EventId}", booking.Id, eventId);
+        }
+        else
+        {
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Skipped updating booking {BookingId} from full fetch {EventId} - no changes detected", booking.Id, eventId);
         }
         sw.Stop();
         _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed full update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);
