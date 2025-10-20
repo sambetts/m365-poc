@@ -1,5 +1,4 @@
 using GraphNotifications;
-using Microsoft.Extensions.Configuration;
 
 namespace Bookify.Server;
 

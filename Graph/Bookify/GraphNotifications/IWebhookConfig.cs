@@ -7,11 +7,11 @@ public interface IWebhookConfig
     public string WebhookUrlOverride { get; }
 }
 
-public interface IAzureAdConfig 
+public interface IAzureAdConfig
 {
     public string ClientSecret { get; }
 
-    public string ClientId { get; } 
+    public string ClientId { get; }
 
     public string TenantId { get; }
 }

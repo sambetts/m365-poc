@@ -1,8 +1,6 @@
 ﻿using Microsoft.Graph.Models;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace GraphNotifications;
 

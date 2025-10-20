@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.Json;
 
 namespace GraphNotifications;
 
@@ -28,9 +26,11 @@ public class CalendarWebhooksManager : BaseWebhooksManager
     public override string ChangeType => "created,updated,deleted";
 
     /// <summary>
-    /// Graph won't let us create webhooks with resource-data for most entities without specifying fields
+    /// User ID specific calendar events with selected fields that you can update from the Outlook UI
     /// </summary>
-    public override string Resource => $"/users/{_userId}/events?$select=subject";
+    public override string Resource => $"/users/{_userId}/events?$select=" +
+        $"subject,body,start,end,location,locations,attendees,isAllDay,recurrence,reminderMinutesBeforeStart,isReminderOn,showAs,sensitivity,importance,categories,responseRequested," +
+        $"allowNewTimeProposals,isOnlineMeeting,onlineMeetingProvider,onlineMeetingUrl,hasAttachments,isCancelled";
 
     public override DateTime MaxNotificationAgeFromToday => DateTime.Now.AddMinutes(55);
 

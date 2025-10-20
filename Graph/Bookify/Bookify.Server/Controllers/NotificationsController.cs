@@ -1,7 +1,6 @@
 using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Serialization;
@@ -118,6 +117,9 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
                                     DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
                                 });
 
+                                var updated = await client.Users[config.SharedRoomMailboxUpn].Events["AAMkADBjN2MxYTYxLTE4YjMtNGVjMy1iNTFjLWYxZTNjMTBkYmVlNgBGAAAAAACT06eRK7fDQZjjUnvGRYzqBwBKvLRJEfAmQaLMd_biWlXUAAAAAAENAABKvLRJEfAmQaLMd_biWlXUAAAC2AILAAA="]
+                                    .GetAsync();
+
                                 if (await bookingService.ApplyCalendarEventUpdateFromFragmentAsync(eventId, eventUpdate, ct)) updates++; else skipped++;
 
                             }
@@ -135,7 +137,7 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
                             skipped++;
                             break;
                     }
-                    
+
                 }
                 logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
             }

@@ -12,7 +12,7 @@ public class Booking
     public string? Purpose { get; set; }
     public DateTime CreatedAt { get; set; }
     public string? CalendarEventId { get; set; } // Graph event id
-    
+
     // Navigation property
     public Room? Room { get; set; }
 }

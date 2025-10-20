@@ -9,7 +9,7 @@ public class Room
     public bool Available { get; set; }
     public int Floor { get; set; }
     public required string MailboxUpn { get; set; } // Office 365 mailbox UPN
-    
+
     // Navigation property
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
 }

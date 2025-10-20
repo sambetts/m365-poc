@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using Bookify.Server.DTOs;
 using Bookify.Server.Services;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Bookify.Server.Controllers;
 

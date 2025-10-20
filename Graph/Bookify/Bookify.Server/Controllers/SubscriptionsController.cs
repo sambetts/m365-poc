@@ -1,7 +1,6 @@
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
 
 namespace Bookify.Server.Controllers;

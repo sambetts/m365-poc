@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
+using Azure.Identity;
+using Bookify.Server; // For AppConfig
 using Bookify.Server.Data;
 using Bookify.Server.Services;
-using Azure.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
-using Bookify.Server; // For AppConfig
 
 var builder = WebApplication.CreateBuilder(args);
 

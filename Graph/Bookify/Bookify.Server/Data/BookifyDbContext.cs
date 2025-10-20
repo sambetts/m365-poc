@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Bookify.Server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bookify.Server.Data;
 
@@ -45,7 +45,7 @@ public class BookifyDbContext : DbContext
             entity.Property(e => e.Purpose).HasMaxLength(500);
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.CalendarEventId).HasMaxLength(200);
-            
+
             // Configure relationship
             entity.HasOne(e => e.Room)
                   .WithMany(r => r.Bookings)
