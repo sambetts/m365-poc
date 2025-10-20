@@ -1,5 +1,6 @@
 using Bookify.Server.DTOs;
 using Microsoft.Graph.Models;
+using GraphEvent = Microsoft.Graph.Models.Event;
 
 namespace Bookify.Server.Services;
 
@@ -21,7 +22,7 @@ public interface IBookingService
     Task<IEnumerable<BookingResponse>> GetUserBookingsAsync(string email);
 
     // Calendar sync operations invoked by webhook notifications
-    Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default);
+    Task<bool> UpdateBookingFromCalendarEventAsync(string eventId, CancellationToken ct = default);
     Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default);
-    Task<bool> ApplyCalendarEventUpdateFromExternalFragmentAsync(string eventId, Event eventUpdateFragment, CancellationToken ct);
+    Task<bool> ApplyBookingFromExternalFragmentAsync(string eventId, GraphEvent eventUpdateFragment, CancellationToken ct);
 }

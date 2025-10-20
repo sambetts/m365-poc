@@ -169,7 +169,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                     {
                         // Non-encrypted: may require separate Graph fetch inside booking service.
                         logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-                        if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
+                        if (await bookingService.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
                     }
                     break;
 
@@ -205,7 +205,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                 return false;
             }
             // Apply external fragment (partial event data) to local booking store.
-            return await bookingService.ApplyCalendarEventUpdateFromExternalFragmentAsync(eventId, eventUpdate, ct);
+            return await bookingService.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdate, ct);
         }
         catch (Exception ex)
         {

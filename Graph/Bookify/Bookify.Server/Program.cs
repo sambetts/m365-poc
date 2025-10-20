@@ -23,6 +23,7 @@ builder.Services.AddSingleton(appConfig);
 // Add services to the container.
 builder.Services.AddControllers();
 
+
 // Configure Entity Framework Core with SQL Server
 builder.Services.AddDbContext<BookifyDbContext>(options =>
     options.UseSqlServer(
@@ -40,6 +41,7 @@ builder.Services.AddSingleton<GraphServiceClient>(sp =>
 });
 
 // Register application services
+builder.Services.AddScoped<IBookingCalendarSyncService, BookingCalendarSyncService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddSingleton<IExternalCalendarService, GraphCalendarService>();
