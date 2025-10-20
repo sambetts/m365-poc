@@ -15,7 +15,7 @@ SELECT
     b.BookedByEmail,
     b.StartTime,
     b.EndTime,
-    b.Purpose,
+    b.Body,
     b.CreatedAt,
     r.Name AS RoomName,
     r.Location,
@@ -80,7 +80,7 @@ SELECT
     b.BookedByEmail,
     b.StartTime,
     b.EndTime,
-    b.Purpose,
+    b.Body,
     DATEDIFF(MINUTE, b.StartTime, b.EndTime) AS DurationMinutes
 FROM Bookings b
 WHERE b.RoomId = @RoomId
@@ -98,7 +98,7 @@ SELECT
     r.Location,
     b.StartTime,
     b.EndTime,
-    b.Purpose
+    b.Body
 FROM Bookings b
 INNER JOIN Rooms r ON b.RoomId = r.Id
 WHERE b.BookedByEmail = @UserEmail

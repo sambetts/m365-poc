@@ -42,7 +42,7 @@ public class BookifyDbContext : DbContext
             entity.Property(e => e.RoomId).IsRequired().HasMaxLength(50);
             entity.Property(e => e.BookedBy).IsRequired().HasMaxLength(100);
             entity.Property(e => e.BookedByEmail).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Purpose).HasMaxLength(500);
+            entity.Property(e => e.Body).HasMaxLength(500); // Body replaces Purpose
             entity.Property(e => e.Title).HasMaxLength(200);
             entity.Property(e => e.CalendarEventId).HasMaxLength(200);
 

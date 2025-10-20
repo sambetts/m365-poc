@@ -22,7 +22,7 @@ interface BookingDialogProps {
     startTime: string;
     endTime: string;
     title?: string;
-    purpose?: string;
+    body?: string; // renamed from purpose
   } | null;
   onSaved?: () => void; // callback to refresh lists after save
 }
@@ -51,7 +51,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
   const [selectedTime, setSelectedTime] = useState("");
   const [duration, setDuration] = useState("1"); // hours as string (e.g. 1, 1.5)
   const [title, setTitle] = useState("");
-  const [purpose, setPurpose] = useState("");
+  const [body, setBody] = useState(""); // renamed from purpose
   const [isSaving, setIsSaving] = useState(false);
 
   // Derive time slots (include the edit time if custom e.g. 09:30)
@@ -78,7 +78,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
       setSelectedTime(`${hh}:${mm}`);
       setDuration(diffHours.toString());
       setTitle(bookingToEdit.title || "");
-      setPurpose(bookingToEdit.purpose || "");
+      setBody(bookingToEdit.body || "");
     }
     if (open && !bookingToEdit) {
       const now = new Date();
@@ -86,7 +86,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
       setSelectedTime("");
       setDuration("1");
       setTitle("");
-      setPurpose("");
+      setBody("");
     }
   }, [open, bookingToEdit]);
 
@@ -107,7 +107,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
           time: selectedTime,
           duration: `${duration}H`,
           title: title || undefined,
-          purpose: purpose || undefined,
+          body: body || undefined,
         });
         if (result.success) {
           toast.success("BOOKING UPDATED!", { description: `${roomName} - ${selectedDate} ${selectedTime}` });
@@ -123,7 +123,7 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
           time: selectedTime,
           duration: `${duration}H`,
           title: title || undefined,
-          purpose: purpose || undefined,
+          body: body || undefined,
         });
         if (result.success) {
           toast.success("ROOM BOOKED!", { description: `${roomName} - ${selectedDate} at ${selectedTime}` });
@@ -225,17 +225,17 @@ export const BookingDialog = ({ open, onOpenChange, roomName, roomId, bookingToE
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="purpose" className="text-xs flex items-center gap-2">
+              <Label htmlFor="body" className="text-xs flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                PURPOSE / DESCRIPTION (OPTIONAL)
+                BODY / DESCRIPTION (OPTIONAL)
               </Label>
               <textarea
-                id="purpose"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
+                id="body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
                 maxLength={500}
                 rows={3}
-                placeholder="Meeting purpose or description"
+                placeholder="Meeting body or description"
                 className="w-full px-3 py-2 bg-input border-2 border-border text-xs font-pixel resize-none"
               />
             </div>

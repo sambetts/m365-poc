@@ -9,7 +9,7 @@ public class Booking
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public string? Title { get; set; } // Meeting title / subject
-    public string? Purpose { get; set; }
+    public string? Body { get; set; } // Meeting body / description (renamed from Purpose)
     public DateTime CreatedAt { get; set; }
     public string? CalendarEventId { get; set; } // Graph event id
 

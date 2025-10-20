@@ -13,13 +13,13 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
     private static DateTime AsUtc(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
     private static bool IsInvalidRange(DateTime start, DateTime end) => start >= end;
 
-    private static (string subject, string? body) BuildSubjectAndBody(string? title, string? purpose, string roomName)
+    private static (string subject, string? body) BuildSubjectAndBody(string? title, string? body, string roomName)
     {
         var subject = string.IsNullOrWhiteSpace(title)
-            ? (string.IsNullOrWhiteSpace(purpose) ? $"Room booking - {roomName}" : purpose!)
+            ? (string.IsNullOrWhiteSpace(body) ? $"Room booking - {roomName}" : body!)
             : title!;
-        var body = purpose ?? title;
-        return (subject, body);
+        var bodyContent = body ?? title;
+        return (subject, bodyContent);
     }
 
     private static BookingResponse MapToResponse(Booking b) => new()
@@ -32,7 +32,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         StartTime = AsUtc(b.StartTime),
         EndTime = AsUtc(b.EndTime),
         Title = b.Title,
-        Purpose = b.Purpose,
+        Body = b.Body,
         CreatedAt = AsUtc(b.CreatedAt),
         CalendarEventId = b.CalendarEventId
     };
@@ -50,7 +50,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
     {
         try
         {
-            var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Purpose, room.Name);
+            var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, room.Name);
             var eventId = await calendarService.CreateRoomEventAsync(room, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
             if (!string.IsNullOrEmpty(eventId))
             {
@@ -83,7 +83,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
                 {
                     logger.LogWarning(ServiceLogEvents.ExternalDelete, "Failed to delete old calendar event {EventId} for booking {BookingId} during room move", booking.CalendarEventId, booking.Id);
                 }
-                var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Purpose, newRoom.Name);
+                var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, newRoom.Name);
                 var newEventId = await calendarService.CreateRoomEventAsync(newRoom, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
                 if (!string.IsNullOrEmpty(newEventId))
                 {
@@ -98,7 +98,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
             }
             else
             {
-                var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Purpose, newRoom.Name);
+                var (subject, body) = BuildSubjectAndBody(booking.Title, booking.Body, newRoom.Name);
                 var updated = await calendarService.UpdateRoomEventAsync(newRoom, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject, booking.BookedBy, booking.BookedByEmail, body, ct);
                 if (updated)
                 {
@@ -215,7 +215,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
             StartTime = startUtc,
             EndTime = endUtc,
             Title = request.Title,
-            Purpose = request.Purpose,
+            Body = request.Body,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -279,7 +279,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         booking.StartTime = startUtc;
         booking.EndTime = endUtc;
         booking.Title = request.Title;
-        booking.Purpose = request.Purpose;
+        booking.Body = request.Body;
 
         await context.SaveChangesAsync();
         logger.LogInformation(ServiceLogEvents.Update, "Updated booking {Id}", id);

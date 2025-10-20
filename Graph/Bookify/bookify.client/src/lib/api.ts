@@ -16,7 +16,7 @@ export interface Booking {
   time: string; // HH:mm
   duration: string; // e.g. "1H", "2H"
   title?: string;
-  purpose?: string;
+  body?: string; // renamed from purpose
 }
 
 export interface BookingUpdate extends Booking {
@@ -64,7 +64,7 @@ export const api = {
     startTime: string;
     endTime: string;
     title?: string;
-    purpose?: string;
+    body?: string; // renamed from purpose
     createdAt: string;
     calendarEventId?: string;
   }> {
@@ -83,7 +83,7 @@ export const api = {
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
         title: booking.title,
-        purpose: booking.purpose ?? 'Meeting',
+        body: booking.body ?? 'Meeting',
       };
 
       await fetchApi('/bookings', {
@@ -112,7 +112,7 @@ export const api = {
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
         title: update.title,
-        purpose: update.purpose ?? 'Meeting',
+        body: update.body ?? 'Meeting',
       };
 
       await fetchApi(`/bookings/${update.id}`, {
@@ -130,7 +130,7 @@ export const api = {
   },
 
   // Raw update (if caller already has ISO start/end times)
-  async updateBookingRaw(id: number, data: { roomId: string; startTime: string; endTime: string; title?: string; purpose?: string; }): Promise<void> {
+  async updateBookingRaw(id: number, data: { roomId: string; startTime: string; endTime: string; title?: string; body?: string; }): Promise<void> {
     const bookingRequest = {
       roomId: data.roomId,
       bookedBy: 'Current User', // TODO: Replace with authenticated user name
@@ -138,7 +138,7 @@ export const api = {
       startTime: data.startTime,
       endTime: data.endTime,
       title: data.title,
-      purpose: data.purpose,
+      body: data.body,
     };
     await fetchApi(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(bookingRequest) });
   },
@@ -167,7 +167,8 @@ export const api = {
         bookedBy: string;
         startTime: string;
         endTime: string;
-        purpose?: string;
+        body?: string; // renamed from purpose
+        title?: string;
       }>;
     }
 
@@ -196,7 +197,8 @@ export const api = {
     bookedBy: string;
     startTime: string;
     endTime: string;
-    purpose?: string;
+    body?: string; // renamed from purpose
+    title?: string;
   }>> {
     let endpoint = `/rooms/${roomId}/bookings`;
     const params = new URLSearchParams();
@@ -218,7 +220,8 @@ export const api = {
     bookedByEmail: string;
     startTime: string;
     endTime: string;
-    purpose?: string;
+    body?: string; // renamed from purpose
+    title?: string;
     createdAt: string;
   }>> {
     let endpoint = '/bookings';

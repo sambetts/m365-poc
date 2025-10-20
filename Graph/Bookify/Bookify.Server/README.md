@@ -19,7 +19,8 @@ Bookify is a meeting room booking system for Office 365 with a SQL Server backen
 - `BookedByEmail` (string, required)
 - `StartTime` (DateTime)
 - `EndTime` (DateTime)
-- `Purpose` (string, optional)
+- `Title` (string, optional)
+- `Body` (string, optional) // Meeting description / purpose
 - `CreatedAt` (DateTime)
 
 ## API Endpoints
@@ -81,7 +82,7 @@ Check which rooms are available for a specific time range.
         "bookedBy": "John Doe",
         "startTime": "2024-01-15T09:00:00Z",
         "endTime": "2024-01-15T10:00:00Z",
-        "purpose": "Team Standup"
+        "body": "Team Standup"
       }
     ]
   }
@@ -118,7 +119,7 @@ Create a new booking.
   "bookedByEmail": "john.doe@company.com",
   "startTime": "2024-01-15T09:00:00Z",
   "endTime": "2024-01-15T10:00:00Z",
-  "purpose": "Team Meeting"
+  "body": "Team Meeting"
 }
 ```
 
@@ -132,7 +133,7 @@ Create a new booking.
   "bookedByEmail": "john.doe@company.com",
   "startTime": "2024-01-15T09:00:00Z",
   "endTime": "2024-01-15T10:00:00Z",
-  "purpose": "Team Meeting",
+  "body": "Team Meeting",
   "createdAt": "2024-01-14T15:30:00Z"
 }
 ```

@@ -63,7 +63,7 @@ public class RoomService : IRoomService
                     StartTime = b.StartTime,
                     EndTime = b.EndTime,
                     Title = b.Title, // include title so client can display / edit
-                    Purpose = b.Purpose
+                    Body = b.Body
                 })
                 .ToList();
 
@@ -109,7 +109,7 @@ public class RoomService : IRoomService
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
                 Title = b.Title, // include title so edit dialog pre-fills correctly
-                Purpose = b.Purpose
+                Body = b.Body
             })
             .ToListAsync();
         sw.Stop();

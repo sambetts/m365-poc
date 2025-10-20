@@ -24,7 +24,7 @@ public class BookingInfo
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public string? Title { get; set; } // added title to support edit prefill
-    public string? Purpose { get; set; }
+    public string? Body { get; set; } // renamed from Purpose
 }
 
 public class CreateBookingRequest
@@ -35,7 +35,7 @@ public class CreateBookingRequest
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public string? Title { get; set; }
-    public string? Purpose { get; set; }
+    public string? Body { get; set; } // renamed from Purpose
 }
 
 public class BookingResponse
@@ -48,7 +48,7 @@ public class BookingResponse
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }
     public string? Title { get; set; }
-    public string? Purpose { get; set; }
+    public string? Body { get; set; } // renamed from Purpose
     public DateTime CreatedAt { get; set; }
     public string? CalendarEventId { get; set; }
 }
