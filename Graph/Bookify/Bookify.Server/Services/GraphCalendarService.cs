@@ -1,5 +1,6 @@
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using System.Diagnostics;
 
 namespace Bookify.Server.Services;
 
@@ -21,9 +22,10 @@ public class GraphCalendarService : IExternalCalendarService
 
     public async Task<string?> CreateRoomEventAsync(Bookify.Server.Models.Room room, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("Creating Graph event for room {Room} ({Upn}) Start={Start} End={End}", room.Name, room.MailboxUpn, startUtc, endUtc);
+            _logger.LogInformation(ServiceLogEvents.ExternalCreate, "Creating Graph event for room {Room} ({Upn}) Start={Start:o} End={End:o}", room.Name, room.MailboxUpn, startUtc, endUtc);
 
             var @event = new Event
             {
@@ -58,21 +60,24 @@ public class GraphCalendarService : IExternalCalendarService
             };
 
             var created = await _graph.Users[room.MailboxUpn].Events.PostAsync(@event, cancellationToken: ct);
-            _logger.LogInformation("Created event {EventId} for booking in room {RoomId}", created?.Id, room.Id);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.ExternalCreate, "Created event {EventId} for room {RoomId} in {ElapsedMs}ms", created?.Id, room.Id, sw.ElapsedMilliseconds);
             return created?.Id;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create calendar event for room {RoomId}", room.Id);
+            sw.Stop();
+            _logger.LogError(ex, "Failed to create calendar event for room {RoomId} after {ElapsedMs}ms", room.Id, sw.ElapsedMilliseconds);
             return null;
         }
     }
 
     public async Task<bool> UpdateRoomEventAsync(Bookify.Server.Models.Room room, string eventId, DateTime startUtc, DateTime endUtc, string subject, string organiserName, string organiserEmail, string? body = null, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("Updating Graph event {EventId} for room {RoomId} Start={Start} End={End}", eventId, room.Id, startUtc, endUtc);
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Updating Graph event {EventId} for room {RoomId} Start={Start:o} End={End:o}", eventId, room.Id, startUtc, endUtc);
 
             // Fetch event first and ensure it is a Bookify managed event
             var existing = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
@@ -85,7 +90,8 @@ public class GraphCalendarService : IExternalCalendarService
 
             if (!isBookify)
             {
-                _logger.LogWarning("Refusing to update event {EventId} in room {RoomId} because it is not tagged as a Bookify event", eventId, room.Id);
+                sw.Stop();
+                _logger.LogWarning(ServiceLogEvents.ExternalUpdate, "Refusing to update event {EventId} in room {RoomId} because it is not tagged as a Bookify event (Elapsed {ElapsedMs}ms)", eventId, room.Id, sw.ElapsedMilliseconds);
                 return false;
             }
 
@@ -99,20 +105,24 @@ public class GraphCalendarService : IExternalCalendarService
             };
 
             await _graph.Users[room.MailboxUpn].Events[eventId].PatchAsync(update, cancellationToken: ct);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Updated event {EventId} for room {RoomId} in {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to update calendar event {EventId} for room {RoomId}", eventId, room.Id);
+            sw.Stop();
+            _logger.LogError(ex, "Failed to update calendar event {EventId} for room {RoomId} after {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return false;
         }
     }
 
     public async Task<bool> DeleteRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
-            _logger.LogInformation("Deleting Graph event {EventId} for room {RoomId}", eventId, room.Id);
+            _logger.LogInformation(ServiceLogEvents.ExternalDelete, "Deleting Graph event {EventId} for room {RoomId}", eventId, room.Id);
 
             // Fetch event first and ensure it is a Bookify managed event
             var existing = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(rc =>
@@ -125,26 +135,37 @@ public class GraphCalendarService : IExternalCalendarService
 
             if (!isBookify)
             {
-                _logger.LogWarning("Refusing to delete event {EventId} in room {RoomId} because it is not tagged as a Bookify event", eventId, room.Id);
+                sw.Stop();
+                _logger.LogWarning(ServiceLogEvents.ExternalDelete, "Refusing to delete event {EventId} in room {RoomId} because it is not tagged as a Bookify event (Elapsed {ElapsedMs}ms)", eventId, room.Id, sw.ElapsedMilliseconds);
                 return false;
             }
 
             await _graph.Users[room.MailboxUpn].Events[eventId].DeleteAsync(cancellationToken: ct);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.ExternalDelete, "Deleted event {EventId} for room {RoomId} in {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to delete calendar event {EventId} for room {RoomId}", eventId, room.Id);
+            sw.Stop();
+            _logger.LogError(ex, "Failed to delete calendar event {EventId} for room {RoomId} after {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return false;
         }
     }
 
     public async Task<(bool success, DateTime? startUtc, DateTime? endUtc, string? subject)> GetRoomEventAsync(Bookify.Server.Models.Room room, string eventId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         try
         {
+            _logger.LogDebug(ServiceLogEvents.ExternalFetch, "Fetching Graph event {EventId} for room {RoomId}", eventId, room.Id);
             var evt = await _graph.Users[room.MailboxUpn].Events[eventId].GetAsync(cancellationToken: ct);
-            if (evt == null) return (false, null, null, null);
+            sw.Stop();
+            if (evt == null)
+            {
+                _logger.LogWarning(ServiceLogEvents.ExternalFetch, "Event {EventId} for room {RoomId} not found (Elapsed {ElapsedMs}ms)", eventId, room.Id, sw.ElapsedMilliseconds);
+                return (false, null, null, null);
+            }
             DateTime? Parse(DateTimeTimeZone? dtz)
             {
                 if (dtz?.DateTime == null) return null;
@@ -156,11 +177,13 @@ public class GraphCalendarService : IExternalCalendarService
                 }
                 return null;
             }
+            _logger.LogInformation(ServiceLogEvents.ExternalFetch, "Fetched event {EventId} for room {RoomId} in {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return (true, Parse(evt.Start), Parse(evt.End), evt.Subject);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch event {EventId} for room {RoomId}", eventId, room.Id);
+            sw.Stop();
+            _logger.LogWarning(ex, "Failed to fetch event {EventId} for room {RoomId} after {ElapsedMs}ms", eventId, room.Id, sw.ElapsedMilliseconds);
             return (false, null, null, null);
         }
     }

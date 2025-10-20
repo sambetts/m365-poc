@@ -29,7 +29,7 @@ public class CalendarWebhooksManager : BaseWebhooksManager
     /// User ID specific calendar events with selected fields that you can update from the Outlook UI
     /// </summary>
     public override string Resource => $"/users/{_userId}/events?$select=" +
-        $"subject,body,start,end,location,locations,attendees,isAllDay,recurrence,reminderMinutesBeforeStart,isReminderOn,showAs,sensitivity,importance,categories,responseRequested," +
+        $"subject,bodyPreview,start,end,location,locations,attendees,isAllDay,recurrence,reminderMinutesBeforeStart,isReminderOn,showAs,sensitivity,importance,categories,responseRequested," +
         $"allowNewTimeProposals,isOnlineMeeting,onlineMeetingProvider,onlineMeetingUrl,hasAttachments,isCancelled";
 
     public override DateTime MaxNotificationAgeFromToday => DateTime.Now.AddMinutes(55);

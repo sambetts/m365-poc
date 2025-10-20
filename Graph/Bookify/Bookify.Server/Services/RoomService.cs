@@ -2,6 +2,7 @@ using Bookify.Server.Data;
 using Bookify.Server.DTOs;
 using Bookify.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Bookify.Server.Services;
 
@@ -18,26 +19,35 @@ public class RoomService : IRoomService
 
     public async Task<IEnumerable<Room>> GetRoomsAsync()
     {
-        _logger.LogDebug("Fetching all rooms");
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Fetching all rooms");
         var list = await _context.Rooms.ToListAsync();
-        _logger.LogDebug("Returning {Count} rooms", list.Count);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Fetch, "Returned {Count} rooms in {ElapsedMs}ms", list.Count, sw.ElapsedMilliseconds);
         return list;
     }
 
     public async Task<Room?> GetRoomAsync(string id)
     {
-        _logger.LogDebug("Fetching room {Id}", id);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Fetching room {Id}", id);
         var room = await _context.Rooms.FindAsync(id);
+        sw.Stop();
         if (room == null)
         {
-            _logger.LogInformation("Room {Id} not found", id);
+            _logger.LogWarning(ServiceLogEvents.Fetch, "Room {Id} not found after {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
+        }
+        else
+        {
+            _logger.LogInformation(ServiceLogEvents.Fetch, "Fetched room {Id} in {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
         }
         return room;
     }
 
     public async Task<IEnumerable<RoomAvailabilityResponse>> CheckAvailabilityAsync(RoomAvailabilityRequest request)
     {
-        _logger.LogDebug("Checking availability Start={Start} End={End}", request.StartTime, request.EndTime);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.AvailabilityCheck, "Checking availability Start={Start} End={End}", request.StartTime, request.EndTime);
         var rooms = await _context.Rooms
             .Include(r => r.Bookings)
             .ToListAsync();
@@ -68,14 +78,16 @@ public class RoomService : IRoomService
                 ExistingBookings = overlappingBookings
             };
         }).ToList();
+        sw.Stop();
 
-        _logger.LogDebug("Computed availability for {RoomCount} rooms", response.Count());
+        _logger.LogInformation(ServiceLogEvents.AvailabilityCheck, "Computed availability for {RoomCount} rooms in {ElapsedMs}ms (Range {Start}->{End})", response.Count, sw.ElapsedMilliseconds, request.StartTime, request.EndTime);
         return response;
     }
 
     public async Task<IEnumerable<BookingInfo>> GetRoomBookingsAsync(string roomId, DateTime? startDate, DateTime? endDate)
     {
-        _logger.LogDebug("Fetching bookings for room {RoomId} StartDate={StartDate} EndDate={EndDate}", roomId, startDate, endDate);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Fetching bookings for room {RoomId} StartDate={StartDate} EndDate={EndDate}", roomId, startDate, endDate);
         var query = _context.Bookings.Where(b => b.RoomId == roomId);
 
         if (startDate.HasValue)
@@ -100,7 +112,8 @@ public class RoomService : IRoomService
                 Purpose = b.Purpose
             })
             .ToListAsync();
-        _logger.LogDebug("Found {Count} bookings for room {RoomId}", list.Count, roomId);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Fetch, "Found {Count} bookings for room {RoomId} in {ElapsedMs}ms", list.Count, roomId, sw.ElapsedMilliseconds);
         return list;
     }
 }

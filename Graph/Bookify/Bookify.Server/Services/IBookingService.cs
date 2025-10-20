@@ -23,5 +23,5 @@ public interface IBookingService
     // Calendar sync operations invoked by webhook notifications
     Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default);
     Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default);
-    Task<bool> ApplyCalendarEventUpdateFromFragmentAsync(string eventId, Event? eventUpdate, CancellationToken ct);
+    Task<bool> ApplyCalendarEventUpdateFromExternalFragmentAsync(string eventId, Event eventUpdateFragment, CancellationToken ct);
 }

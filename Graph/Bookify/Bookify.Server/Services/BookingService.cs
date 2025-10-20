@@ -2,6 +2,7 @@ using Bookify.Server.Data;
 using Bookify.Server.DTOs;
 using Bookify.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Bookify.Server.Services;
 
@@ -26,7 +27,8 @@ public class BookingService : IBookingService
 
     public async Task<IEnumerable<BookingResponse>> GetBookingsAsync(DateTime? startDate, DateTime? endDate)
     {
-        _logger.LogDebug("Fetching bookings with filters StartDate={StartDate} EndDate={EndDate}", startDate, endDate);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Fetching bookings with filters StartDate={StartDate} EndDate={EndDate}", startDate, endDate);
         var query = _context.Bookings.Include(b => b.Room).AsQueryable();
 
         if (startDate.HasValue)
@@ -56,23 +58,27 @@ public class BookingService : IBookingService
                 CalendarEventId = b.CalendarEventId
             })
             .ToListAsync();
-        _logger.LogDebug("Returning {Count} bookings", list.Count);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Fetch, "Returning {Count} bookings in {ElapsedMs}ms", list.Count, sw.ElapsedMilliseconds);
         return list;
     }
 
     public async Task<BookingResponse?> GetBookingAsync(int id)
     {
-        _logger.LogDebug("Getting booking {Id}", id);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Getting booking {Id}", id);
         var booking = await _context.Bookings
             .Include(b => b.Room)
             .FirstOrDefaultAsync(b => b.Id == id);
+        sw.Stop();
 
         if (booking == null)
         {
-            _logger.LogInformation("Booking {Id} not found", id);
+            _logger.LogInformation(ServiceLogEvents.Fetch, "Booking {Id} not found after {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
             return null;
         }
 
+        _logger.LogInformation(ServiceLogEvents.Fetch, "Fetched booking {Id} in {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
         return new BookingResponse
         {
             Id = booking.Id,
@@ -91,10 +97,12 @@ public class BookingService : IBookingService
 
     public async Task<(BookingOperationStatus status, BookingResponse? response, string? errorMessage)> CreateBookingAsync(CreateBookingRequest request)
     {
-        _logger.LogInformation("Creating booking for Room={RoomId} By={User} Start={Start} End={End}", request.RoomId, request.BookedByEmail, request.StartTime, request.EndTime);
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation(ServiceLogEvents.Create, "Creating booking for Room={RoomId} By={User} Start={Start:o} End={End:o}", request.RoomId, request.BookedByEmail, request.StartTime, request.EndTime);
         if (request.StartTime >= request.EndTime)
         {
-            _logger.LogWarning("Invalid time range for booking: Start={Start} End={End}", request.StartTime, request.EndTime);
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.ValidationFailed, "Invalid time range for booking: Start={Start:o} End={End:o} (Elapsed {ElapsedMs}ms)", request.StartTime, request.EndTime, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.BadRequest, null, "End time must be after start time");
         }
 
@@ -104,14 +112,16 @@ public class BookingService : IBookingService
 
         if (startUtc < DateTime.UtcNow)
         {
-            _logger.LogWarning("Attempt to book in the past Start={Start}", startUtc);
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.ValidationFailed, "Attempt to book in the past Start={Start:o} (Elapsed {ElapsedMs}ms)", startUtc, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.BadRequest, null, "Cannot book a room in the past");
         }
 
         var room = await _context.Rooms.FindAsync(request.RoomId);
         if (room == null)
         {
-            _logger.LogWarning("Room {RoomId} not found when creating booking", request.RoomId);
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.Fetch, "Room {RoomId} not found when creating booking (Elapsed {ElapsedMs}ms)", request.RoomId, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.NotFound, null, $"Room with ID {request.RoomId} not found");
         }
 
@@ -120,7 +130,8 @@ public class BookingService : IBookingService
                                                                 b.EndTime > startUtc);
         if (hasConflict)
         {
-            _logger.LogInformation("Booking conflict for Room={RoomId} Start={Start} End={End}", request.RoomId, startUtc, endUtc);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.Conflict, "Booking conflict for Room={RoomId} Start={Start:o} End={End:o} (Elapsed {ElapsedMs}ms)", request.RoomId, startUtc, endUtc, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.Conflict, null, "Room is already booked for the requested time");
         }
 
@@ -138,7 +149,7 @@ public class BookingService : IBookingService
 
         _context.Bookings.Add(booking);
         await _context.SaveChangesAsync(); // get booking Id
-        _logger.LogInformation("Created booking {BookingId} for Room={RoomId}", booking.Id, booking.RoomId);
+        _logger.LogInformation(ServiceLogEvents.Create, "Created booking {BookingId} for Room={RoomId}", booking.Id, booking.RoomId);
 
         // Create calendar event synchronously so we can persist its ID reliably
         try
@@ -152,17 +163,18 @@ public class BookingService : IBookingService
             {
                 booking.CalendarEventId = eventId;
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Linked booking {BookingId} with calendar event {EventId}", booking.Id, eventId);
+                _logger.LogInformation(ServiceLogEvents.ExternalCreate, "Linked booking {BookingId} with calendar event {EventId}", booking.Id, eventId);
             }
             else
             {
-                _logger.LogWarning("Calendar event creation returned null for booking {BookingId}", booking.Id);
+                _logger.LogWarning(ServiceLogEvents.ExternalCreate, "Calendar event creation returned null for booking {BookingId}", booking.Id);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create/link calendar event for booking {BookingId}", booking.Id);
         }
+        sw.Stop();
 
         var response = new BookingResponse
         {
@@ -179,18 +191,21 @@ public class BookingService : IBookingService
             CalendarEventId = booking.CalendarEventId
         };
 
+        _logger.LogInformation(ServiceLogEvents.Create, "Completed booking creation {BookingId} in {ElapsedMs}ms", booking.Id, sw.ElapsedMilliseconds);
         return (BookingOperationStatus.Success, response, null);
     }
 
     public async Task<(BookingOperationStatus status, string? errorMessage)> UpdateBookingAsync(int id, CreateBookingRequest request)
     {
-        _logger.LogInformation("Updating booking {Id} Room={RoomId} Start={Start} End={End}", id, request.RoomId, request.StartTime, request.EndTime);
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation(ServiceLogEvents.Update, "Updating booking {Id} Room={RoomId} Start={Start:o} End={End:o}", id, request.RoomId, request.StartTime, request.EndTime);
 
         // Load booking with original room to detect room change
         var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.Id == id);
         if (booking == null)
         {
-            _logger.LogInformation("Booking {Id} not found for update", id);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.Fetch, "Booking {Id} not found for update (Elapsed {ElapsedMs}ms)", id, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.NotFound, null);
         }
         var originalRoom = booking.Room; // may be null if not found, but should exist
@@ -198,7 +213,8 @@ public class BookingService : IBookingService
 
         if (request.StartTime >= request.EndTime)
         {
-            _logger.LogWarning("Invalid time range when updating booking {Id} Start={Start} End={End}", id, request.StartTime, request.EndTime);
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.ValidationFailed, "Invalid time range when updating booking {Id} Start={Start:o} End={End:o} (Elapsed {ElapsedMs}ms)", id, request.StartTime, request.EndTime, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.BadRequest, "End time must be after start time");
         }
 
@@ -208,7 +224,8 @@ public class BookingService : IBookingService
         var newRoom = await _context.Rooms.FindAsync(request.RoomId);
         if (newRoom == null)
         {
-            _logger.LogWarning("Room {RoomId} not found when updating booking {BookingId}", request.RoomId, id);
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.Fetch, "Room {RoomId} not found when updating booking {BookingId} (Elapsed {ElapsedMs}ms)", request.RoomId, id, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.NotFound, $"Room with ID {request.RoomId} not found");
         }
 
@@ -218,7 +235,8 @@ public class BookingService : IBookingService
                                                                 b.EndTime > startUtc);
         if (hasConflict)
         {
-            _logger.LogInformation("Conflict updating booking {Id} Room={RoomId} Start={Start} End={End}", id, request.RoomId, startUtc, endUtc);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.Conflict, "Conflict updating booking {Id} Room={RoomId} Start={Start:o} End={End:o} (Elapsed {ElapsedMs}ms)", id, request.RoomId, startUtc, endUtc, sw.ElapsedMilliseconds);
             return (BookingOperationStatus.Conflict, "Room is already booked for the requested time");
         }
 
@@ -234,7 +252,7 @@ public class BookingService : IBookingService
         booking.Purpose = request.Purpose;
 
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Updated booking {Id}", id);
+        _logger.LogInformation(ServiceLogEvents.Update, "Updated booking {Id}", id);
 
         // Calendar sync (await so caller knows update attempt occurred)
         if (!string.IsNullOrEmpty(booking.CalendarEventId))
@@ -243,11 +261,11 @@ public class BookingService : IBookingService
             {
                 if (roomChanged && originalRoom != null)
                 {
-                    _logger.LogInformation("Room changed for booking {BookingId} from {OldRoom} to {NewRoom} - recreating calendar event", booking.Id, originalRoomId, request.RoomId);
+                    _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Room changed for booking {BookingId} from {OldRoom} to {NewRoom} - recreating calendar event", booking.Id, originalRoomId, request.RoomId);
                     var deleted = await _calendarService.DeleteRoomEventAsync(originalRoom, booking.CalendarEventId!);
                     if (!deleted)
                     {
-                        _logger.LogWarning("Failed to delete old calendar event {EventId} for booking {BookingId} during room move", booking.CalendarEventId, booking.Id);
+                        _logger.LogWarning(ServiceLogEvents.ExternalDelete, "Failed to delete old calendar event {EventId} for booking {BookingId} during room move", booking.CalendarEventId, booking.Id);
                     }
                     var subject = string.IsNullOrWhiteSpace(booking.Title)
                         ? (string.IsNullOrWhiteSpace(booking.Purpose) ? $"Room booking - {newRoom.Name}" : booking.Purpose)
@@ -258,11 +276,11 @@ public class BookingService : IBookingService
                     {
                         booking.CalendarEventId = newEventId;
                         await _context.SaveChangesAsync();
-                        _logger.LogInformation("Recreated calendar event {EventId} for booking {BookingId}", newEventId, booking.Id);
+                        _logger.LogInformation(ServiceLogEvents.ExternalCreate, "Recreated calendar event {EventId} for booking {BookingId}", newEventId, booking.Id);
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to recreate calendar event for booking {BookingId} after room change", booking.Id);
+                        _logger.LogWarning(ServiceLogEvents.ExternalCreate, "Failed to recreate calendar event for booking {BookingId} after room change", booking.Id);
                     }
                 }
                 else
@@ -274,11 +292,11 @@ public class BookingService : IBookingService
                     var updated = await _calendarService.UpdateRoomEventAsync(newRoom, booking.CalendarEventId!, booking.StartTime, booking.EndTime, subject!, booking.BookedBy, booking.BookedByEmail, body);
                     if (updated)
                     {
-                        _logger.LogInformation("Updated calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+                        _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Updated calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
                     }
                     else
                     {
-                        _logger.LogWarning("Calendar update failed for booking {BookingId} Event {EventId}", booking.Id, booking.CalendarEventId);
+                        _logger.LogWarning(ServiceLogEvents.ExternalUpdate, "Calendar update failed for booking {BookingId} Event {EventId}", booking.Id, booking.CalendarEventId);
                     }
                 }
             }
@@ -287,18 +305,21 @@ public class BookingService : IBookingService
                 _logger.LogError(ex, "Error synchronising calendar event for booking {BookingId}", booking.Id);
             }
         }
-
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Update, "Completed booking update {BookingId} in {ElapsedMs}ms", booking.Id, sw.ElapsedMilliseconds);
         return (BookingOperationStatus.Success, null);
     }
 
     public async Task<bool> DeleteBookingAsync(int id)
     {
-        _logger.LogInformation("Deleting booking {Id}", id);
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation(ServiceLogEvents.Delete, "Deleting booking {Id}", id);
         // Need room + calendar event id to delete external event
         var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.Id == id);
         if (booking == null)
         {
-            _logger.LogInformation("Booking {Id} not found for delete", id);
+            sw.Stop();
+            _logger.LogInformation(ServiceLogEvents.Delete, "Booking {Id} not found for delete (Elapsed {ElapsedMs}ms)", id, sw.ElapsedMilliseconds);
             return false;
         }
 
@@ -310,11 +331,11 @@ public class BookingService : IBookingService
                 var deletedEvent = await _calendarService.DeleteRoomEventAsync(booking.Room, booking.CalendarEventId);
                 if (deletedEvent)
                 {
-                    _logger.LogInformation("Deleted calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
+                    _logger.LogInformation(ServiceLogEvents.ExternalDelete, "Deleted calendar event {EventId} for booking {BookingId}", booking.CalendarEventId, booking.Id);
                 }
                 else
                 {
-                    _logger.LogWarning("Calendar event {EventId} for booking {BookingId} not deleted (may have been removed or not a Bookify event)", booking.CalendarEventId, booking.Id);
+                    _logger.LogWarning(ServiceLogEvents.ExternalDelete, "Calendar event {EventId} for booking {BookingId} not deleted (may have been removed or not a Bookify event)", booking.CalendarEventId, booking.Id);
                 }
             }
             catch (Exception ex)
@@ -325,13 +346,15 @@ public class BookingService : IBookingService
 
         _context.Bookings.Remove(booking);
         await _context.SaveChangesAsync();
-        _logger.LogInformation("Deleted booking {Id}", id);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Delete, "Deleted booking {Id} in {ElapsedMs}ms", id, sw.ElapsedMilliseconds);
         return true;
     }
 
     public async Task<IEnumerable<BookingResponse>> GetUserBookingsAsync(string email)
     {
-        _logger.LogDebug("Fetching bookings for user {Email}", email);
+        var sw = Stopwatch.StartNew();
+        _logger.LogDebug(ServiceLogEvents.Fetch, "Fetching bookings for user {Email}", email);
         var list = await _context.Bookings
             .Include(b => b.Room)
             .Where(b => b.BookedByEmail == email)
@@ -351,25 +374,38 @@ public class BookingService : IBookingService
                 CalendarEventId = b.CalendarEventId
             })
             .ToListAsync();
-        _logger.LogDebug("Found {Count} bookings for user {Email}", list.Count, email);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.Fetch, "Found {Count} bookings for user {Email} in {ElapsedMs}ms", list.Count, email, sw.ElapsedMilliseconds);
         return list;
     }
 
-
     public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         var booking = await _context.Bookings.FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
-        if (booking == null) return false;
+        if (booking == null)
+        {
+            sw.Stop();
+            _logger.LogDebug(ServiceLogEvents.ExternalDelete, "No booking found for deleted external event {EventId} (Elapsed {ElapsedMs}ms)", eventId, sw.ElapsedMilliseconds);
+            return false;
+        }
         _context.Bookings.Remove(booking);
         await _context.SaveChangesAsync(ct);
-        _logger.LogInformation("Removed booking {BookingId} due to external calendar event deletion", booking.Id);
+        sw.Stop();
+        _logger.LogInformation(ServiceLogEvents.ExternalDelete, "Removed booking {BookingId} due to external calendar event deletion {EventId} in {ElapsedMs}ms", booking.Id, eventId, sw.ElapsedMilliseconds);
         return true;
     }
 
-    public async Task<bool> ApplyCalendarEventUpdateFromFragmentAsync(string eventId, Microsoft.Graph.Models.Event eventUpdate, CancellationToken ct)
+    public async Task<bool> ApplyCalendarEventUpdateFromExternalFragmentAsync(string eventId, Microsoft.Graph.Models.Event eventUpdate, CancellationToken ct)
     {
+        var sw = Stopwatch.StartNew();
         var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
-        if (booking?.Room == null) return false;
+        if (booking?.Room == null)
+        {
+            sw.Stop();
+            _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "No booking found for external event fragment update {EventId} (Elapsed {ElapsedMs}ms)", eventId, sw.ElapsedMilliseconds);
+            return false;
+        }
         var changed = false;
         if (eventUpdate.Start != null && DateTime.TryParse(eventUpdate.Start.DateTime, out var start))
         {
@@ -397,17 +433,30 @@ public class BookingService : IBookingService
         if (changed)
         {
             await _context.SaveChangesAsync(ct);
-            _logger.LogInformation("Applied external event update to booking {BookingId}", booking.Id);
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from fragment {EventId}", booking.Id, eventId);
         }
+        sw.Stop();
+        _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed fragment update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);
         return changed;
     }
 
     public async Task<bool> ApplyCalendarEventUpdatedAsync(string eventId, CancellationToken ct = default)
     {
+        var sw = Stopwatch.StartNew();
         var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.CalendarEventId == eventId, ct);
-        if (booking?.Room == null) return false;
+        if (booking?.Room == null)
+        {
+            sw.Stop();
+            _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "No booking found for external event update {EventId} (Elapsed {ElapsedMs}ms)", eventId, sw.ElapsedMilliseconds);
+            return false;
+        }
         var (success, startUtc, endUtc, subject) = await _calendarService.GetRoomEventAsync(booking.Room, eventId, ct);
-        if (!success) return false;
+        if (!success)
+        {
+            sw.Stop();
+            _logger.LogWarning(ServiceLogEvents.ExternalFetch, "Failed to fetch external event {EventId} for booking {BookingId} (Elapsed {ElapsedMs}ms)", eventId, booking.Id, sw.ElapsedMilliseconds);
+            return false;
+        }
         var changed = false;
         if (startUtc.HasValue && endUtc.HasValue)
         {
@@ -426,8 +475,10 @@ public class BookingService : IBookingService
         if (changed)
         {
             await _context.SaveChangesAsync(ct);
-            _logger.LogInformation("Applied external event update to booking {BookingId}", booking.Id);
+            _logger.LogInformation(ServiceLogEvents.ExternalUpdate, "Applied external event update to booking {BookingId} from full fetch {EventId}", booking.Id, eventId);
         }
+        sw.Stop();
+        _logger.LogDebug(ServiceLogEvents.ExternalUpdate, "Processed full update for event {EventId} (Changed={Changed}) in {ElapsedMs}ms", eventId, changed, sw.ElapsedMilliseconds);
         return changed;
     }
 }

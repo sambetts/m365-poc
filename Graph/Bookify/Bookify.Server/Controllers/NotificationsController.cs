@@ -1,17 +1,14 @@
 using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using Microsoft.Kiota.Abstractions.Serialization;
-using System.Text;
 using System.Text.Json;
 
 namespace Bookify.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NotificationsController(GraphServiceClient client, AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService) : ControllerBase
+public class NotificationsController(AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService) : ControllerBase
 {
 
     // Microsoft Graph validation handshake (GET with validationToken) per docs:
@@ -59,14 +56,10 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
                 return Ok();
             }
 
-            Microsoft.Graph.Models.ChangeNotificationCollection? payload = null;
+            ChangeNotificationCollection? payload = null;
             try
             {
-                using var stream = new MemoryStream(Encoding.UTF8.GetBytes(raw));
-                var root = await ParseNodeFactoryRegistry.DefaultInstance.GetRootParseNodeAsync("application/json", stream);
-
-                // For a specific type:
-                payload = root.GetObjectValue(ChangeNotificationCollection.CreateFromDiscriminatorValue);
+                payload = await Utils.DeserializeGraphJson(raw, ChangeNotificationCollection.CreateFromDiscriminatorValue);
             }
             catch (Exception dex)
             {
@@ -77,69 +70,86 @@ public class NotificationsController(GraphServiceClient client, AppConfig config
 
             if (payload != null)
             {
-                var updates = 0; var deletions = 0; var skipped = 0;
-                foreach (var n in payload.Value)
+                // Defensive: payload.Value may be null
+                if (payload?.Value != null)
                 {
-
-                    // Extract event id: prefer resourceData.id then last segment of resource path
-                    var eventId = string.Empty;
-                    if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
+                    var updates = 0; var deletions = 0; var skipped = 0;
+                    foreach (var n in payload.Value)
                     {
-                        var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        if (parts.Length > 0)
+                        // Extract event id: prefer resourceData.id then last segment of resource path
+                        var eventId = string.Empty;
+                        object? idObj = null;
+                        if (n.ResourceData?.AdditionalData != null && n.ResourceData.AdditionalData.TryGetValue("id", out idObj))
                         {
-                            eventId = parts[^1];
+                            eventId = idObj as string ?? string.Empty;
                         }
-                    }
-                    if (string.IsNullOrWhiteSpace(eventId))
-                    {
-                        logger.LogDebug("Skipping notification with no resolvable event id.");
-                        skipped++;
-                        continue;
-                    }
+                        else
+                        {
+                            eventId = string.Empty;
+                        }
 
-                    // Process change notification via BookingService
-                    switch (n.ChangeType)
-                    {
-                        case Microsoft.Graph.Models.ChangeType.Deleted:
-                            if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
-                            break;
-                        case Microsoft.Graph.Models.ChangeType.Updated:
-
-                            // Decrypt resource data if present
-                            if (n.EncryptedContent != null)
+                        if (string.IsNullOrWhiteSpace(eventId) && !string.IsNullOrWhiteSpace(n.Resource))
+                        {
+                            var parts = n.Resource.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            if (parts.Length > 0)
                             {
-                                var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent, contentDecryptingCert);
-
-                                var eventUpdate = JsonSerializer.Deserialize<Microsoft.Graph.Models.Event>(notificationContentJson, new JsonSerializerOptions
-                                {
-                                    PropertyNameCaseInsensitive = true,
-                                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-                                });
-
-                                var updated = await client.Users[config.SharedRoomMailboxUpn].Events["AAMkADBjN2MxYTYxLTE4YjMtNGVjMy1iNTFjLWYxZTNjMTBkYmVlNgBGAAAAAACT06eRK7fDQZjjUnvGRYzqBwBKvLRJEfAmQaLMd_biWlXUAAAAAAENAABKvLRJEfAmQaLMd_biWlXUAAAC2AILAAA="]
-                                    .GetAsync();
-
-                                if (await bookingService.ApplyCalendarEventUpdateFromFragmentAsync(eventId, eventUpdate, ct)) updates++; else skipped++;
-
+                                eventId = parts[^1];
                             }
-                            else
-                            {
-                                // No encrypted content - load event by id if needed
-                                logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-
-
-                                if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
-                            }
-
-                            break;
-                        default:
+                        }
+                        if (string.IsNullOrWhiteSpace(eventId))
+                        {
+                            logger.LogDebug("Skipping notification with no resolvable event id.");
                             skipped++;
-                            break;
-                    }
+                            continue;
+                        }
 
+                        // Process change notification via BookingService
+                        switch (n.ChangeType)
+                        {
+                            case ChangeType.Deleted:
+                                if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
+                                break;
+                            case ChangeType.Updated:
+
+                                // Decrypt resource data if present
+                                if (n.EncryptedContent != null)
+                                {
+                                    var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent, contentDecryptingCert);
+
+                                    var eventUpdate = await Utils.DeserializeGraphJson(raw, Event.CreateFromDiscriminatorValue); 
+
+                                    if (eventUpdate == null)
+                                    {
+                                        logger.LogWarning("Failed to deserialize decrypted notification content for event id {EventId}. Content: {Content}", eventId, notificationContentJson);
+                                        skipped++;
+                                        continue;
+                                    }
+
+                                    if (await bookingService.ApplyCalendarEventUpdateFromExternalFragmentAsync(eventId, eventUpdate, ct)) updates++; else skipped++;
+
+                                }
+                                else
+                                {
+                                    // No encrypted content - load event by id if needed
+                                    logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
+
+
+                                    if (await bookingService.ApplyCalendarEventUpdatedAsync(eventId, ct)) updates++; else skipped++;
+                                }
+
+                                break;
+                            default:
+                                skipped++;
+                                break;
+                        }
+
+                    }
+                    logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
                 }
-                logger.LogInformation("Notification processing complete. Updates={Updates} Deletions={Deletions} Skipped={Skipped}", updates, deletions, skipped);
+                else
+                {
+                    logger.LogWarning("Graph notification payload had no value array. Raw: {Raw}", raw);
+                }
             }
             else
             {
