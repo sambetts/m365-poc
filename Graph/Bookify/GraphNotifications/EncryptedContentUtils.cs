@@ -26,6 +26,19 @@ public static class EncryptedContentUtils
                 throw new NotSupportedException("Unsupported algorithm group");
         }
 
+        if (encryptedResourceDataContent.DataKey == null)
+        {
+            throw new InvalidDataException("No DataKey in encrypted content");
+        }
+        if (encryptedResourceDataContent.Data == null)
+        {
+            throw new InvalidDataException("No Data in encrypted content");
+        }
+        if (encryptedResourceDataContent.DataSignature == null)
+        {
+            throw new InvalidDataException("No DataSignature in encrypted content");
+        }
+
         // Initialize with the private key that matches the encryptionCertificateId.
         var encryptedSymmetricKey = Convert.FromBase64String(encryptedResourceDataContent.DataKey);
 
@@ -42,7 +55,7 @@ public static class EncryptedContentUtils
             if (actualSignature.SequenceEqual(expectedSignature))
             {
                 // Continue with decryption of the encryptedPayload.
-                return DecryptPayload(encryptedResourceDataContent, decryptedSymmetricKey);
+                return DecryptPayload(encryptedResourceDataContent.Data, decryptedSymmetricKey);
             }
             else
             {
@@ -52,7 +65,7 @@ public static class EncryptedContentUtils
         }
     }
 
-    private static string DecryptPayload(ChangeNotificationEncryptedContent encryptedResourceDataContent, byte[] decryptedSymmetricKey)
+    private static string DecryptPayload(string encryptedResourceDataContentData, byte[] decryptedSymmetricKey)
     {
         var aesProvider = Aes.Create();
         aesProvider.Key = decryptedSymmetricKey;
@@ -65,7 +78,7 @@ public static class EncryptedContentUtils
         Array.Copy(decryptedSymmetricKey, iv, vectorSize);
         aesProvider.IV = iv;
 
-        var encryptedPayload = Convert.FromBase64String(encryptedResourceDataContent.Data);
+        var encryptedPayload = Convert.FromBase64String(encryptedResourceDataContentData);
 
         // Decrypt the resource data content.
         using (var decryptor = aesProvider.CreateDecryptor())
