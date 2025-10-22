@@ -1,3 +1,4 @@
+using Bookify.Server.DTOs;
 using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +21,8 @@ namespace Bookify.Server.Controllers;
 [Route("api/[controller]")]
 public class NotificationsController(AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService) : ControllerBase
 {
+    private X509Certificate2? _decryptingCert;
+
     /// <summary>
     /// Handles Microsoft Graph validation handshake GET requests by echoing back the provided validationToken.
     /// Returns a simple message if no token is supplied (health/info endpoint behavior).
@@ -81,15 +84,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                 return Ok();
             }
 
-            // Retrieve certificate used for decrypting resource data (if encrypted notifications used).
-            var contentDecryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
-                "webhooks", 
-                config.AzureAdConfig.TenantId, 
-                config.AzureAdConfig.ClientId, 
-                config.AzureAdConfig.ClientSecret, 
-                config.KeyVaultUrl);
-
-            await ProcessNotificationsAsync(payload.Value, contentDecryptingCert, ct);
+            await ProcessNotificationsAsync(payload.Value, ct);
         }
         catch (Exception ex)
         {
@@ -137,7 +132,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
     /// <param name="notifications">Enumerable of Graph change notifications.</param>
     /// <param name="decryptingCert">Certificate used to decrypt encrypted resource data payloads.</param>
     /// <param name="ct">Cancellation token.</param>
-    private async Task ProcessNotificationsAsync(IEnumerable<ChangeNotification> notifications, X509Certificate2? decryptingCert, CancellationToken ct)
+    private async Task ProcessNotificationsAsync(IEnumerable<ChangeNotification> notifications, CancellationToken ct)
     {
         var updates = 0; var deletions = 0; var skipped = 0;
         foreach (var n in notifications)
@@ -160,9 +155,21 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
 
                 case ChangeType.Updated:
                     // Prefer encrypted content when provided (more data, privacy compliance).
-                    if (n.EncryptedContent != null && decryptingCert != null)
+                    if (n.EncryptedContent != null)
                     {
-                        var success = await HandleEncryptedUpdateAsync(n, eventId, decryptingCert, ct);
+
+                        // Retrieve certificate used for decrypting resource data (if encrypted notifications used).
+                        if (_decryptingCert == null)
+                        {
+                            _decryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
+                                "webhooks",
+                                config.AzureAdConfig.TenantId,
+                                config.AzureAdConfig.ClientId,
+                                config.AzureAdConfig.ClientSecret,
+                                config.KeyVaultUrl);
+                        }
+
+                        var success = await HandleEncryptedUpdateAsync(n, eventId, _decryptingCert, ct);
                         if (success) updates++; else skipped++;
                     }
                     else
@@ -173,6 +180,31 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                     }
                     break;
 
+                case ChangeType.Created:
+                    // Prefer encrypted content when provided (more data, privacy compliance).
+                    if (n.EncryptedContent != null)
+                    {
+                        // Retrieve certificate used for decrypting resource data (if encrypted notifications used).
+                        if (_decryptingCert == null)
+                        {
+                            _decryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
+                                "webhooks",
+                                config.AzureAdConfig.TenantId,
+                                config.AzureAdConfig.ClientId,
+                                config.AzureAdConfig.ClientSecret,
+                                config.KeyVaultUrl);
+                        }
+
+                        var success = await HandleEncryptedCreateAsync(n, eventId, _decryptingCert, ct);
+                        if (success) updates++; else skipped++;
+                    }
+                    else
+                    {
+                        // Non-encrypted: may require separate Graph fetch inside booking service.
+                        logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
+                        if (await bookingService.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
+                    }
+                    break;
                 default:
                     // Unhandled change types (e.g., Created) currently ignored; could be added later.
                     skipped++;
@@ -198,12 +230,14 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
         {
             // Decrypt resource data to obtain minimal event fragment provided by webhook.
             var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent!, decryptingCert);
+
             var eventUpdate = await Utils.DeserializeGraphJson(notificationContentJson, Event.CreateFromDiscriminatorValue);
             if (eventUpdate == null)
             {
                 logger.LogWarning("Failed to deserialize decrypted notification content for event id {EventId}. Content: {Content}", eventId, notificationContentJson);
                 return false;
             }
+
             // Apply external fragment (partial event data) to local booking store.
             return await bookingService.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdate, ct);
         }
@@ -211,6 +245,68 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
         {
             logger.LogError(ex, "Error handling encrypted update for event id {EventId}", eventId);
             return false;
+        }
+    }
+
+    private async Task<bool> HandleEncryptedCreateAsync(ChangeNotification n, string eventId, X509Certificate2 decryptingCert, CancellationToken ct)
+    {
+        try
+        {
+            var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent!, decryptingCert);
+            var eventUpdate = await Utils.DeserializeGraphJson(notificationContentJson, Event.CreateFromDiscriminatorValue);
+            if (eventUpdate == null)
+            {
+                logger.LogWarning("Failed to deserialize decrypted notification content for event id {EventId}. Content: {Content}", eventId, notificationContentJson);
+                return false;
+            }
+
+            // Build CreateBookingRequest from Graph Event
+            var start = ParseDateTime(eventUpdate.Start);
+            var end = ParseDateTime(eventUpdate.End);
+
+            var request = new CreateBookingRequest
+            {
+                RoomId = eventUpdate.Location?.UniqueId
+                         ?? eventUpdate.Location?.LocationEmailAddress
+                         ?? eventUpdate.Location?.DisplayName
+                         ?? "unknown",
+                BookedBy = eventUpdate.Organizer?.EmailAddress?.Name
+                           ?? eventUpdate.Organizer?.EmailAddress?.Address
+                           ?? "unknown",
+                BookedByEmail = eventUpdate.Organizer?.EmailAddress?.Address
+                                ?? config.SharedRoomMailboxUpn,
+                StartTime = start,
+                EndTime = end,
+                Title = eventUpdate.Subject,
+                Body = eventUpdate.Body?.Content ?? eventUpdate.BodyPreview
+            };
+
+            var (status, response, errorMessage) = await bookingService.CreateBookingAsync(request, false);
+            if (response == null)
+            {
+                logger.LogWarning("CreateBookingAsync failed for event {EventId}. Status={Status} Error={Error}", eventId, status, errorMessage);
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error handling encrypted create for event id {EventId}", eventId);
+            return false;
+        }
+
+        static DateTime ParseDateTime(DateTimeTimeZone? dt)
+        {
+            if (dt?.DateTime == null) return DateTime.UtcNow;
+            if (DateTime.TryParse(dt.DateTime, out var parsed))
+            {
+                // Treat unspecified as UTC if timezone provided; else leave as is.
+                if (!string.IsNullOrWhiteSpace(dt.TimeZone) && parsed.Kind == DateTimeKind.Unspecified)
+                    return DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+                return parsed;
+            }
+            return DateTime.UtcNow;
         }
     }
 

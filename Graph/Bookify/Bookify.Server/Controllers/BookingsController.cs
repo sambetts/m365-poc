@@ -49,7 +49,7 @@ public class BookingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<BookingResponse>> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        var (status, response, error) = await _bookingService.CreateBookingAsync(request);
+        var (status, response, error) = await _bookingService.CreateBookingAsync(request, true);
         return status switch
         {
             BookingOperationStatus.Success => CreatedAtAction(nameof(GetBooking), new { id = response!.Id }, response),

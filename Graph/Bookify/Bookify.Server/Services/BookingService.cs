@@ -191,7 +191,7 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         return MapToResponse(booking);
     }
 
-    public async Task<(BookingOperationStatus status, BookingResponse? response, string? errorMessage)> CreateBookingAsync(CreateBookingRequest request)
+    public async Task<(BookingOperationStatus status, BookingResponse? response, string? errorMessage)> CreateBookingAsync(CreateBookingRequest request, bool createExternal)
     {
         var sw = Stopwatch.StartNew();
         logger.LogInformation(ServiceLogEvents.Create, "Creating booking for Room={RoomId} By={User} Start={Start:o} End={End:o}", request.RoomId, request.BookedByEmail, request.StartTime, request.EndTime);
@@ -245,7 +245,8 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         logger.LogInformation(ServiceLogEvents.Create, "Created booking {BookingId} for Room={RoomId}", booking.Id, booking.RoomId);
         await LogAsync("BookingCreated", booking, "web-app");
 
-        await LinkCalendarEventAsync(booking, room);
+        if (createExternal)
+            await LinkCalendarEventAsync(booking, room);
         sw.Stop();
 
         var response = MapToResponse(booking);
