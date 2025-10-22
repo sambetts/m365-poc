@@ -1,6 +1,4 @@
 using Microsoft.Graph.Models;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Bookify.Server.Services;
 

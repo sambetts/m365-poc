@@ -1,6 +1,6 @@
-using Bookify.Server.Services;
 using Bookify.Server.Application.Rooms.Contracts;
 using Bookify.Server.Models; // Added for Room type
+using Bookify.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookify.Server.Controllers;

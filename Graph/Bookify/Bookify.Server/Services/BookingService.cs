@@ -1,9 +1,9 @@
-using Bookify.Server.Data;
-using Bookify.Server.Models;
-using Microsoft.EntityFrameworkCore;
 using Bookify.Server.Application.Bookings;
 using Bookify.Server.Application.Bookings.Contracts;
 using Bookify.Server.Application.Common;
+using Bookify.Server.Data;
+using Bookify.Server.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bookify.Server.Services;
 

@@ -135,7 +135,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
 
         // Extract attendees (may be omitted depending on subscription configuration).
         List<string>? attendees = null;
-        if (eventUpdateFragment.Attendees?.Count >0)
+        if (eventUpdateFragment.Attendees?.Count > 0)
         {
             attendees = eventUpdateFragment.Attendees
                 .Select(a => a.EmailAddress?.Address)

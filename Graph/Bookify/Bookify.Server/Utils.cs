@@ -1,5 +1,4 @@
-﻿using Microsoft.Graph.Models;
-using Microsoft.Kiota.Abstractions.Serialization;
+﻿using Microsoft.Kiota.Abstractions.Serialization;
 using System.Text;
 
 namespace Bookify.Server;

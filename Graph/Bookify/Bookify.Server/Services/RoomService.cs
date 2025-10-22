@@ -1,5 +1,5 @@
-using Bookify.Server.Data;
 using Bookify.Server.Application.Rooms.Contracts;
+using Bookify.Server.Data;
 using Bookify.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
