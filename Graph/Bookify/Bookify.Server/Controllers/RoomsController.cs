@@ -1,6 +1,6 @@
-using Bookify.Server.DTOs;
-using Bookify.Server.Models;
 using Bookify.Server.Services;
+using Bookify.Server.Application.Rooms.Contracts;
+using Bookify.Server.Models; // Added for Room type
 using Microsoft.AspNetCore.Mvc;
 
 namespace Bookify.Server.Controllers;
@@ -35,27 +35,18 @@ public class RoomsController : ControllerBase
     public async Task<ActionResult<Room>> GetRoom(string id)
     {
         var room = await _roomService.GetRoomAsync(id);
-        if (room == null)
-        {
-            return NotFound();
-        }
+        if (room == null) return NotFound();
         return Ok(room);
     }
 
     /// <summary>
-    /// Check room availability for a specific time range
+    /// Check room availability
     /// </summary>
     [HttpPost("availability")]
-    public async Task<ActionResult<IEnumerable<RoomAvailabilityResponse>>> CheckAvailability(
-        [FromBody] RoomAvailabilityRequest request)
+    public async Task<ActionResult<IEnumerable<RoomAvailabilityResponse>>> CheckAvailability([FromBody] RoomAvailabilityRequest request)
     {
-        if (request.StartTime >= request.EndTime)
-        {
-            return BadRequest("End time must be after start time");
-        }
-
-        var response = await _roomService.CheckAvailabilityAsync(request);
-        return Ok(response);
+        var result = await _roomService.CheckAvailabilityAsync(request);
+        return Ok(result);
     }
 
     /// <summary>
@@ -67,12 +58,6 @@ public class RoomsController : ControllerBase
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null)
     {
-        var room = await _roomService.GetRoomAsync(id);
-        if (room == null)
-        {
-            return NotFound();
-        }
-
         var bookings = await _roomService.GetRoomBookingsAsync(id, startDate, endDate);
         return Ok(bookings);
     }

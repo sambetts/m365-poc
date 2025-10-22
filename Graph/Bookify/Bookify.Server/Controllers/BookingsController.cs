@@ -1,4 +1,4 @@
-using Bookify.Server.DTOs;
+using Bookify.Server.Application.Bookings.Contracts;
 using Bookify.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,10 +36,7 @@ public class BookingsController : ControllerBase
     public async Task<ActionResult<BookingResponse>> GetBooking(int id)
     {
         var booking = await _bookingService.GetBookingAsync(id);
-        if (booking == null)
-        {
-            return NotFound();
-        }
+        if (booking == null) return NotFound();
         return Ok(booking);
     }
 
@@ -49,15 +46,10 @@ public class BookingsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<BookingResponse>> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        var (status, response, error) = await _bookingService.CreateBookingAsync(request, true);
-        return status switch
-        {
-            BookingOperationStatus.Success => CreatedAtAction(nameof(GetBooking), new { id = response!.Id }, response),
-            BookingOperationStatus.BadRequest => BadRequest(error),
-            BookingOperationStatus.Conflict => Conflict(error),
-            BookingOperationStatus.NotFound => NotFound(error),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, "Unknown status")
-        };
+        var result = await _bookingService.CreateBookingAsync(request, true);
+        if (!result.Success) return BadRequest(result.Error);
+        var response = result.Value!;
+        return CreatedAtAction(nameof(GetBooking), new { id = response.Id }, response);
     }
 
     /// <summary>
@@ -66,15 +58,17 @@ public class BookingsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBooking(int id, [FromBody] CreateBookingRequest request)
     {
-        var (status, error) = await _bookingService.UpdateBookingAsync(id, request);
-        return status switch
+        var result = await _bookingService.UpdateBookingAsync(id, request);
+        if (!result.Success)
         {
-            BookingOperationStatus.Success => NoContent(),
-            BookingOperationStatus.BadRequest => BadRequest(error),
-            BookingOperationStatus.Conflict => Conflict(error),
-            BookingOperationStatus.NotFound => NotFound(error),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, "Unknown status")
-        };
+            return result.Error switch
+            {
+                "Booking not found" => NotFound(result.Error),
+                "Room is already booked for the requested time" => Conflict(result.Error),
+                _ => BadRequest(result.Error)
+            };
+        }
+        return NoContent();
     }
 
     /// <summary>

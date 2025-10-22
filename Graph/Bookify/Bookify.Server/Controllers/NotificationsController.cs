@@ -1,4 +1,4 @@
-using Bookify.Server.DTOs;
+using Bookify.Server.Application.Bookings.Contracts;
 using Bookify.Server.Services;
 using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
@@ -286,10 +286,10 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                 Body = eventUpdate.Body?.Content ?? eventUpdate.BodyPreview
             };
 
-            var (status, response, errorMessage) = await bookingService.CreateBookingAsync(request, false);
-            if (response == null)
+            var result = await bookingService.CreateBookingAsync(request, false);
+            if (!result.Success)
             {
-                logger.LogWarning("CreateBookingAsync failed for event {EventId}. Status={Status} Error={Error}", eventId, status, errorMessage);
+                logger.LogWarning("CreateBookingAsync failed for event {EventId}. Error={Error}", eventId, result.Error);
                 return false;
             }
 

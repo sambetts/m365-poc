@@ -1,4 +1,4 @@
-using Bookify.Server.DTOs;
+using Bookify.Server.Application.Rooms.Contracts;
 using Bookify.Server.Models;
 
 namespace Bookify.Server.Services;

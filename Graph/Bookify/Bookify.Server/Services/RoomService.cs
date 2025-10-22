@@ -1,5 +1,5 @@
 using Bookify.Server.Data;
-using Bookify.Server.DTOs;
+using Bookify.Server.Application.Rooms.Contracts;
 using Bookify.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -62,7 +62,7 @@ public class RoomService : IRoomService
                     BookedBy = b.BookedBy,
                     StartTime = b.StartTime,
                     EndTime = b.EndTime,
-                    Title = b.Title, // include title so client can display / edit
+                    Title = b.Title,
                     Body = b.Body
                 })
                 .ToList();
@@ -108,7 +108,7 @@ public class RoomService : IRoomService
                 BookedBy = b.BookedBy,
                 StartTime = b.StartTime,
                 EndTime = b.EndTime,
-                Title = b.Title, // include title so edit dialog pre-fills correctly
+                Title = b.Title,
                 Body = b.Body
             })
             .ToListAsync();
