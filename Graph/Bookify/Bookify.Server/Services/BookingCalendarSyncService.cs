@@ -5,10 +5,24 @@ using Microsoft.Graph.Models;
 
 namespace Bookify.Server.Services;
 
+/// <summary>
+/// Synchronises external Microsoft365 calendar events with local <see cref="Booking"/> entities.
+/// Implements one-way update logic in response to Graph webhook notifications or explicit fetch requests.
+/// Responsibilities:
+/// - Translate event fragments (encrypted webhook resource data) into local booking changes.
+/// - Fetch full event data when only an event id is available.
+/// - Apply deletions (remove local booking when external event deleted).
+/// - Persist update audit trail via <see cref="UpdateLog"/> entries (Source = "notification").
+/// </summary>
 public class BookingCalendarSyncService(BookifyDbContext context, ILogger<BookingCalendarSyncService> logger, IExternalCalendarService calendarService) : IBookingCalendarSyncService
 {
     private static DateTime AsUtc(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
 
+    /// <summary>
+    /// Records a synchronisation action for diagnostics / audit history.
+    /// </summary>
+    /// <param name="action">Logical action applied (CalendarEventUpdated / CalendarEventDeleted).</param>
+    /// <param name="booking">Affected booking.</param>
     private void LogUpdate(string action, Booking booking)
     {
         context.UpdateLogs.Add(new UpdateLog
@@ -21,8 +35,16 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         });
     }
 
-    // Centralized comparison & application logic for updating a Booking from Graph event data.
-    // Applies provided (nullable) UTC start/end times, subject and attendees, returning true if any field changed.
+    /// <summary>
+    /// Applies external event data (full or fragment) to a booking, updating start/end/subject/attendees where changed.
+    /// Returns true if any field was modified.
+    /// </summary>
+    /// <param name="booking">Target local booking.</param>
+    /// <param name="startUtc">Optional new UTC start time.</param>
+    /// <param name="endUtc">Optional new UTC end time.</param>
+    /// <param name="subject">Optional new subject/title.</param>
+    /// <param name="attendees">Optional attendee email list (normalised lowercase).</param>
+    /// <returns>True if at least one property changed.</returns>
     private static bool ApplyEventDataToBooking(Booking booking, DateTime? startUtc, DateTime? endUtc, string? subject, List<string>? attendees)
     {
         var changed = false;
@@ -43,18 +65,24 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         }
         if (attendees != null)
         {
-            // Normalise incoming list
+            // Normalise incoming list (trim + lower + distinct + sorted) so comparisons are deterministic.
             var normalisedIncoming = attendees.Select(a => a.Trim().ToLowerInvariant()).Distinct().OrderBy(a => a).ToList();
             var normalisedExisting = booking.Attendees.Select(a => a.Trim().ToLowerInvariant()).Distinct().OrderBy(a => a).ToList();
             if (!normalisedIncoming.SequenceEqual(normalisedExisting))
             {
-                booking.Attendees = normalisedIncoming; // replace
+                booking.Attendees = normalisedIncoming; // Replace entire list.
                 changed = true;
             }
         }
         return changed;
     }
 
+    /// <summary>
+    /// Handles an external calendar event deletion by removing the associated local booking.
+    /// </summary>
+    /// <param name="eventId">External calendar event identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>True if a booking was found and removed; false otherwise.</returns>
     public async Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -73,6 +101,14 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         return true;
     }
 
+    /// <summary>
+    /// Applies a partial (fragment) update received from an encrypted Graph webhook notification.
+    /// Only fields present in the fragment are considered; missing fields are ignored.
+    /// </summary>
+    /// <param name="eventId">External event id.</param>
+    /// <param name="eventUpdateFragment">Partially populated <see cref="Event"/> instance (decrypted resource data).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>True if booking was updated; false if no booking found or no changes.</returns>
     public async Task<bool> ApplyBookingFromExternalFragmentAsync(string eventId, Event eventUpdateFragment, CancellationToken ct)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -84,6 +120,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
+        // Extract times if present.
         DateTime? startUtc = null;
         if (eventUpdateFragment.Start != null && DateTime.TryParse(eventUpdateFragment.Start.DateTime, out var start))
         {
@@ -96,9 +133,9 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         }
         var subject = eventUpdateFragment.Subject;
 
-        // Fragment may include attendees (depends on subscription shape). Extract if present.
+        // Extract attendees (may be omitted depending on subscription configuration).
         List<string>? attendees = null;
-        if (eventUpdateFragment.Attendees?.Count > 0)
+        if (eventUpdateFragment.Attendees?.Count >0)
         {
             attendees = eventUpdateFragment.Attendees
                 .Select(a => a.EmailAddress?.Address)
@@ -125,6 +162,13 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
         return changed;
     }
 
+    /// <summary>
+    /// Fetches full external event data (via Graph) and applies differences to a local booking.
+    /// Used when webhook payload does not include resource data or when a proactive refresh is needed.
+    /// </summary>
+    /// <param name="eventId">External event id.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>True if booking was updated; false if no booking found or no changes / fetch failed.</returns>
     public async Task<bool> UpdateBookingFromCalendarEventAsync(string eventId, CancellationToken ct = default)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -136,6 +180,7 @@ public class BookingCalendarSyncService(BookifyDbContext context, ILogger<Bookin
             return false;
         }
 
+        // Fetch full event details from external calendar service.
         var (success, startUtc, endUtc, subject, attendees) = await calendarService.GetRoomEventAsync(booking.Room, eventId, ct);
         if (!success)
         {

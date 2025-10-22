@@ -3,11 +3,10 @@ using Bookify.Server.DTOs;
 using Bookify.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using GraphEvent = Microsoft.Graph.Models.Event;
 
 namespace Bookify.Server.Services;
 
-public class BookingService(BookifyDbContext context, ILogger<BookingService> logger, IExternalCalendarService calendarService, IBookingCalendarSyncService calendarSync) : IBookingService
+public class BookingService(BookifyDbContext context, ILogger<BookingService> logger, IExternalCalendarService calendarService) : IBookingService
 {
     // --- Utility helpers ----------------------------------------------------
     private static DateTime AsUtc(DateTime dt) => dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc);
@@ -351,9 +350,4 @@ public class BookingService(BookifyDbContext context, ILogger<BookingService> lo
         logger.LogInformation(ServiceLogEvents.Fetch, "Found {Count} bookings for user {Email} in {ElapsedMs}ms", list.Count, email, sw.ElapsedMilliseconds);
         return list;
     }
-
-    // --- External calendar sync delegated ----------------------------------
-    public Task<bool> UpdateBookingFromCalendarEventAsync(string eventId, CancellationToken ct = default) => calendarSync.UpdateBookingFromCalendarEventAsync(eventId, ct);
-    public Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default) => calendarSync.ApplyCalendarEventDeletedAsync(eventId, ct);
-    public Task<bool> ApplyBookingFromExternalFragmentAsync(string eventId, GraphEvent eventUpdateFragment, CancellationToken ct) => calendarSync.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdateFragment, ct);
 }

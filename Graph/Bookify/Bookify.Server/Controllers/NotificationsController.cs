@@ -19,7 +19,7 @@ namespace Bookify.Server.Controllers;
 /// </remarks>
 [ApiController]
 [Route("api/[controller]")]
-public class NotificationsController(AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService) : ControllerBase
+public class NotificationsController(AppConfig config, ILogger<NotificationsController> logger, IBookingService bookingService, IBookingCalendarSyncService calendarSync) : ControllerBase
 {
     private X509Certificate2? _decryptingCert;
 
@@ -150,7 +150,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
             {
                 case ChangeType.Deleted:
                     // Attempt to propagate deletion into local store.
-                    if (await bookingService.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
+                    if (await calendarSync.ApplyCalendarEventDeletedAsync(eventId, ct)) deletions++; else skipped++;
                     break;
 
                 case ChangeType.Updated:
@@ -176,7 +176,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                     {
                         // Non-encrypted: may require separate Graph fetch inside booking service.
                         logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-                        if (await bookingService.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
+                        if (await calendarSync.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
                     }
                     break;
 
@@ -202,7 +202,7 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                     {
                         // Non-encrypted: may require separate Graph fetch inside booking service.
                         logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-                        if (await bookingService.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
+                        if (await calendarSync.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
                     }
                     break;
                 default:
@@ -239,7 +239,12 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
             }
 
             // Apply external fragment (partial event data) to local booking store.
-            return await bookingService.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdate, ct);
+
+            var eventUpdated = new Action<Event>(e => { /* Update logic here */ });
+            var changesFoundInLocalDb = await calendarSync.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdate, ct);
+            if (changesFoundInLocalDb) eventUpdated(eventUpdate);
+
+            return changesFoundInLocalDb;
         }
         catch (Exception ex)
         {

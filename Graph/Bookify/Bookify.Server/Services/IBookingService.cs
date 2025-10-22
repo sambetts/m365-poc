@@ -1,6 +1,4 @@
 using Bookify.Server.DTOs;
-using Microsoft.Graph.Models;
-using GraphEvent = Microsoft.Graph.Models.Event;
 
 namespace Bookify.Server.Services;
 
@@ -20,9 +18,5 @@ public interface IBookingService
     Task<(BookingOperationStatus status, string? errorMessage)> UpdateBookingAsync(int id, CreateBookingRequest request);
     Task<bool> DeleteBookingAsync(int id);
     Task<IEnumerable<BookingResponse>> GetUserBookingsAsync(string email);
-
-    // Calendar sync operations invoked by webhook notifications
-    Task<bool> UpdateBookingFromCalendarEventAsync(string eventId, CancellationToken ct = default);
-    Task<bool> ApplyCalendarEventDeletedAsync(string eventId, CancellationToken ct = default);
-    Task<bool> ApplyBookingFromExternalFragmentAsync(string eventId, GraphEvent eventUpdateFragment, CancellationToken ct);
+    // External calendar sync operations have been removed; callers should depend directly on IBookingCalendarSyncService.
 }
