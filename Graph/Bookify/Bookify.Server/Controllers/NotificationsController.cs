@@ -154,48 +154,11 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                     break;
 
                 case ChangeType.Updated:
-                    // Prefer encrypted content when provided (more data, privacy compliance).
-                    if (n.EncryptedContent != null)
-                    {
-
-                        // Retrieve certificate used for decrypting resource data (if encrypted notifications used).
-                        if (_decryptingCert == null)
-                        {
-                            _decryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
-                                "webhooks",
-                                config.AzureAdConfig.TenantId,
-                                config.AzureAdConfig.ClientId,
-                                config.AzureAdConfig.ClientSecret,
-                                config.KeyVaultUrl);
-                        }
-
-                        var success = await HandleEncryptedUpdateAsync(n, eventId, _decryptingCert, ct);
-                        if (success) updates++; else skipped++;
-                    }
-                    else
-                    {
-                        // Non-encrypted: may require separate Graph fetch inside booking service.
-                        logger.LogInformation("Graph change notification: Sub={Sub} Type={Type} Resource={Resource} Expires={Exp}", n.SubscriptionId, n.ChangeType, n.Resource, n.SubscriptionExpirationDateTime);
-                        if (await calendarSync.UpdateBookingFromCalendarEventAsync(eventId, ct)) updates++; else skipped++;
-                    }
-                    break;
-
                 case ChangeType.Created:
                     // Prefer encrypted content when provided (more data, privacy compliance).
                     if (n.EncryptedContent != null)
                     {
-                        // Retrieve certificate used for decrypting resource data (if encrypted notifications used).
-                        if (_decryptingCert == null)
-                        {
-                            _decryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
-                                "webhooks",
-                                config.AzureAdConfig.TenantId,
-                                config.AzureAdConfig.ClientId,
-                                config.AzureAdConfig.ClientSecret,
-                                config.KeyVaultUrl);
-                        }
-
-                        var success = await HandleEncryptedCreateAsync(n, eventId, _decryptingCert, ct);
+                        var success = await HandleEncryptedUpsertAsync(n, eventId, ct);
                         if (success) updates++; else skipped++;
                     }
                     else
@@ -216,88 +179,79 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
     }
 
     /// <summary>
-    /// Handles an Updated change notification that includes encrypted content.
-    /// Decrypts the resource data, deserializes the Event fragment, and applies it through booking service.
+    /// Ensures the decrypting certificate is loaded once (lazy initialization).
     /// </summary>
-    /// <param name="n">The originating change notification.</param>
-    /// <param name="eventId">Resolved calendar event id.</param>
-    /// <param name="decryptingCert">Certificate for decrypting payload.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>True if update applied successfully; false if skipped or failed.</returns>
-    private async Task<bool> HandleEncryptedUpdateAsync(ChangeNotification n, string eventId, X509Certificate2 decryptingCert, CancellationToken ct)
+    private async Task<X509Certificate2> EnsureDecryptingCertificateAsync()
     {
-        try
-        {
-            // Decrypt resource data to obtain minimal event fragment provided by webhook.
-            var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent!, decryptingCert);
-
-            var eventUpdate = await Utils.DeserializeGraphJson(notificationContentJson, Event.CreateFromDiscriminatorValue);
-            if (eventUpdate == null)
-            {
-                logger.LogWarning("Failed to deserialize decrypted notification content for event id {EventId}. Content: {Content}", eventId, notificationContentJson);
-                return false;
-            }
-
-            // Apply external fragment (partial event data) to local booking store.
-
-            var eventUpdated = new Action<Event>(e => { /* Update logic here */ });
-            var changesFoundInLocalDb = await calendarSync.ApplyBookingFromExternalFragmentAsync(eventId, eventUpdate, ct);
-            if (changesFoundInLocalDb) eventUpdated(eventUpdate);
-
-            return changesFoundInLocalDb;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error handling encrypted update for event id {EventId}", eventId);
-            return false;
-        }
+        if (_decryptingCert != null) return _decryptingCert;
+        _decryptingCert = await AuthUtils.RetrieveKeyVaultCertificate(
+            "webhooks",
+            config.AzureAdConfig.TenantId,
+            config.AzureAdConfig.ClientId,
+            config.AzureAdConfig.ClientSecret,
+            config.KeyVaultUrl);
+        return _decryptingCert;
     }
 
-    private async Task<bool> HandleEncryptedCreateAsync(ChangeNotification n, string eventId, X509Certificate2 decryptingCert, CancellationToken ct)
+    /// <summary>
+    /// Unified handler for encrypted Created or Updated notifications.
+    /// Decrypts payload, materializes Event fragment, then dispatches to create or update logic.
+    /// </summary>
+    private async Task<bool> HandleEncryptedUpsertAsync(ChangeNotification n, string eventId, CancellationToken ct)
     {
         try
         {
-            var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent!, decryptingCert);
-            var eventUpdate = await Utils.DeserializeGraphJson(notificationContentJson, Event.CreateFromDiscriminatorValue);
-            if (eventUpdate == null)
+            var cert = await EnsureDecryptingCertificateAsync();
+            var notificationContentJson = EncryptedContentUtils.DecryptResourceDataContent(n.EncryptedContent!, cert);
+            var evt = await Utils.DeserializeGraphJson(notificationContentJson, Event.CreateFromDiscriminatorValue);
+            if (evt == null)
             {
                 logger.LogWarning("Failed to deserialize decrypted notification content for event id {EventId}. Content: {Content}", eventId, notificationContentJson);
                 return false;
             }
 
-            // Build CreateBookingRequest from Graph Event
-            var start = ParseDateTime(eventUpdate.Start);
-            var end = ParseDateTime(eventUpdate.End);
 
-            var request = new CreateBookingRequest
-            {
-                RoomId = eventUpdate.Location?.UniqueId
-                         ?? eventUpdate.Location?.LocationEmailAddress
-                         ?? eventUpdate.Location?.DisplayName
-                         ?? "unknown",
-                BookedBy = eventUpdate.Organizer?.EmailAddress?.Name
-                           ?? eventUpdate.Organizer?.EmailAddress?.Address
-                           ?? "unknown",
-                BookedByEmail = eventUpdate.Organizer?.EmailAddress?.Address
-                                ?? config.SharedRoomMailboxUpn,
-                StartTime = start,
-                EndTime = end,
-                Title = eventUpdate.Subject,
-                Body = eventUpdate.Body?.Content ?? eventUpdate.BodyPreview
-            };
 
-            var result = await bookingService.CreateBookingAsync(request, false);
-            if (!result.Success)
+            if (n.ChangeType == ChangeType.Updated)
             {
-                logger.LogWarning("CreateBookingAsync failed for event {EventId}. Error={Error}", eventId, result.Error);
-                return false;
+                // Update existing booking from partial external fragment
+                var changed = await calendarSync.ApplyBookingFromExternalFragmentAsync(eventId, evt, ct);
+                return changed;
             }
-
-            return true;
+            else if (n.ChangeType == ChangeType.Created)
+            {
+                // Create booking locally from new event fragment
+                var start = ParseDateTime(evt.Start);
+                var end = ParseDateTime(evt.End);
+                var request = new CreateBookingRequest
+                {
+                    RoomId = evt.Location?.UniqueId
+                             ?? evt.Location?.LocationEmailAddress
+                             ?? evt.Location?.DisplayName
+                             ?? "unknown",
+                    BookedBy = evt.Organizer?.EmailAddress?.Name
+                               ?? evt.Organizer?.EmailAddress?.Address
+                               ?? "unknown",
+                    BookedByEmail = evt.Organizer?.EmailAddress?.Address
+                                    ?? config.SharedRoomMailboxUpn,
+                    StartTime = start,
+                    EndTime = end,
+                    Title = evt.Subject,
+                    Body = evt.Body?.Content ?? evt.BodyPreview
+                };
+                var result = await bookingService.CreateBookingAsync(request, false);
+                if (!result.Success)
+                {
+                    logger.LogWarning("CreateBookingAsync failed for event {EventId}. Error={Error}", eventId, result.Error);
+                    return false;
+                }
+                return true;
+            }
+            return false;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error handling encrypted create for event id {EventId}", eventId);
+            logger.LogError(ex, "Error handling encrypted upsert for event id {EventId}", eventId);
             return false;
         }
 
