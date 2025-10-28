@@ -4,6 +4,7 @@ using GraphNotifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Graph.Models;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json; // added for optional debug tracing serialization
 
 namespace Bookify.Server.Controllers;
 
@@ -12,7 +13,7 @@ namespace Bookify.Server.Controllers;
 /// Implements validation handshake (GET with validationToken) and processes POST notifications including optional encrypted resource data.
 /// </summary>
 /// <remarks>
-/// Microsoft Graph documentation references (provide multiple fallback URLs to mitigate restructuring / 404 issues):
+/// Microsoft Graph documentation references (provide multiple fallback URLs to mitigate restructuring /404 issues):
 /// Overview (change notifications): https://learn.microsoft.com/graph/change-notifications-overview
 /// Subscription resource: https://learn.microsoft.com/graph/api/resources/subscription
 /// Encrypted resource data: https://learn.microsoft.com/graph/change-notifications-with-resource-data
@@ -210,7 +211,28 @@ public class NotificationsController(AppConfig config, ILogger<NotificationsCont
                 return false;
             }
 
-
+            // Optional debug tracing: if env var WEBHOOK_TRACE_DIR is set, write composite payload to disk.
+            var traceDir = Environment.GetEnvironmentVariable("WEBHOOK_TRACE_DIR");
+            if (!string.IsNullOrWhiteSpace(traceDir))
+            {
+                try
+                {
+                    Directory.CreateDirectory(traceDir); // safe even if exists
+                    var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmssfff}_{n.ChangeType}_{eventId}.json";
+                    var path = Path.Combine(traceDir, fileName);
+                    var composite = new
+                    {
+                        Notification = n, // full notification object,
+                        CalendarEventPayload = evt
+                    };
+                    var json = JsonSerializer.Serialize(composite, new JsonSerializerOptions { WriteIndented = true });
+                    await System.IO.File.WriteAllTextAsync(path, json, ct);
+                }
+                catch (Exception tex)
+                {
+                    logger.LogDebug(tex, "Failed writing webhook trace for event {EventId}", eventId);
+                }
+            }
 
             if (n.ChangeType == ChangeType.Updated)
             {
