@@ -28,7 +28,8 @@
       "applicationUrl": "https://localhost:7163;http://localhost:5026",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy"
+        "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES": "Microsoft.AspNetCore.SpaProxy",
+        "WEBHOOK_TRACE_DIR": "C:\\Users\\sambetts\\Desktop\\Out"
       }
     },
     "IIS Express": {
