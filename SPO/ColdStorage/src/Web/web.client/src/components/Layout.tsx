@@ -1,5 +1,4 @@
 import { Component, PropsWithChildren } from 'react';
-import { Container } from 'reactstrap';
 import { NavMenu } from './NavMenu';
 
 export class Layout extends Component<PropsWithChildren<{}>> {
@@ -7,11 +6,13 @@ export class Layout extends Component<PropsWithChildren<{}>> {
 
   render () {
     return (
-      <div>
+      <div className="spo-app">
         <NavMenu />
-        <Container>
-          {this.props.children}
-        </Container>
+        <main className="spo-page-container">
+          <div className="spo-content">
+            {this.props.children}
+          </div>
+        </main>
       </div>
     );
   }

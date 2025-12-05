@@ -5,6 +5,7 @@ using Microsoft.Identity.Client;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
+using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 using System;
 
@@ -21,7 +22,7 @@ namespace SPO.ColdStorage.Migration.Engine.Migration
 
         public SharePointFileMigrator(Config config, DebugTracer debugTracer) : base(config, debugTracer)
         {
-            _sbClient = new ServiceBusClient(_config.ConnectionStrings.ServiceBus);
+            _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
             _sbSender = _sbClient.CreateSender(_config.ServiceBusQueueName);
             _db = new SPOColdStorageDbContext(_config);
         }
@@ -150,3 +151,4 @@ namespace SPO.ColdStorage.Migration.Engine.Migration
         }
     }
 }
+

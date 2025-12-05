@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Migration;
+using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 using System.Collections.Concurrent;
 
@@ -22,7 +23,7 @@ namespace SPO.ColdStorage.Migration.Engine
 
         public ServiceBusMigrationListener(Config config, DebugTracer debugTracer) : base(config, debugTracer)
         {
-            _sbClient = new ServiceBusClient(_config.ConnectionStrings.ServiceBus);
+            _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
             _receiver = _sbClient.CreateProcessor(_config.ServiceBusQueueName, new ServiceBusProcessorOptions
             {
                 MaxConcurrentCalls = 10,
@@ -50,8 +51,7 @@ namespace SPO.ColdStorage.Migration.Engine
                 _receiver.ProcessErrorAsync += ErrorHandler;
 
                 // Start processing SB messages
-                var sbConnectionProps = ServiceBusConnectionStringProperties.Parse(_config.ConnectionStrings.ServiceBus);
-                _tracer.TrackTrace($"Listening on service-bus '{sbConnectionProps.Endpoint}' for new files to migrate.");
+                _tracer.TrackTrace($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
                 await _receiver.StartProcessingAsync();
 
                 // Block infinitely
