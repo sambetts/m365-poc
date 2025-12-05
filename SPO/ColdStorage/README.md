@@ -40,6 +40,10 @@ The search integration is so far basic but includes the ability to search inside
 Finally, the configuration for indexing targets can be set in the web-application itself:
  
 Next time the indexer is run, this configuration will be used to add files to the migration queue. 
+
+## Database Structure
+For detailed information about the SQL database schema, tables, relationships, and common queries, see the **[Database Structure Documentation](DATABASE_STRUCTURE.md)**.
+
 ## Configuration Inventory
 The following configuration items are needed either in an appSettings.json file or app service configuration. 
 
@@ -64,6 +68,10 @@ During the azure component setup, take a note of each configuration item for lat
 
 In addition to this, we also need a URL for the web-application. This is so we can configure a reply URL for the web authentication. This URL is only needed for the Azure AD application; not for solution configuration itself. 
 The solution is built on .Net 6 – LTS. 
+
+## Documentation
+- **[Database Structure](DATABASE_STRUCTURE.md)** - Complete SQL database schema documentation including tables, relationships, and common queries
+
 ## Setup Instructions
 There are three parts of the system – Azure resources, Azure AD application, and the solution itself.
 
@@ -161,6 +169,159 @@ Server=spocoldstorage.database.windows.net,1433;Initial Catalog=spocoldstorage;P
 ```
 
 Replace the values with your own.
+
+## Configure RBAC Roles for Azure Resources
+After creating the Azure resources, you need to assign appropriate RBAC (Role-Based Access Control) roles to allow the application to access these resources. You have two options for identity management:
+
+### Option 1: Using Managed Identity (Recommended for Azure Deployments)
+If deploying to Azure App Service, Azure Functions, or other Azure compute resources, use a System-assigned Managed Identity:
+
+1. **Enable Managed Identity on your compute resource**:
+   * For Azure App Service: Go to Settings > Identity > System assigned tab > Set Status to "On" > Save
+   * Note down the Object (principal) ID shown after enabling
+
+2. **Assign RBAC roles using the Managed Identity**:
+   * Use the Object (principal) ID from step 1 for all role assignments below
+   * The Managed Identity will authenticate automatically without needing connection strings or secrets
+
+### Option 2: Using Azure AD Application Service Principal
+If running locally, on VMs, or in non-Azure environments, use the Azure AD application created earlier:
+
+1. **Find your application's Service Principal**:
+   * In Azure Portal > Azure Active Directory > Enterprise Applications
+   * Search for your application name (created in "Create & Configure Solution Azure AD Application")
+   * Note down the Object ID (this is different from the Application/Client ID)
+
+2. **Use this Object ID** for all role assignments below
+
+### Required RBAC Role Assignments
+
+For each Azure resource created, assign the following roles. You can assign roles via:
+* Azure Portal: Resource > Access control (IAM) > Add role assignment
+* Azure CLI (see examples below)
+* PowerShell
+
+#### 1. Storage Account Roles
+Assign to the identity (Managed Identity or Service Principal):
+
+* **Storage Blob Data Contributor** - Allows read, write, and delete access to blob containers and data
+  * Scope: The storage account created for cold storage
+  * Why: The migrator needs to upload files to blob storage; the web app needs to read/write blobs
+
+```powershell
+# Using Azure CLI
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Storage Blob Data Contributor" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.Storage/storageAccounts/<STORAGE_ACCOUNT_NAME>
+```
+
+#### 2. Key Vault Roles
+Assign to the identity (Managed Identity or Service Principal):
+
+* **Key Vault Secrets User** - Allows read access to secret contents
+  * Scope: The Key Vault created for certificate storage
+  * Why: The application needs to read secrets from Key Vault
+
+* **Key Vault Certificate User** - Allows read access to certificates
+  * Scope: The Key Vault created for certificate storage
+  * Why: The application needs to read the SharePoint access certificate
+
+```powershell
+# Using Azure CLI
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Key Vault Secrets User" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.KeyVault/vaults/<KEY_VAULT_NAME>
+
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Key Vault Certificate User" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.KeyVault/vaults/<KEY_VAULT_NAME>
+```
+
+Note: If using Access Policies model instead of RBAC for Key Vault, the access policy configuration in step 3 under "Setup Azure Resources" should be sufficient.
+
+#### 3. Service Bus Roles
+Assign to the identity (Managed Identity or Service Principal):
+
+* **Azure Service Bus Data Sender** - Allows sending messages to Service Bus queues
+  * Scope: The Service Bus namespace or specific queue
+  * Why: The indexer needs to send messages to the queue
+
+* **Azure Service Bus Data Receiver** - Allows receiving messages from Service Bus queues
+  * Scope: The Service Bus namespace or specific queue
+  * Why: The migrator needs to receive and process messages from the queue
+
+```powershell
+# Using Azure CLI
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Azure Service Bus Data Sender" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.ServiceBus/namespaces/<SERVICE_BUS_NAMESPACE>
+
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Azure Service Bus Data Receiver" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.ServiceBus/namespaces/<SERVICE_BUS_NAMESPACE>
+```
+
+#### 4. Azure SQL Database Roles
+Assign to the identity (Managed Identity or Service Principal):
+
+* **SQL DB Contributor** - Allows management of SQL databases (optional, if you want to manage the database through the identity)
+  * Scope: The SQL database or SQL server
+  * Why: Allows database schema management if needed
+
+For database access, you also need to create a database user mapped to the identity:
+
+```sql
+-- Connect to your SQL database and run:
+CREATE USER [<APP_NAME_OR_MANAGED_IDENTITY_NAME>] FROM EXTERNAL PROVIDER;
+ALTER ROLE db_datareader ADD MEMBER [<APP_NAME_OR_MANAGED_IDENTITY_NAME>];
+ALTER ROLE db_datawriter ADD MEMBER [<APP_NAME_OR_MANAGED_IDENTITY_NAME>];
+ALTER ROLE db_ddladmin ADD MEMBER [<APP_NAME_OR_MANAGED_IDENTITY_NAME>];
+```
+
+Note: The current solution uses SQL authentication (username/password) so this step is optional unless you want to migrate to Azure AD authentication for SQL.
+
+#### 5. Azure Cognitive Search Roles
+Assign to the identity (Managed Identity or Service Principal):
+
+* **Search Index Data Reader** - Allows read access to search index data
+  * Scope: The Azure Cognitive Search service
+  * Why: The web application needs to query the search index
+
+* **Search Service Contributor** - Allows management of the search service (optional)
+  * Scope: The Azure Cognitive Search service
+  * Why: If you want the application to manage indexers and data sources
+
+```powershell
+# Using Azure CLI
+az role assignment create \
+  --assignee <OBJECT_ID> \
+  --role "Search Index Data Reader" \
+  --scope /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.Search/searchServices/<SEARCH_SERVICE_NAME>
+```
+
+### Verification
+After assigning roles, verify access by:
+1. Checking "Access control (IAM)" > "Role assignments" in each Azure resource
+2. Testing the application startup - check Application Insights or logs for authentication errors
+3. Running a test migration to verify all permissions are working correctly
+
+### Migration from Connection Strings to RBAC
+If you're currently using connection strings and want to migrate to RBAC-based access:
+1. Assign all the RBAC roles listed above
+2. Update your application configuration to use **DefaultAzureCredential** or **ManagedIdentityCredential**
+3. Remove connection strings from configuration (except SQL, which still requires a connection string unless migrated to Azure AD auth)
+4. Test thoroughly before removing the connection string configuration
+
+### Important Notes
+* RBAC role assignments can take up to 5 minutes to propagate
+* For production deployments, use Managed Identity rather than Service Principal with secrets
+* Regularly audit role assignments to follow the principle of least privilege
+* Consider using Azure Policy to enforce RBAC usage instead of access keys/connection strings
 
 ## Create a Search Service for Blob Storage Contents
 We’ll use an Azure Cognitive Search service to keep track of contents uploaded. That way if content is moved outside the migration tool, we’ll have a single point of searching for results without any dependency on a custom solution. 

@@ -48,10 +48,24 @@ namespace SPO.ColdStorage.Entities
             var migratedFileRecord = await db.Files.Where(f => f.Url.ToLower() == fileMigrated.FullSharePointUrl.ToLower()).FirstOrDefaultAsync();
             if (migratedFileRecord == null)
             {
+                // Find or create directory if provided
+                FileDirectory? directory = null;
+                if (!string.IsNullOrEmpty(fileMigrated.DirectoryPath))
+                {
+                    directory = await db.FileDirectories.Where(d => d.DirectoryPath == fileMigrated.DirectoryPath).FirstOrDefaultAsync();
+                    if (directory == null)
+                    {
+                        directory = new FileDirectory { DirectoryPath = fileMigrated.DirectoryPath };
+                        db.FileDirectories.Add(directory);
+                    }
+                }
+
                 migratedFileRecord = new SPFile
                 {
                     Url = fileMigrated.FullSharePointUrl.ToLower(),
-                    Web = fileWeb
+                    Web = fileWeb,
+                    Directory = directory,
+                    CreatedDate = fileMigrated.CreatedDate
                 };
                 db.Files.Append(migratedFileRecord);
             }

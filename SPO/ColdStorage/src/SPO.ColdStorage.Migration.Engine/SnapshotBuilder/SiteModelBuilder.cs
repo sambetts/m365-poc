@@ -7,6 +7,7 @@ using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Migration.Engine.Connectors;
 using Microsoft.SharePoint.Client;
+using Microsoft.EntityFrameworkCore;
 
 namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
 {
@@ -63,6 +64,24 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
         }
 
         #endregion
+
+        /// <summary>
+        /// Check if a file was successfully analyzed recently and should be skipped
+        /// </summary>
+        private async Task<bool> ShouldSkipFileAnalysis(DriveItemSharePointFileInfo fileInfo)
+        {
+            var existingFile = await _db.Files.Where(f => f.Url == fileInfo.FullSharePointUrl).SingleOrDefaultAsync();
+            if (existingFile?.AnalysisCompleted != null)
+            {
+                var cutoffDate = DateTime.Now.AddHours(-_config.AnalysisSkipHours);
+                if (existingFile.AnalysisCompleted.Value > cutoffDate)
+                {
+                    _tracer.TrackTrace($"Skipping analysis for {fileInfo.ServerRelativeFilePath} - already analyzed at {existingFile.AnalysisCompleted.Value}");
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /// <summary>
         /// Background tasks getting item analytics
@@ -254,9 +273,20 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
             {
                 lock (this)
                 {
-                    // Update model
-                    var itemVersionInfo = versionUpdates.Where(i => i.Key.Equals(fileUpdated.Key)).SingleOrDefault();
-                    updatedFiles.Add(_model.UpdateDocItemAndInvalidateCaches(fileUpdated.Key, fileUpdated.Value, itemVersionInfo.Value.Versions.ToVersionStorageInfo()));
+                    // Update model - use TryGetValue for better performance
+                    if (versionUpdates.TryGetValue(fileUpdated.Key, out var versionInfo))
+                    {
+                        var updatedDoc = _model.UpdateDocItemAndInvalidateCaches(fileUpdated.Key, fileUpdated.Value, versionInfo.Versions.ToVersionStorageInfo());
+                        updatedDoc.State = SiteFileAnalysisState.Complete;
+                        updatedFiles.Add(updatedDoc);
+                    }
+                    else
+                    {
+                        // Handle case where version info wasn't retrieved (HTTP error, throttling, etc.)
+                        var updatedDoc = _model.UpdateDocItemAndInvalidateCaches(fileUpdated.Key, fileUpdated.Value, null);
+                        updatedDoc.State = SiteFileAnalysisState.Complete;
+                        updatedFiles.Add(updatedDoc);
+                    }
                 }
             }
 
@@ -274,7 +304,7 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
             _fileFoundBuffer.Clear();
         }
 
-        private Task Crawler_SharePointFileFound(SharePointFileInfoWithList foundFile, int batchSize, Action<List<SharePointFileInfoWithList>>? newFilesCallback)
+        private async Task Crawler_SharePointFileFound(SharePointFileInfoWithList foundFile, int batchSize, Action<List<SharePointFileInfoWithList>>? newFilesCallback)
         {
             SharePointFileInfoWithList? newFile = null;
 
@@ -282,8 +312,17 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
             {
                 var driveArg = (DriveItemSharePointFileInfo)foundFile;
 
-                // Set newly found file as "pending" analysis data
-                newFile = new DocumentSiteWithMetadata(driveArg) { State = SiteFileAnalysisState.AnalysisPending };
+                // Check if file was already analyzed recently
+                if (await ShouldSkipFileAnalysis(driveArg))
+                {
+                    // Mark as already complete - no need to analyze again
+                    newFile = new DocumentSiteWithMetadata(driveArg) { State = SiteFileAnalysisState.Complete };
+                }
+                else
+                {
+                    // Set newly found file as "pending" analysis data
+                    newFile = new DocumentSiteWithMetadata(driveArg) { State = SiteFileAnalysisState.AnalysisPending };
+                }
             }
             else
             {
@@ -309,7 +348,7 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
                 }
             }
 
-            return Task.CompletedTask;
+            return;
         }
     }
 }

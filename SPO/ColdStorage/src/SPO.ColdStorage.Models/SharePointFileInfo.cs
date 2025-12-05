@@ -15,7 +15,9 @@ namespace SPO.ColdStorage.Models
             this.ServerRelativeFilePath = driveArg.ServerRelativeFilePath;
             this.Author = driveArg.Author;
             this.Subfolder = driveArg.Subfolder;
+            this.DirectoryPath = driveArg.DirectoryPath;
             this.LastModified = driveArg.LastModified;
+            this.CreatedDate = driveArg.CreatedDate;
             this.FileSize = driveArg.FileSize;
         }
 
@@ -41,7 +43,14 @@ namespace SPO.ColdStorage.Models
         /// </summary>
         public string Subfolder { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Directory path where the file was found
+        /// </summary>
+        public string DirectoryPath { get; set; } = string.Empty;
+
         public DateTime LastModified { get; set; } = DateTime.MinValue;
+
+        public DateTime? CreatedDate { get; set; }
 
         /// <summary>
         /// Bytes

@@ -104,17 +104,18 @@ namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder
                 _tracer.TrackTrace($"Got update for a file that we haven't inserted yet...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
                 existingFile = await updatedFile.GetDbFileForFileInfo(db);
             }
-            if (existingFile.StatsUpdated.HasValue)
+            if (existingFile.AnalysisCompleted.HasValue)
             {
                 results = StatsSaveResult.Updated;
             }
 
             // Set stats
-            existingFile.StatsUpdated = DateTime.Now;
+            existingFile.AnalysisCompleted = DateTime.Now;
             existingFile.AccessCount = updatedFile.AccessCount;
             existingFile.VersionCount = updatedFile.VersionCount;
             existingFile.VersionHistorySize = updatedFile.VersionHistorySize;
             existingFile.LastModified = updatedFile.LastModified;
+            existingFile.CreatedDate = updatedFile.CreatedDate;
             existingFile.FileSize = updatedFile.FileSize;
 
             return results;

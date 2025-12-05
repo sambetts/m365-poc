@@ -30,7 +30,17 @@ namespace SPO.ColdStorage.Entities.Configuration
                     {
                         throw new ConfigurationMissingException(prop.Name);
                     }
-                    prop.SetValue(this, configVal);
+                    if (prop.PropertyType == typeof(int))
+                    {
+                        if (int.TryParse(configVal, out var intVal))
+                        {
+                            prop.SetValue(this, intVal);
+                        }
+                    }
+                    else
+                    {
+                        prop.SetValue(this, configVal);
+                    }
                 }
 
                 // Set config sub-sections

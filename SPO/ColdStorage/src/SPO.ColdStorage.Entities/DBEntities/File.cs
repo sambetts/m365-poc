@@ -21,16 +21,24 @@ namespace SPO.ColdStorage.Entities.DBEntities
 
         public Web Web { get; set; } = null!;
 
+        [ForeignKey(nameof(Directory))]
+        [Column("directory_id")]
+        public int? DirectoryId { get; set; }
+
+        public FileDirectory? Directory { get; set; }
+
 
         [Column("access_count")]
         public int? AccessCount { get; set; } = null;
 
-        [Column("stats_updated")]
-        public DateTime? StatsUpdated { get; set; }
-
+        [Column("analysis_completed")]
+        public DateTime? AnalysisCompleted { get; set; }
 
         [Column("last_modified")]
         public DateTime LastModified { get; set; } = DateTime.MinValue;
+
+        [Column("created_date")]
+        public DateTime? CreatedDate { get; set; }
 
         public User LastModifiedBy { get; set; } = new User();
 

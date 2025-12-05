@@ -43,6 +43,7 @@ namespace SPO.ColdStorage.Entities
         public DbSet<Site> Sites { get; set; } = null!;
         public DbSet<Web> Webs { get; set; } = null!;
         public DbSet<SPFile> Files { get; set; } = null!;
+        public DbSet<FileDirectory> FileDirectories { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<StagingTempFile> StagingFiles { get; set; } = null!;
         public DbSet<FileMigrationErrorLog> FileMigrationErrors { get; set; } = null!;
@@ -59,6 +60,10 @@ namespace SPO.ColdStorage.Entities
 
             builder.Entity<Site>()
                 .HasIndex(u => u.Url)
+                .IsUnique();
+
+            builder.Entity<FileDirectory>()
+                .HasIndex(u => u.DirectoryPath)
                 .IsUnique();
         }
         protected override void OnConfiguring(DbContextOptionsBuilder options)

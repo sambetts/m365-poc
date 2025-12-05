@@ -92,7 +92,7 @@ namespace SPO.ColdStorage.Models
             return results;
         }
 
-        public DocumentSiteWithMetadata UpdateDocItemAndInvalidateCaches(DriveItemSharePointFileInfo updatedDocInfo, ItemAnalyticsRepsonse.AnalyticsItemActionStat accessStats, VersionStorageInfo versionStorageInfo)
+        public DocumentSiteWithMetadata UpdateDocItemAndInvalidateCaches(DriveItemSharePointFileInfo updatedDocInfo, ItemAnalyticsRepsonse.AnalyticsItemActionStat accessStats, VersionStorageInfo? versionStorageInfo)
         {
             var docLib = AllDocLibs.Where(l => l.DriveId == updatedDocInfo.DriveId).SingleOrDefault();
             if (docLib == null) throw new ArgumentOutOfRangeException(nameof(updatedDocInfo), $"No library in model for drive Id {updatedDocInfo.DriveId}");
@@ -102,8 +102,8 @@ namespace SPO.ColdStorage.Models
             {
                 // Set downloaded metadata
                 file.AccessCount = accessStats.ActionCount;
-                file.VersionHistorySize = versionStorageInfo.TotalSize;
-                file.VersionCount = versionStorageInfo.VersionCount;
+                file.VersionHistorySize = versionStorageInfo?.TotalSize ?? 0;
+                file.VersionCount = versionStorageInfo?.VersionCount ?? 0;
 
                 InvalidateCaches();
 

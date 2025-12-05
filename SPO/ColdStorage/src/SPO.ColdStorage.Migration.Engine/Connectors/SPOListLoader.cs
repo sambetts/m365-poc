@@ -55,6 +55,7 @@ namespace SPO.ColdStorage.Migration.Engine.Connectors
                                     item => item.Id,
                                     item => item.FileSystemObjectType,
                                     item => item["Modified"],
+                                    item => item["Created"],
                                     item => item["Editor"],
                                     item => item["File_x0020_Size"],
                                     item => item.File.Exists,
@@ -79,6 +80,7 @@ namespace SPO.ColdStorage.Migration.Engine.Connectors
                                     item => item.Id,
                                     item => item.AttachmentFiles,
                                     item => item["Modified"],
+                                    item => item["Created"],
                                     item => item["Editor"],
                                     item => item.File.Exists,
                                     item => item.File.ServerRelativeUrl
@@ -193,7 +195,18 @@ namespace SPO.ColdStorage.Migration.Engine.Connectors
                 throw new ArgumentOutOfRangeException(nameof(item), "Can't find dir column");
             }
 
+            // Get the full directory path (not truncated)
+            var fullDirectoryPath = item.FieldValues.ContainsKey("FileDirRef") ? item.FieldValues["FileDirRef"].ToString() : string.Empty;
+
             var dt = DateTime.MinValue;
+            DateTime? createdDate = null;
+            
+            // Parse creation date if available
+            if (item.FieldValues.ContainsKey("Created") && DateTime.TryParse(item.FieldValues["Created"]?.ToString(), out var createdDt))
+            {
+                createdDate = createdDt;
+            }
+            
             if (DateTime.TryParse(item.FieldValues["Modified"]?.ToString(), out dt))
             {
                 var authorFieldObj = item.FieldValues["Editor"];
@@ -218,6 +231,8 @@ namespace SPO.ColdStorage.Migration.Engine.Connectors
                             Author = author,
                             ServerRelativeFilePath = url,
                             LastModified = dt,
+                            CreatedDate = createdDate,
+                            DirectoryPath = fullDirectoryPath ?? string.Empty,
                             WebUrl = _spClient.Web.Url,
                             SiteUrl = _spClient.Site.Url,
                             Subfolder = dir.TrimEnd("/".ToCharArray()),
@@ -236,6 +251,8 @@ namespace SPO.ColdStorage.Migration.Engine.Connectors
                             Author = author,
                             ServerRelativeFilePath = url,
                             LastModified = dt,
+                            CreatedDate = createdDate,
+                            DirectoryPath = fullDirectoryPath ?? string.Empty,
                             WebUrl = _spClient.Web.Url,
                             SiteUrl = _spClient.Site.Url,
                             Subfolder = dir.TrimEnd("/".ToCharArray()),

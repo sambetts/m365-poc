@@ -25,6 +25,9 @@
 
         public bool HaveAppInsightsConfigured => !string.IsNullOrEmpty(AppInsightsInstrumentationKey);
 
+        [ConfigValue(true)]
+        public int AnalysisSkipHours { get; set; } = 24;
+
         [ConfigSection("AzureAd")]
         public AzureAdConfig AzureAdConfig { get; set; } = null!;
 

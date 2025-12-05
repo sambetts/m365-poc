@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Entities.Migrations;
 using SPO.ColdStorage.Migration.Engine.Connectors;
 using SPO.ColdStorage.Migration.Engine.Migration;
 using SPO.ColdStorage.Migration.Engine.Utils;
