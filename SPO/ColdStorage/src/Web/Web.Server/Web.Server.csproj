@@ -18,14 +18,16 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\SPO.ColdStorage.Entities\SPO.ColdStorage.Entities.csproj" />
+		<ProjectReference Include="..\..\SPO.ColdStorage.Migration.Engine\SPO.ColdStorage.Migration.Engine.csproj" />
 		<ProjectReference Include="..\web.client\web.client.esproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+			<SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
 		</ProjectReference>
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Data.Tables" Version="12.10.0" />
-		<PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
 		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.22.0" />
 		<PackageReference Include="Azure.Storage.Queues" Version="12.22.0" />
 		<PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
@@ -40,10 +42,6 @@
 		<PackageReference Include="Microsoft.Identity.Web" Version="3.8.3" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.2" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Controllers\" />
 	</ItemGroup>
 
 </Project>

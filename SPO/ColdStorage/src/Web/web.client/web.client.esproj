@@ -7,5 +7,8 @@
     <ShouldRunBuildScript>false</ShouldRunBuildScript>
     <!-- Folder where production build objects will be placed -->
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
+    <!-- Disable JavaScript debugging in Visual Studio -->
+    <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
+    <DebuggerFlavor>LaunchSpaProxyWithoutDebugging</DebuggerFlavor>
   </PropertyGroup>
 </Project>

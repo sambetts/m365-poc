@@ -15,6 +15,10 @@ export const loginRequest = {
   scopes: [readConfigVal("MSAL_SCOPES")]
 };
 
+export const storageRequest = {
+  scopes: ["https://storage.azure.com/user_impersonation"]
+};
+
 export const teamsAppConfig = {
   startLoginPageUrl: readConfigVal("TEAMSFX_START_LOGIN_PAGE_URL"),
 }

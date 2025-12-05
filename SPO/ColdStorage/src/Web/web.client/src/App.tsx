@@ -1,34 +1,73 @@
-
-import { AuthContainer } from './AuthContainer';
-import { AppRoutes, LoginMethod } from './AppRoutes';
 import React, { useState } from 'react';
+import { Route } from 'react-router';
+import { Layout } from './components/Layout';
+import { FileBrowser } from './components/FileBrowser/FileBrowser';
+import { Login } from './components/Login';
+import { FindFile } from './components/FileSearch/FindFile';
+import { FindMigrationLog } from './components/MigrationLogs/FindMigrationLog';
 
-import { BaseAxiosApiLoader } from './api/AxiosApiLoader';
-import { teamsLightTheme, Theme } from '@fluentui/react-components';
+import { AuthenticatedTemplate, UnauthenticatedTemplate, useIsAuthenticated, useMsal } from "@azure/msal-react";
+import { loginRequest } from "./authConfig";
 
-export const App: React.FC <{}> = () => {
+import './custom.css'
+import { MigrationTargetsConfig } from './components/MigrationTargets/MigrationTargetsConfig';
 
-    const [theme, setTheme] = useState<Theme>(teamsLightTheme);
-    const [apiLoader, setApiLoader] = useState<BaseAxiosApiLoader | undefined>();
-    const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>();
+export default function App() {
 
-    const [key, setKey] = React.useState(0);
+    const [accessToken, setAccessToken] = useState<string | null>();
+    const isAuthenticated = useIsAuthenticated();
+    const { instance, accounts } = useMsal();
 
-    const forceRerender = () => {
-        setKey(key + 1);
-        console.log("forceRerender: ", key);
-    };
+    const RequestAccessToken = React.useCallback(() => {
+        const request = {
+            ...loginRequest,
+            account: accounts[0]
+        };
 
-    const loginMethodChange = React.useCallback((method: LoginMethod) => {
-        setLoginMethod(method);
-        console.log("Login method changed to: ", method);
-    }, []);
+        // Silently acquires an access token which is then attached to a request for Microsoft Graph data
+        instance.acquireTokenSilent(request).then((response) => {
+            setAccessToken(response.accessToken);
+        }).catch((e) => {
+            instance.acquireTokenPopup(request).then((response) => {
+                setAccessToken(response.accessToken);
+            });
+        });
+    }, [accounts, instance]);
+
+    React.useEffect(() => {
+
+        // Get OAuth token
+        if (isAuthenticated && !accessToken) {
+            RequestAccessToken();
+        }
+    }, [accessToken, RequestAccessToken, isAuthenticated]);
+
 
     return (
-        <>
-            <AuthContainer teamsThemeChange={(style : Theme) => setTheme(style)} onApiLoaderReady={(l: BaseAxiosApiLoader) => setApiLoader(l)} loginMethodChange={loginMethodChange}>
-                <AppRoutes theme={theme} apiLoader={apiLoader} onAuthReload={forceRerender} loginMethod={loginMethod} />
-            </AuthContainer>
-        </>
+        <div>
+            {accessToken ?
+                (
+                    <Layout>
+                        <AuthenticatedTemplate>
+                                <Route path='/' render={() =><FileBrowser {... { token: accessToken! }} />} />
+                                <Route path='/FindFile' render={() =><FindFile {... { token: accessToken! }} />} />
+                                <Route path='/FindMigrationLog' render={() =><FindMigrationLog {... { token: accessToken! }} />} />
+                                <Route path='/MigrationTargets' render={() =><MigrationTargetsConfig {... { token: accessToken! }} />} />
+                        </AuthenticatedTemplate>
+                        <UnauthenticatedTemplate>
+                            <Route path='/' render={() =><Login />} />
+                        </UnauthenticatedTemplate>
+                    </Layout>
+                )
+                :
+                (
+                    <Layout>
+                        <UnauthenticatedTemplate>
+                            <Route path='/' render={() =><Login />} />
+                        </UnauthenticatedTemplate>
+                    </Layout>
+                )}
+        </div>
     );
+
 }

@@ -69,7 +69,7 @@ namespace SPO.ColdStorage.Entities
     /// <summary>
     /// For EF migrations
     /// </summary>
-    public class BuildSyncDbContextFactory : IDesignTimeDbContextFactory<SPOColdStorageDbContext>
+    public class DbContextFactory : IDesignTimeDbContextFactory<SPOColdStorageDbContext>
     {
         public SPOColdStorageDbContext CreateDbContext(string[] args)
         {
@@ -80,7 +80,7 @@ namespace SPO.ColdStorage.Entities
 
             var configCollection = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddUserSecrets(System.Reflection.Assembly.GetEntryAssembly(), true)
+                .AddUserSecrets(System.Reflection.Assembly.GetEntryAssembly()!, true)
                 .AddJsonFile("appsettings.json", true).Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<SPOColdStorageDbContext>();

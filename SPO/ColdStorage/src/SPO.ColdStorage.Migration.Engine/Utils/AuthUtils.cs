@@ -1,5 +1,6 @@
 ﻿using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Azure.Security.KeyVault.Certificates;
 using Microsoft.Identity.Client;
 using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Entities.Configuration;
@@ -15,11 +16,10 @@ namespace SPO.ColdStorage.Migration.Engine
         {
             if (_cachedCert == null)
             {
-                var client = new SecretClient(vaultUri: new Uri(keyVaultUrl), credential: new ClientSecretCredential(tenantId, clientId, clientSecret));
+                var keyClient = new CertificateClient(vaultUri: new Uri(keyVaultUrl), credential: new ClientSecretCredential(tenantId, clientId, clientSecret));
 
-                var secret = await client.GetSecretAsync(name);
-
-                _cachedCert = new X509Certificate2(Convert.FromBase64String(secret.Value.Value));
+                var certificate = await keyClient.DownloadCertificateAsync(name);
+                _cachedCert = certificate.Value;
             }
             return _cachedCert;
 

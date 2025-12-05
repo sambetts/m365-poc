@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Web;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
+using SPO.ColdStorage.Migration.Engine;
 using System.Threading.Tasks;
 
 namespace Web.Server;
@@ -26,6 +27,11 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         var config = new Config(builder.Configuration);
+        builder.Services.AddSingleton(config);
+
+        // Register DebugTracer for dependency injection
+        var debugTracer = new DebugTracer(config.AppInsightsInstrumentationKey, "Web.Server");
+        builder.Services.AddSingleton(debugTracer);
 
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));

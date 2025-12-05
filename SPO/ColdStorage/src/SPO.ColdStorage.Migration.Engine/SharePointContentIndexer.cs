@@ -1,4 +1,6 @@
-﻿using Azure.Messaging.ServiceBus;
+﻿using Azure.Identity;
+using Azure.Core;
+using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +10,7 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.Migrations;
 using SPO.ColdStorage.Migration.Engine.Connectors;
 using SPO.ColdStorage.Migration.Engine.Migration;
+using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
 namespace SPO.ColdStorage.Migration.Engine
@@ -28,9 +31,8 @@ namespace SPO.ColdStorage.Migration.Engine
             var sbConnectionProps = ServiceBusConnectionStringProperties.Parse(_config.ConnectionStrings.ServiceBus);
             _tracer.TrackTrace($"Sending new SharePoint files to migrate to service-bus '{sbConnectionProps.Endpoint}'.");
 
-
-            // Create a BlobServiceClient object which will be used to create a container client
-            _blobServiceClient = new BlobServiceClient(_config.ConnectionStrings.Storage);
+            // Create BlobServiceClient with appropriate authentication based on connection string type
+            _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
             _sharePointFileMigrator = new SharePointFileMigrator(config, _tracer);
         }
 
@@ -41,12 +43,41 @@ namespace SPO.ColdStorage.Migration.Engine
             // Create the container and return a container client object
             this._containerClient = _blobServiceClient.GetBlobContainerClient(_config.BlobContainerName);
 
-            // Create container with no access to public
-            await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+            // Try to create container with no access to public
+            // If container already exists or we don't have permission to create, continue anyway
+            try
+            {
+                await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None);
+            }
+            catch (Azure.RequestFailedException ex) when (ex.Status == 403 || ex.Status == 409)
+            {
+                // 403: No permission to create container (assume it exists)
+                // 409: Container already exists
+                _tracer.TrackTrace($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}", 
+                    Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                
+                // Verify we can at least access the container
+                // Note: ExistsAsync also requires permissions, so handle 403 here too
+                try
+                {
+                    if (!await _containerClient.ExistsAsync())
+                    {
+                        throw new InvalidOperationException($"Container '{_config.BlobContainerName}' does not exist and service principal does not have permission to create it. Please create the container manually or assign Storage Blob Data Contributor role.", ex);
+                    }
+                }
+                catch (Azure.RequestFailedException existsEx) when (existsEx.Status == 403)
+                {
+                    // Service principal lacks RBAC permissions to check container existence
+                    // Assume container exists and log warning
+                    _tracer.TrackTrace($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.", 
+                        Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                }
+            }
 
             using (var db = new SPOColdStorageDbContext(this._config))
             {
                 var sitesToMigrate = await db.TargetSharePointSites.ToListAsync();
+                _tracer.TrackTrace($"Found {sitesToMigrate.Count} site-collections to migrate.");
                 foreach (var s in sitesToMigrate)
                 {
                     SiteListFilterConfig? siteFilterConfig = null;
