@@ -1,6 +1,6 @@
 import React from 'react';
 import { ListFolderConfig, SiteListFilterConfig } from '../TargetSitesInterfaces';
-import { TreeView } from '@mui/lab';
+import { SimpleTreeView } from '@mui/x-tree-view/SimpleTreeView';
 import { ListAndFolders } from "./ListAndFolders";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -55,19 +55,38 @@ export const SiteListsAndLibraries: React.FC<Props> = (props) => {
         )
             .then(async response => {
 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SharePoint API error:', response.status, errorText);
+                    alert(`Error loading SharePoint lists: ${response.status} - ${response.statusText}`);
+                    setSpLists([]);
+                    return;
+                }
+
                 var responseText = await response.text();
                 const data: SPListResponse = JSON.parse(responseText);
 
                 if (data.d?.results) {
 
                     const lists: SPList[] = data.d.results;
+                    console.log('Loaded SharePoint lists:', lists);
                     
-                    setSpLists(lists);
+                    // Filter out hidden system lists
+                    const visibleLists = lists.filter(list => !list.Hidden);
+                    console.log('Visible lists after filtering:', visibleLists);
+                    
+                    setSpLists(visibleLists);
                 }
                 else {
+                    console.error('Unexpected response format from SharePoint:', responseText);
                     alert('Unexpected response from SharePoint for lists: ' + responseText);
-                    return Promise.reject();
+                    setSpLists([]);
                 }
+            })
+            .catch(err => {
+                console.error('Error fetching SharePoint lists:', err);
+                alert('Failed to load SharePoint lists: ' + err.message);
+                setSpLists([]);
             });
     }, [props.spoAuthInfo, props.targetSite, getFilterConfigForSPList]);
 
@@ -94,19 +113,36 @@ export const SiteListsAndLibraries: React.FC<Props> = (props) => {
                     <div>Loading...</div>
                 )
                 :
+                spLists.length === 0 ?
                 (
-                    <TreeView defaultCollapseIcon={<ExpandMoreIcon />} defaultExpandIcon={<ChevronRightIcon />} >
-                        {spLists.map((splist: SPList) =>
-                        (
-                            <ListAndFolders spoAuthInfo={props.spoAuthInfo} list={splist} targetListConfig={getFilterConfigForSPList(splist)} 
-                                folderAdd={(f : string, list : ListFolderConfig)=> folderAdd(f, list)}
-                                folderRemoved={(f : string, list : ListFolderConfig)=> folderRemoved(f, list)}
-                                listAdd={() => listAdd(splist.Title)} listRemoved={() => listRemoved(splist.Title)}
-                                key={splist.Title}
-                            />
-                        )
-                        )}
-                    </TreeView>
+                    <div style={{ padding: '20px' }}>
+                        <p>No lists or libraries found in this site.</p>
+                        <p>Please check the browser console for errors.</p>
+                    </div>
+                )
+                :
+                (
+                    <div style={{ padding: '20px' }}>
+                        <h3>Lists and Libraries ({spLists.length} found)</h3>
+                        <SimpleTreeView
+                            slots={{
+                                collapseIcon: ExpandMoreIcon,
+                                expandIcon: ChevronRightIcon,
+                            }}
+                        >
+                            {spLists.map((splist: SPList) => {
+                                console.log('Rendering list:', splist.Title);
+                                return (
+                                    <ListAndFolders spoAuthInfo={props.spoAuthInfo} list={splist} targetListConfig={getFilterConfigForSPList(splist)} 
+                                        folderAdd={(f : string, list : ListFolderConfig)=> folderAdd(f, list)}
+                                        folderRemoved={(f : string, list : ListFolderConfig)=> folderRemoved(f, list)}
+                                        listAdd={() => listAdd(splist.Title)} listRemoved={() => listRemoved(splist.Title)}
+                                        key={splist.Title}
+                                    />
+                                );
+                            })}
+                        </SimpleTreeView>
+                    </div>
                 )
             }
         </div>

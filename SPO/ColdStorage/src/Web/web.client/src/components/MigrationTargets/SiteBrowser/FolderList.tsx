@@ -48,7 +48,7 @@ export const FolderList: React.FC<Props> = (props) => {
         <div>
             {folders.map((folder: string) =>
                 <TreeItem key={folder}
-                    nodeId={folder}
+                    itemId={folder}
                     label={
                         <FormControlLabel
                             control={
@@ -62,7 +62,7 @@ export const FolderList: React.FC<Props> = (props) => {
             )
             }
             <TreeItem
-                nodeId="new"
+                itemId="new"
                 label={
                     <FormControlLabel
                         control={

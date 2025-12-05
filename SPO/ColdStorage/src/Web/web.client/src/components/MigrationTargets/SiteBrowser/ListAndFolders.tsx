@@ -2,7 +2,7 @@ import React from 'react';
 import { ListFolderConfig } from '../TargetSitesInterfaces';
 import { FolderList } from './FolderList';
 import { SPAuthInfo, SPList } from './SPDefs';
-import { TreeItem } from '@mui/lab';
+import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import { Checkbox, FormControlLabel } from "@mui/material";
 
 interface Props {
@@ -40,8 +40,7 @@ export const ListAndFolders: React.FC<Props> = (props) => {
 
     return (
         <TreeItem
-            key={props.list.Title}
-            nodeId={props.list.Title}
+            itemId={props.list.Title}
             label={
                 <FormControlLabel
                     control={

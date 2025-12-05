@@ -1,6 +1,7 @@
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { BlobFileList } from './BlobFileList';
 import '../NavMenu.css';
+import './FileExplorer.css';
 import React from 'react';
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { getStorageConfigFromAPI, ServiceConfiguration } from '../ConfigReader';
@@ -80,22 +81,30 @@ export const FileBrowser: React.FC<{ token: string }> = (props) => {
 
   const name = accounts[0] && accounts[0].name;
   return (
-    <div>
-      <h1>Cold Storage Access Web</h1>
+    <div className="file-browser-container">
+      <div className="spo-content-card">
+        <div className="file-browser-header">
+          <h1 className="spo-section-header">Cold Storage Browser</h1>
+          <p className="file-browser-description">
+            Browse and access files that have been moved into Azure Blob cold storage.
+          </p>
+        </div>
 
-      <p>This application is for finding files moved into Azure Blob cold storage.</p>
-
-      <span>Signed In: {name}</span>
-      <p><b>Files in Storage Account:</b></p>
-
-      {!loading && client ?
-        (
-          <div>
-            <BlobFileList client={client!} accessToken={props.token} storageInfo={serviceConfiguration!.storageInfo} />
+        {!loading && client ? (
+          <div className="file-browser-content">
+            <BlobFileList 
+              client={client!} 
+              accessToken={props.token} 
+              storageInfo={serviceConfiguration!.storageInfo} 
+            />
           </div>
-        )
-        : <div>Loading</div>
-      }
+        ) : (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading storage...</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

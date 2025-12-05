@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Route } from 'react-router';
+import { Route, Switch } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { FileBrowser } from './components/FileBrowser/FileBrowser';
 import { Login } from './components/Login';
@@ -49,13 +49,15 @@ export default function App() {
                 (
                     <Layout>
                         <AuthenticatedTemplate>
-                                <Route path='/' render={() =><FileBrowser {... { token: accessToken! }} />} />
-                                <Route path='/FindFile' render={() =><FindFile {... { token: accessToken! }} />} />
-                                <Route path='/FindMigrationLog' render={() =><FindMigrationLog {... { token: accessToken! }} />} />
-                                <Route path='/MigrationTargets' render={() =><MigrationTargetsConfig {... { token: accessToken! }} />} />
+                            <Switch>
+                                <Route exact path='/' render={() => <FileBrowser {... { token: accessToken! }} />} />
+                                <Route path='/FindFile' render={() => <FindFile {... { token: accessToken! }} />} />
+                                <Route path='/FindMigrationLog' render={() => <FindMigrationLog {... { token: accessToken! }} />} />
+                                <Route path='/MigrationTargets' render={() => <MigrationTargetsConfig {... { token: accessToken! }} />} />
+                            </Switch>
                         </AuthenticatedTemplate>
                         <UnauthenticatedTemplate>
-                            <Route path='/' render={() =><Login />} />
+                            <Route path='/' render={() => <Login />} />
                         </UnauthenticatedTemplate>
                     </Layout>
                 )
@@ -63,7 +65,7 @@ export default function App() {
                 (
                     <Layout>
                         <UnauthenticatedTemplate>
-                            <Route path='/' render={() =><Login />} />
+                            <Route path='/' render={() => <Login />} />
                         </UnauthenticatedTemplate>
                     </Layout>
                 )}
