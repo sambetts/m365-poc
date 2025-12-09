@@ -29,10 +29,10 @@ namespace SPO.ColdStorage.Tests
             var targetList = ctx.Web.Lists.GetByTitle("Documents");
 
             var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-            var newItemId = await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS));
+            var newItemId = await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
 
             // Update contents
-            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + "v2"));
+            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + "v2"), _tracer);
 
             var uploaded = targetList.GetItemByUniqueId(newItemId);
 
@@ -44,16 +44,20 @@ namespace SPO.ColdStorage.Tests
             var httpClient = new SecureSPThrottledHttpClient(_config!, false, DebugTracer.ConsoleOnlyTracer());
 
             // Test batch method with files in doc-lib
-            var driveItems = await gc.Drives[uploaded.File.VroomDriveID].Root.Children.Request().GetAsync();
+            var driveItems = await gc.Drives[uploaded.File.VroomDriveID].Items.GetAsync();
 
             var graphFileInfoList = new System.Collections.Generic.List<DocumentSiteWithMetadata>();
-            var graphFiles = driveItems.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id });
+            var graphFiles = driveItems.Value.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id });
             graphFileInfoList.AddRange(graphFiles);
 
             var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _tracer);
-            Assert.IsTrue(batchAnalytics.Count == graphFiles.Count());
+            Assert.IsTrue(batchAnalytics.UpdateResults.Count == graphFiles.Count());
 
-            var filesWithAnalytics = batchAnalytics.Select(d => d.Value).Where(v=> v.AccessStats != null && v.AccessStats.ActionCount > 0).ToList();
+            var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v => 
+            {
+                var analytics = v as ItemAnalyticsRepsonse;
+                return analytics?.AccessStats != null && analytics.AccessStats.ActionCount > 0;
+            }).ToList();
         }
 
         /// <summary>
@@ -73,7 +77,7 @@ namespace SPO.ColdStorage.Tests
             await ctx.ExecuteQueryAsync();
 
             var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS));
+            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
 
 
             // Discover file in SP with crawler
@@ -120,7 +124,7 @@ namespace SPO.ColdStorage.Tests
             ctx.Load(targetList, t => t.Id, t => t.Title);
 
             var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS));
+            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
 
             // Prepare for file migration
             var discoveredFile = await GetFromIndex(fileTitle, targetList);
@@ -140,7 +144,7 @@ namespace SPO.ColdStorage.Tests
             Assert.IsFalse(needsMigratingPostMigration);
 
             // Update file with new content and recrawl
-            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + " + extra data"));
+            await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + " + extra data"), _tracer);
             discoveredFile = await GetFromIndex(fileTitle, targetList);
 
             // Now the file's been updated, it should need a new migration
