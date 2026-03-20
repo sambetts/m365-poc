@@ -29,15 +29,13 @@ namespace Bot.Services.Bot
         private readonly IGraphLogger logger;
         private AudioVideoFramePlayerSettings audioVideoFramePlayerSettings;
         private AudioVideoFramePlayer audioVideoFramePlayer;
-        private AudioVideoFramePlayer vbssFramePlayer;
+        private VbssPlayerHandler vbssPlayerHandler;
         private long audioTick;
         private long videoTick;
         private long mediaTick;
         private List<AudioMediaBuffer> audioMediaBuffers = new List<AudioMediaBuffer>();
         private List<VideoMediaBuffer> videoMediaBuffers = new List<VideoMediaBuffer>();
-        private List<VideoMediaBuffer> vbssMediaBuffers = new List<VideoMediaBuffer>();
         private List<VideoFormat> videoKnownSupportedFormats;
-        private List<VideoFormat> vbssKnownSupportedFormats;
         private int shutdown;
 
         private AzureSettings _settings;
@@ -79,7 +77,7 @@ namespace Bot.Services.Bot
             this.vbssSocket = this.mediaSession.VbssSocket;
             if (this.vbssSocket != null)
             {
-                this.vbssSocket.VideoSendStatusChanged += this.OnVbssSocketSendStatusChanged;
+                this.vbssPlayerHandler = new VbssPlayerHandler(this.vbssSocket, this.logger, _settings);
             }
 
             var ignoreTask = this.StartAudioVideoFramePlayerAsync().ForgetAndLogExceptionAsync(this.logger, "Failed to start the player");
@@ -171,10 +169,6 @@ namespace Bot.Services.Bot
 
             // unsubscribe
             this.audioVideoFramePlayer.LowOnFrames -= this.OnAudioVideoFramePlayerLowOnFrames;
-            if (this.vbssFramePlayer != null)
-            {
-                this.vbssFramePlayer.LowOnFrames -= this.OnVbssPlayerLowOnFrames;
-            }
 
             if (this.audioSocket != null)
             {
@@ -187,20 +181,15 @@ namespace Bot.Services.Bot
                 this.mainVideoSocket.VideoSendStatusChanged -= this.OnVideoSendStatusChanged;
             }
 
-            if (this.vbssSocket != null)
-            {
-                this.vbssSocket.VideoSendStatusChanged -= this.OnVbssSocketSendStatusChanged;
-            }
-
             // shutting down the players
             if (this.audioVideoFramePlayer != null)
             {
                 await this.audioVideoFramePlayer.ShutdownAsync().ConfigureAwait(false);
             }
 
-            if (this.vbssFramePlayer != null)
+            if (this.vbssPlayerHandler != null)
             {
-                await this.vbssFramePlayer.ShutdownAsync().ConfigureAwait(false);
+                await this.vbssPlayerHandler.ShutdownAsync().ConfigureAwait(false);
             }
 
             // make sure all the audio and video buffers are disposed, it can happen that,
@@ -217,15 +206,8 @@ namespace Bot.Services.Bot
             }
 
             this.logger.Info($"disposed {this.videoMediaBuffers.Count} videoMediaBuffers");
-            foreach (var videoMediaBuffer in this.vbssMediaBuffers)
-            {
-                videoMediaBuffer.Dispose();
-            }
-
-            this.logger.Info($"disposed {this.vbssMediaBuffers.Count} vbssMediaBuffers");
             this.audioMediaBuffers.Clear();
             this.videoMediaBuffers.Clear();
-            this.vbssMediaBuffers.Clear();
         }
 
         /// <summary>
@@ -383,73 +365,6 @@ namespace Bot.Services.Bot
         }
 
         /// <summary>
-        /// Performs action when the vbss socket send status changed event is received.
-        /// </summary>
-        /// <param name="sender">
-        /// The sender.
-        /// </param>
-        /// <param name="e">
-        /// The video send status changed event arguments.
-        /// </param>
-        private void OnVbssSocketSendStatusChanged(object sender, VideoSendStatusChangedEventArgs e)
-        {
-            this.logger.Info($"[VbssSendStatusChangedEventArgs(MediaSendStatus=<{e.MediaSendStatus}>]");
-
-            if (e.MediaSendStatus == MediaSendStatus.Active)
-            {
-                this.logger.Info($"[VbssSendStatusChangedEventArgs(MediaSendStatus=<{e.MediaSendStatus}>;PreferredVideoSourceFormat=<{string.Join(";", e.PreferredEncodedVideoSourceFormats.ToList())}>]");
-
-                var previousSupportedFormats = (this.vbssKnownSupportedFormats != null && this.vbssKnownSupportedFormats.Any()) ? this.vbssKnownSupportedFormats :
-                   new List<VideoFormat>();
-                this.vbssKnownSupportedFormats = e.PreferredEncodedVideoSourceFormats.ToList();
-
-                if (this.vbssFramePlayer == null)
-                {
-                    this.CreateVbssFramePlayer();
-                }
-
-                // when this is false it means that we have received a new event with different videoFormats
-                // the behavior for this bot is to clean up the previous enqueued media and push the new formats,
-                // starting from beginning
-                else
-                {
-                    // we restart the player
-                    this.vbssFramePlayer?.ClearAsync().ForgetAndLogExceptionAsync(this.logger);
-                }
-
-                // enqueue video buffers
-                this.logger.Info($"[VbssSendStatusChangedEventArgs(MediaSendStatus=<{e.MediaSendStatus}> enqueuing new formats: {string.Join(";", this.vbssKnownSupportedFormats)}]");
-
-                // Create the video buffers
-                this.vbssMediaBuffers = Utilities.GetUtils(_settings).CreateVideoMediaBuffers(DateTime.Now.Ticks, this.vbssKnownSupportedFormats, true, this.logger);
-                this.vbssFramePlayer?.EnqueueBuffersAsync(new List<AudioMediaBuffer>(), this.vbssMediaBuffers).ForgetAndLogExceptionAsync(this.logger);
-            }
-            else if (e.MediaSendStatus == MediaSendStatus.Inactive)
-            {
-                this.vbssFramePlayer?.ClearAsync().ForgetAndLogExceptionAsync(this.logger);
-            }
-        }
-
-        /// <summary>
-        /// Callback handler for the lowOnFrames event that the vbss frame player will raise when there are no more frames to stream.
-        /// The behavior is to enqueue more frames.
-        /// </summary>
-        /// <param name="sender">The vbss frame player.</param>
-        /// <param name="e">LowOnframes eventArgs.</param>
-        private void OnVbssPlayerLowOnFrames(object sender, LowOnFramesEventArgs e)
-        {
-            if (this.shutdown != 1)
-            {
-                this.logger.Info($"Low on frames event raised for the vbss player, remaining lenght is {e.RemainingMediaLengthInMS} ms");
-
-                // Create the video buffers
-                this.vbssMediaBuffers = Utilities.GetUtils(_settings).CreateVideoMediaBuffers(DateTime.Now.Ticks, this.vbssKnownSupportedFormats, true, this.logger);
-                this.vbssFramePlayer?.EnqueueBuffersAsync(new List<AudioMediaBuffer>(), this.vbssMediaBuffers).ForgetAndLogExceptionAsync(this.logger);
-                this.logger.Info("enqueued more frames in the vbssFramePlayer");
-            }
-        }
-
-        /// <summary>
         /// Create audio video buffers.
         /// </summary>
         /// <param name="referenceTick">Current clock tick.</param>
@@ -475,29 +390,6 @@ namespace Bot.Services.Bot
                 this.audioTick = this.audioMediaBuffers.Last().Timestamp;
                 this.videoTick = this.videoMediaBuffers.Last().Timestamp;
                 this.mediaTick = Math.Max(this.audioTick, this.videoTick);
-            }
-        }
-
-        /// <summary>
-        /// Creates the vbss player that will stream the video buffers for the sharer.
-        /// </summary>
-        private void CreateVbssFramePlayer()
-        {
-            try
-            {
-                this.logger.Info("Creating the vbss FramePlayer");
-                this.audioVideoFramePlayerSettings =
-                    new AudioVideoFramePlayerSettings(new AudioSettings(20), new VideoSettings(), 1000);
-                this.vbssFramePlayer = new AudioVideoFramePlayer(
-                    null,
-                    (VideoSocket)this.vbssSocket,
-                    this.audioVideoFramePlayerSettings);
-
-                this.vbssFramePlayer.LowOnFrames += this.OnVbssPlayerLowOnFrames;
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(ex, $"Failed to create the vbssFramePlayer with exception {ex}");
             }
         }
     }

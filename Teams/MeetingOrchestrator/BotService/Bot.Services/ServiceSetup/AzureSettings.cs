@@ -6,7 +6,6 @@ using Microsoft.Skype.Bots.Media;
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
 namespace Bot.Services.ServiceSetup
@@ -178,7 +177,7 @@ namespace Bot.Services.ServiceSetup
                 ServiceCname = ServiceDnsName;
             }
 
-            var defaultCertificate = this.GetCertificateFromStore();
+            var defaultCertificate = CertificateResolver.GetFromStore(CertificateThumbprint);
             var controlListenUris = new List<string>();
 
             var baseDomain = "+";
@@ -239,34 +238,5 @@ namespace Bot.Services.ServiceSetup
 
         }
 
-        /// <summary>
-        /// Helper to search the certificate store by its thumbprint.
-        /// </summary>
-        /// <returns>Certificate if found.</returns>
-        /// <exception cref="Exception">No certificate with thumbprint {CertificateThumbprint} was found in the machine store.</exception>
-        private X509Certificate2 GetCertificateFromStore()
-        {
-            if (string.IsNullOrEmpty(CertificateThumbprint))
-            {
-                throw new ArgumentNullException(nameof(CertificateThumbprint), "No certificate thumbprint found");
-            }
-            X509Store store = new X509Store(StoreName.My, StoreLocation.LocalMachine);
-            store.Open(OpenFlags.ReadOnly);
-            try
-            {
-                X509Certificate2Collection certs = store.Certificates.Find(X509FindType.FindByThumbprint, CertificateThumbprint, validOnly: false);
-
-                if (certs.Count != 1)
-                {
-                    throw new Exception($"No certificate with thumbprint {CertificateThumbprint} was found in the machine store.");
-                }
-
-                return certs[0];
-            }
-            finally
-            {
-                store.Close();
             }
         }
-    }
-}
