@@ -11,17 +11,11 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-using Microsoft.Graph.Communications.Calls;
-using Microsoft.Graph.Communications.Common;
-using Microsoft.Graph.Communications.Resources;
 using Microsoft.Skype.Bots.Media;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
-using MeetingOrchestratorBot.Model.Extension;
-using MeetingOrchestratorBot.Model.Models;
 using MeetingOrchestratorBot.Services.Media;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -103,38 +97,12 @@ namespace MeetingOrchestratorBot.Services.Util
         }
 
         /// <summary>
-        /// Saves the quality of experience data.
-        /// </summary>
-        /// <param name="data">The data.</param>
-        private async Task _saveQualityOfExperienceData(SerializableAudioQualityOfExperienceData data)
-        {
-            await saveJsonFile(data, $"{data.Id}-AudioQoE.json");
-        }
-
-        /// <summary>
         /// Saves the audio media buffer.
         /// </summary>
         /// <param name="data">The data.</param>
         private async Task _saveAudioMediaBuffer(SerializableAudioMediaBuffer data)
         {
             await saveBsonFile(data, data.Timestamp.ToString());
-        }
-
-        /// <summary>
-        /// Saves the participant event.
-        /// </summary>
-        /// <param name="data">The data.</param>
-        private async Task _saveParticipantEvent(CollectionEventArgs<IParticipant> data)
-        {
-            var added = new List<IParticipant>();
-            data.AddedResources.ForEach(x => added.Add(new ParticipantExtension(x)));
-
-            var removed = new List<IParticipant>();
-            data.RemovedResources.ForEach(x => removed.Add(new ParticipantExtension(x)));
-
-            var participant = new ParticipantData { AddedResources = added, RemovedResources = removed };
-
-            await saveJsonFile(participant, $"{DateTime.UtcNow.Ticks.ToString()}-participant.json");
         }
 
         /// <summary>
@@ -168,14 +136,8 @@ namespace MeetingOrchestratorBot.Services.Util
                 case string d:
                     await _saveRequests(d);
                     return;
-                case CollectionEventArgs<IParticipant> d:
-                    await _saveParticipantEvent(d);
-                    return;
                 case SerializableAudioMediaBuffer d:
                     await _saveAudioMediaBuffer(d);
-                    return;
-                case SerializableAudioQualityOfExperienceData q:
-                    await _saveQualityOfExperienceData(q);
                     return;
                 default:
                     return;
