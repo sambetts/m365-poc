@@ -46,3 +46,5 @@ Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.mjs
 /Graph/Bookify/Bookify.Server/obj
 /Graph/Bookify/Bookify.Server/Bookify.Server.csproj.user
 /Graph/Bookify/bookify.client/obj/Debug
+/Teams/MeetingOrchestrator/ngrok-bot-tunnels.yaml
+/Teams/MeetingOrchestrator/build/certs-dev.bat
