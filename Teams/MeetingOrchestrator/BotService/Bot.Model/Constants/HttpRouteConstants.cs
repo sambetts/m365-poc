@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Model
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -12,7 +12,7 @@
 // <summary>HTTP route constants for routing requests to CallController methods.</summary>
 // ***********************************************************************-
 
-namespace RickrollBot.Model.Constants
+namespace MeetingOrchestratorBot.Model.Constants
 {
     /// <summary>
     /// HTTP route constants for routing requests to CallController methods.

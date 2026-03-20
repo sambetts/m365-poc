@@ -1,7 +1,7 @@
-﻿
+
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using RickrollBot.Model.Models;
+using MeetingOrchestratorBot.Model.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +10,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     /// <summary>
     /// Gets the join information.

@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -15,10 +15,10 @@ using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Skype.Bots.Media;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
-using RickrollBot.Services.Util;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Services.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,13 +26,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace RickrollBot.Services.Media
+namespace MeetingOrchestratorBot.Services.Media
 {
     /// <summary>
     /// Class MediaStream.
-    /// Implements the <see cref="RickrollBot.Services.Contract.IMediaStream" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.Contract.IMediaStream" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.Contract.IMediaStream" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.Contract.IMediaStream" />
     public class MediaStream : IMediaStream
     {
         /// <summary>

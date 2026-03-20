@@ -1,10 +1,10 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 
-namespace RickrollBot.Services.Contract
+namespace MeetingOrchestratorBot.Services.Contract
 {
     /// <summary>
     /// Interface IServiceHost

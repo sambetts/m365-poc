@@ -1,21 +1,21 @@
-﻿
+
 using Bot.Services.Util;
 using Microsoft.Skype.Bots.Media;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Contract;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Contract;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 
-namespace RickrollBot.Services.ServiceSetup
+namespace MeetingOrchestratorBot.Services.ServiceSetup
 {
     /// <summary>
     /// Class AzureSettings.
-    /// Implements the <see cref="RickrollBot.Services.Contract.IAzureSettings" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.Contract.IAzureSettings" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.Contract.IAzureSettings" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.Contract.IAzureSettings" />
     public class AzureSettings : IAzureSettings
     {
         /// <summary>

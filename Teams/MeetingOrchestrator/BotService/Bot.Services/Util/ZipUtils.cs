@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -15,7 +15,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using System.Collections.Generic;
 using System.IO;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     /// <summary>
     /// Class ZipUtils.

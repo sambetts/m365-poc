@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http
+namespace MeetingOrchestratorBot.Services.Http
 {
     /// <summary>
     /// Extension methods for converting ASP.NET Core HttpRequest to HttpRequestMessage

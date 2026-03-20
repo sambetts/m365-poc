@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Model
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -7,11 +7,11 @@
 // Last Modified On : 09-03-2020
 // ***********************************************************************
 // <copyright file="BotConstants.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Model.Constants
+namespace MeetingOrchestratorBot.Model.Constants
 {
     /// <summary>
     /// Class BotConstants.

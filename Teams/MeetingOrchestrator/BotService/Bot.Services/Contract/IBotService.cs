@@ -3,19 +3,19 @@ using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Client;
-using RickrollBot.Model.Models;
-using RickrollBot.Services.Bot;
+using MeetingOrchestratorBot.Model.Models;
+using MeetingOrchestratorBot.Services.Bot;
 using Sample.AudioVideoPlaybackBot.FrontEnd.Bot;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Contract
+namespace MeetingOrchestratorBot.Services.Contract
 {
     /// <summary>
     /// Interface IBotService
-    /// Implements the <see cref="RickrollBot.Model.Contracts.IInitializable" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Model.Contracts.IInitializable" />
+    /// <seealso cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
     public interface IBotService : Model.Contracts.IInitializable
     {
         Task ChangeSharingRoleAsync(string callLegId, ScreenSharingRole role);

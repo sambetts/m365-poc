@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -7,11 +7,11 @@
 // Last Modified On : 08-17-2020
 // ***********************************************************************
 // <copyright file="IInitializable.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Services.Contract
+namespace MeetingOrchestratorBot.Services.Contract
 {
     /// <summary>
     /// Interface IInitializable

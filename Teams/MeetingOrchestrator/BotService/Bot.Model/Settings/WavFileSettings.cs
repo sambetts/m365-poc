@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Model
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Model.Settings
+namespace MeetingOrchestratorBot.Model.Settings
 {
     /// <summary>
     /// wav file writer, this class will create a wav file

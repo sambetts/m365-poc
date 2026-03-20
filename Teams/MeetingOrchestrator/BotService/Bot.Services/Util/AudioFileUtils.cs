@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-08-2020
 //
@@ -14,10 +14,10 @@
 using System.IO;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     /// <summary>
     /// Class AudioFileUtils.

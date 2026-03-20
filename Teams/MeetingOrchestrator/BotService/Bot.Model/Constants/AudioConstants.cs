@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Model
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-08-2020
 //
@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Model.Constants
+namespace MeetingOrchestratorBot.Model.Constants
 {
     /// <summary>
     /// Class AudioConstants.

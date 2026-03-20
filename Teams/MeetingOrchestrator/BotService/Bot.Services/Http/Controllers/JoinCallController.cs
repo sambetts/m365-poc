@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -6,10 +6,10 @@ using Microsoft.Extensions.Primitives;
 using Microsoft.Graph;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Core.Serialization;
-using RickrollBot.Model.Constants;
-using RickrollBot.Model.Models;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Model.Models;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +17,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http.Controllers
+namespace MeetingOrchestratorBot.Services.Http.Controllers
 {
     /// <summary>
     /// JoinCallController is a third-party controller (non-Bot Framework) that can be called in CVI scenario to trigger the bot to join a call.

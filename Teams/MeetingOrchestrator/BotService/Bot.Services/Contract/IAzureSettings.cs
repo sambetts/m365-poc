@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 08-28-2020
 //
@@ -11,13 +11,13 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Services.Contract
+namespace MeetingOrchestratorBot.Services.Contract
 {
     /// <summary>
     /// Interface IAzureSettings
-    /// Implements the <see cref="RickrollBot.Model.Contracts.IInitializable" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Model.Contracts.IInitializable" />
+    /// <seealso cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
     public interface IAzureSettings: Model.Contracts.IInitializable
     {
     }

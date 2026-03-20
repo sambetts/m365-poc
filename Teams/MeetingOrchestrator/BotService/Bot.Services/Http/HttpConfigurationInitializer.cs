@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System.IO;
 
-namespace RickrollBot.Services.Http
+namespace MeetingOrchestratorBot.Services.Http
 {
     /// <summary>
     /// Initialize the HTTP configuration for ASP.NET Core.

@@ -9,9 +9,9 @@ using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Common.Transport;
 using Microsoft.Graph.Communications.Core.Notifications;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -19,7 +19,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http.Controllers
+namespace MeetingOrchestratorBot.Services.Http.Controllers
 {
     using ErrorConstants = Microsoft.Graph.Communications.Core.Exceptions.ErrorConstants;
 

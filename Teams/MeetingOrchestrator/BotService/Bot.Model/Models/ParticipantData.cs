@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Model
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -7,14 +7,14 @@
 // Last Modified On : 08-17-2020
 // ***********************************************************************
 // <copyright file="ParticipantData.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
 using Microsoft.Graph.Communications.Calls;
 using System.Collections.Generic;
 
-namespace RickrollBot.Model.Models
+namespace MeetingOrchestratorBot.Model.Models
 {
     /// <summary>
     /// Class ParticipantData.

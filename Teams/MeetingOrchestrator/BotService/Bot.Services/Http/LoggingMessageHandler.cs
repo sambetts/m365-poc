@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -25,7 +25,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http
+namespace MeetingOrchestratorBot.Services.Http
 {
     /// <summary>
     /// Helper class to log HTTP requests and responses and to set the scenario id based on the Scenario-ID or the X-Microsoft-Skype-Chain-ID headers

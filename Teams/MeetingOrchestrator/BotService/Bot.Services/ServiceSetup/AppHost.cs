@@ -10,16 +10,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Skype.Internal.Media.H264;
-using RickrollBot.Services.Bot;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.Http;
-using RickrollBot.Services.Util;
+using MeetingOrchestratorBot.Services.Bot;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.Http;
+using MeetingOrchestratorBot.Services.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace RickrollBot.Services.ServiceSetup
+namespace MeetingOrchestratorBot.Services.ServiceSetup
 {
     /// <summary>
     /// Class AppHost.
@@ -128,7 +128,7 @@ namespace RickrollBot.Services.ServiceSetup
                 // Create ASP.NET Core web application
                 var builder = WebApplication.CreateBuilder();
 
-                // Add services to the container – include the Bot.Services assembly
+                // Add services to the container ï¿½ include the Bot.Services assembly
                 // so controllers in that project are discovered (the entry assembly
                 // is Bot.Console, which contains no controllers).
                 builder.Services.AddControllers()

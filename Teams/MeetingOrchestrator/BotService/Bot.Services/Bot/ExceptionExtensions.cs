@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Bot
+namespace MeetingOrchestratorBot.Services.Bot
 {
     /// <summary>
     /// Extension methods for Exception.

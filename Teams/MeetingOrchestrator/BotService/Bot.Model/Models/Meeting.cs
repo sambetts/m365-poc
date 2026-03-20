@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Model
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -13,7 +13,7 @@
 // ***********************************************************************
 using System.Runtime.Serialization;
 
-namespace RickrollBot.Model.Models
+namespace MeetingOrchestratorBot.Model.Models
 {
     /// <summary>
     /// Join URL context.

@@ -1,16 +1,16 @@
-﻿
-using RickrollBot.Services.ServiceSetup;
+
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace RickrollBot.Console
+namespace MeetingOrchestratorBot.Console
 {
     /// <summary>
     /// Class Program.
-    /// Implements the <see cref="RickrollBot.Services.ServiceSetup.AppHost" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.ServiceSetup.AppHost" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.ServiceSetup.AppHost" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.ServiceSetup.AppHost" />
     public class Program : AppHost
     {
         /// <summary>
@@ -33,12 +33,12 @@ namespace RickrollBot.Console
             try
             {
 #endif
-                System.Console.WriteLine("RickrollBot: booting");
+                System.Console.WriteLine("MeetingOrchestratorBot: booting");
 
                 bot.Boot();
                 bot.StartServer();
 
-                System.Console.WriteLine("RickrollBot: running");
+                System.Console.WriteLine("MeetingOrchestratorBot: running");
 #if !DEBUG
             }
             catch (Exception e)

@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -12,23 +12,23 @@
 // <summary></summary>
 // ***********************************************************************
 using NAudio.Wave;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
-using RickrollBot.Services.Util;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Services.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Media
+namespace MeetingOrchestratorBot.Services.Media
 {
     /// <summary>
     /// Class AudioProcessor.
-    /// Implements the <see cref="RickrollBot.Services.Util.BufferBase{RickrollBot.Services.Media.SerializableAudioMediaBuffer}" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.Util.BufferBase{MeetingOrchestratorBot.Services.Media.SerializableAudioMediaBuffer}" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.Util.BufferBase{RickrollBot.Services.Media.SerializableAudioMediaBuffer}" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.Util.BufferBase{MeetingOrchestratorBot.Services.Media.SerializableAudioMediaBuffer}" />
     public class AudioProcessor : BufferBase<SerializableAudioMediaBuffer>
     {
         /// <summary>

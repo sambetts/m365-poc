@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -17,11 +17,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RickrollBot.Services")]
+[assembly: AssemblyTitle("MeetingOrchestratorBot.Services")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("RickrollBot.Services")]
+[assembly: AssemblyProduct("MeetingOrchestratorBot.Services")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

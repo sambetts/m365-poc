@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,7 +16,7 @@ namespace Bot.Services.Util
     using Microsoft.Graph.Communications.Common.Telemetry;
     using Microsoft.Skype.Bots.Media;
     using Microsoft.Skype.Internal.Media.H264;
-    using RickrollBot.Services.ServiceSetup;
+    using MeetingOrchestratorBot.Services.ServiceSetup;
 
     /// <summary>
     /// The utility class.

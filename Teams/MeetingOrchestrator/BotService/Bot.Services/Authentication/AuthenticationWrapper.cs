@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -7,7 +7,7 @@
 // Last Modified On : 08-17-2020
 // ***********************************************************************
 // <copyright file="AuthenticationWrapper.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************>
@@ -22,7 +22,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Authentication
+namespace MeetingOrchestratorBot.Services.Authentication
 {
     /// <summary>
     /// A wrapper for the <see cref="IRequestAuthenticationProvider" />

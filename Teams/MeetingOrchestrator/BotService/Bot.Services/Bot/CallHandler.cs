@@ -19,9 +19,9 @@ namespace Sample.AudioVideoPlaybackBot.FrontEnd.Bot
     using Microsoft.Graph.Communications.Common.Telemetry;
     using Microsoft.Graph.Communications.Resources;
     using Microsoft.Skype.Bots.Media;
-    using RickrollBot.Services.Bot;
-    using RickrollBot.Services.Contract;
-    using RickrollBot.Services.ServiceSetup;
+    using MeetingOrchestratorBot.Services.Bot;
+    using MeetingOrchestratorBot.Services.Contract;
+    using MeetingOrchestratorBot.Services.ServiceSetup;
 
     /// <summary>
     /// Call Handler Logic.

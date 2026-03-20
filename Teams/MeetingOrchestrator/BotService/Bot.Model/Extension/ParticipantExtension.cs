@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Model
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -7,7 +7,7 @@
 // Last Modified On : 08-17-2020
 // ***********************************************************************
 // <copyright file="ParticipantExtension.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
@@ -24,7 +24,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace RickrollBot.Model.Extension
+namespace MeetingOrchestratorBot.Model.Extension
 {
     /// <summary>
     /// Class ParticipantExtension.

@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -7,7 +7,7 @@
 // Last Modified On : 08-17-2020
 // ***********************************************************************
 // <copyright file="AuthenticationProvider.cs" company="Microsoft">
-//     Copyright ©  2020
+//     Copyright ï¿½  2020
 // </copyright>
 // <summary></summary>
 // ***********************************************************************>
@@ -23,7 +23,7 @@ using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
-using RickrollBot.Model.Constants;
+using MeetingOrchestratorBot.Model.Constants;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -34,7 +34,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace RickrollBot.Services.Authentication
+namespace MeetingOrchestratorBot.Services.Authentication
 {
     /// <summary>
     /// The authentication provider for this bot instance.

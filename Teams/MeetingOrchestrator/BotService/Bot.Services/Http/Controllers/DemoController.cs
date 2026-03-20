@@ -4,16 +4,16 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Core.Serialization;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http.Controllers
+namespace MeetingOrchestratorBot.Services.Http.Controllers
 {
     /// <summary>
     /// DemoController serves as the gateway to explore the bot.

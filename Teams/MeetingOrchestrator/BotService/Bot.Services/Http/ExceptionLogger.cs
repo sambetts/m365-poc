@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -17,7 +17,7 @@ using Microsoft.Graph.Communications.Common.Telemetry;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Http
+namespace MeetingOrchestratorBot.Services.Http
 {
     /// <summary>
     /// The exception logger.

@@ -6,17 +6,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using RickrollBot.Services.Bot;
-using RickrollBot.Services.Contract;
+using MeetingOrchestratorBot.Services.Bot;
+using MeetingOrchestratorBot.Services.Contract;
 using System;
 
-namespace RickrollBot.Services.ServiceSetup
+namespace MeetingOrchestratorBot.Services.ServiceSetup
 {
     /// <summary>
     /// Class ServiceHost.
-    /// Implements the <see cref="RickrollBot.Services.Contract.IServiceHost" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.Contract.IServiceHost" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.Contract.IServiceHost" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.Contract.IServiceHost" />
     public class ServiceHost : IServiceHost
     {
         /// <summary>
@@ -39,7 +39,7 @@ namespace RickrollBot.Services.ServiceSetup
         /// <returns>ServiceHost.</returns>
         public ServiceHost Configure(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddSingleton<IGraphLogger, GraphLogger>(_ => new GraphLogger("RickrollBot", redirectToTrace: true));
+            services.AddSingleton<IGraphLogger, GraphLogger>(_ => new GraphLogger("MeetingOrchestratorBot", redirectToTrace: true));
             services.Configure<AzureSettings>(configuration.GetSection(nameof(AzureSettings)));
 
             services.AddSingleton<IAzureSettings>(_ => _.GetRequiredService<IOptions<AzureSettings>>().Value);

@@ -1,10 +1,10 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RickrollBot.Services.Contract;
+using MeetingOrchestratorBot.Services.Contract;
 using System;
 
-namespace RickrollBot.Services.ServiceSetup
+namespace MeetingOrchestratorBot.Services.ServiceSetup
 {
     /// <summary>
     /// Class ServicesExtension.

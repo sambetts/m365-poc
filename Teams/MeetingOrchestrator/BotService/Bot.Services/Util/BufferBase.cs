@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     /// <summary>
     /// Class BufferBase.

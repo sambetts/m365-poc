@@ -1,10 +1,10 @@
-﻿
+
 using Microsoft.Graph.Communications.Common.Telemetry;
 using System;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     public class AppInsightsGraphLogger : IObserver<LogEvent>
     {

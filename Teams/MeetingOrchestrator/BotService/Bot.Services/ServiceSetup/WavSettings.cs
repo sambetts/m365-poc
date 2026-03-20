@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-08-2020
 //
@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Services.ServiceSetup
+namespace MeetingOrchestratorBot.Services.ServiceSetup
 {
     /// <summary>
     /// Class WAVSettings.

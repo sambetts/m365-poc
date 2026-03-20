@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using RickrollBot.Model.Constants;
-using RickrollBot.Services.Bot;
-using RickrollBot.Services.Contract;
-using RickrollBot.Services.ServiceSetup;
+using MeetingOrchestratorBot.Model.Constants;
+using MeetingOrchestratorBot.Services.Bot;
+using MeetingOrchestratorBot.Services.Contract;
+using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 using System.Net;
 using System.Threading.Tasks;

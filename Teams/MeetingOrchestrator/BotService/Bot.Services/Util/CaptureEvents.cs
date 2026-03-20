@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -17,22 +17,22 @@ using Microsoft.Graph.Communications.Resources;
 using Microsoft.Skype.Bots.Media;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
-using RickrollBot.Model.Extension;
-using RickrollBot.Model.Models;
-using RickrollBot.Services.Media;
+using MeetingOrchestratorBot.Model.Extension;
+using MeetingOrchestratorBot.Model.Models;
+using MeetingOrchestratorBot.Services.Media;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Util
+namespace MeetingOrchestratorBot.Services.Util
 {
     /// <summary>
     /// Class CaptureEvents.
-    /// Implements the <see cref="RickrollBot.Services.Util.BufferBase{System.Object}" />
+    /// Implements the <see cref="MeetingOrchestratorBot.Services.Util.BufferBase{System.Object}" />
     /// </summary>
-    /// <seealso cref="RickrollBot.Services.Util.BufferBase{System.Object}" />
+    /// <seealso cref="MeetingOrchestratorBot.Services.Util.BufferBase{System.Object}" />
     public class CaptureEvents : BufferBase<object>
     {
         /// <summary>

@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Services
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -16,7 +16,7 @@ using Microsoft.Skype.Bots.Media;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Contract
+namespace MeetingOrchestratorBot.Services.Contract
 {
     /// <summary>
     /// Interface IMediaStream

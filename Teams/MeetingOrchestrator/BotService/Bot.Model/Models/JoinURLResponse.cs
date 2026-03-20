@@ -1,8 +1,8 @@
-﻿
+
 using Newtonsoft.Json;
 using System;
 
-namespace RickrollBot.Model.Models
+namespace MeetingOrchestratorBot.Model.Models
 {
     /// <summary>
     /// Class JoinURLResponse.

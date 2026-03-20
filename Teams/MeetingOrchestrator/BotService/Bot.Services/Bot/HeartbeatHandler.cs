@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace RickrollBot.Services.Bot
+namespace MeetingOrchestratorBot.Services.Bot
 {
     /// <summary>
     /// The base class for handling heartbeats.

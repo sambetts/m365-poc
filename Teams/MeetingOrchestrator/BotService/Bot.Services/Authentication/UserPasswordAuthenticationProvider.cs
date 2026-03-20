@@ -1,5 +1,5 @@
 // ***********************************************************************
-// Assembly         : RickrollBot.Services
+// Assembly         : MeetingOrchestratorBot.Services
 // 
 // Created          : 09-07-2020
 //
@@ -27,7 +27,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace RickrollBot.Services.Authentication
+namespace MeetingOrchestratorBot.Services.Authentication
 {
     /// <summary>
     /// Authentication provider to add.

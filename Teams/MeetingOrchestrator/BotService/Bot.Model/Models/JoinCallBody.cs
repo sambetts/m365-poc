@@ -1,5 +1,5 @@
-﻿// ***********************************************************************
-// Assembly         : RickrollBot.Model
+// ***********************************************************************
+// Assembly         : MeetingOrchestratorBot.Model
 // 
 // Created          : 09-07-2020
 //
@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace RickrollBot.Model.Models
+namespace MeetingOrchestratorBot.Model.Models
 {
     /// <summary>
     /// The join call body.
