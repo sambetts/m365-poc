@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace MeetingOrchestratorBot.Model.Models
+namespace Bot.Model.Models
 {
     /// <summary>
     /// The join call body.

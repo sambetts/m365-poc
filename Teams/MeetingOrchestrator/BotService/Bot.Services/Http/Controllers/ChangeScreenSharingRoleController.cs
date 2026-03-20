@@ -1,14 +1,11 @@
+using Bot.Model.Constants;
+using Bot.Services.Contract;
+using Bot.Services.ServiceSetup;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using MeetingOrchestratorBot.Model.Constants;
-using MeetingOrchestratorBot.Services.Bot;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.ServiceSetup;
+using Microsoft.Graph.Models;
 using System;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Bot.Services.Http.Controllers

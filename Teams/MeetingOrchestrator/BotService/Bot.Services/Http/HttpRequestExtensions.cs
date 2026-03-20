@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Http
+namespace Bot.Services.Http
 {
     /// <summary>
     /// Extension methods for converting ASP.NET Core HttpRequest to HttpRequestMessage
@@ -54,9 +54,9 @@ namespace MeetingOrchestratorBot.Services.Http
                     httpRequest.Content.Headers.TryAddWithoutValidation("Content-Length", request.ContentLength.Value.ToString());
                 }
 
-                foreach (var header in request.Headers.Where(h => 
-                    h.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase) && 
-                    h.Key != "Content-Type" && 
+                foreach (var header in request.Headers.Where(h =>
+                    h.Key.StartsWith("Content-", StringComparison.OrdinalIgnoreCase) &&
+                    h.Key != "Content-Type" &&
                     h.Key != "Content-Length"))
                 {
                     httpRequest.Content.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());

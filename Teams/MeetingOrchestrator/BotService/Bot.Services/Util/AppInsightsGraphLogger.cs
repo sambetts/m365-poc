@@ -1,10 +1,10 @@
 
-using Microsoft.Graph.Communications.Common.Telemetry;
-using System;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.Graph.Communications.Common.Telemetry;
+using System;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     public class AppInsightsGraphLogger : IObserver<LogEvent>
     {

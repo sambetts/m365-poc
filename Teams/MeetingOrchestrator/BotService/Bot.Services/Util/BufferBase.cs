@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     /// <summary>
     /// Class BufferBase.
@@ -105,7 +105,7 @@ namespace MeetingOrchestratorBot.Services.Util
         /// Ends this instance.
         /// </summary>
         public virtual async Task End()
-        {  
+        {
             if (IsRunning)
             {
                 await _syncLock.WaitAsync().ConfigureAwait(false);

@@ -11,14 +11,14 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
+using Bot.Model.Constants;
+using Bot.Services.Contract;
+using Bot.Services.ServiceSetup;
+using Bot.Services.Util;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Skype.Bots.Media;
-using MeetingOrchestratorBot.Model.Constants;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.ServiceSetup;
-using MeetingOrchestratorBot.Services.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,13 +26,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace MeetingOrchestratorBot.Services.Media
+namespace Bot.Services.Media
 {
     /// <summary>
     /// Class MediaStream.
-    /// Implements the <see cref="MeetingOrchestratorBot.Services.Contract.IMediaStream" />
+    /// Implements the <see cref="Bot.Services.Contract.IMediaStream" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Services.Contract.IMediaStream" />
+    /// <seealso cref="Bot.Services.Contract.IMediaStream" />
     public class MediaStream : IMediaStream
     {
         /// <summary>
@@ -188,7 +188,7 @@ namespace MeetingOrchestratorBot.Services.Media
                     {
                         await _capture?.Append(data);
                     }
-                        
+
                     await _currentAudioProcessor.Append(data);
 
                     _tokenSource.Token.ThrowIfCancellationRequested();

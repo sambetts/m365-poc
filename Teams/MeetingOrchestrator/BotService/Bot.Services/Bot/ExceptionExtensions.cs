@@ -1,4 +1,3 @@
-
 using Microsoft.Graph;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using System;
@@ -7,7 +6,7 @@ using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Bot
+namespace Bot.Services.Bot
 {
     /// <summary>
     /// Extension methods for Exception.

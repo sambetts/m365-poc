@@ -1,11 +1,10 @@
-
 using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using System;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace MeetingOrchestratorBot.Services.Bot
+namespace Bot.Services.Bot
 {
     /// <summary>
     /// The base class for handling heartbeats.

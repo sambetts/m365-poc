@@ -11,24 +11,24 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
+using Bot.Model.Constants;
+using Bot.Services.Contract;
+using Bot.Services.ServiceSetup;
+using Bot.Services.Util;
 using NAudio.Wave;
-using MeetingOrchestratorBot.Model.Constants;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.ServiceSetup;
-using MeetingOrchestratorBot.Services.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Media
+namespace Bot.Services.Media
 {
     /// <summary>
     /// Class AudioProcessor.
-    /// Implements the <see cref="MeetingOrchestratorBot.Services.Util.BufferBase{MeetingOrchestratorBot.Services.Media.SerializableAudioMediaBuffer}" />
+    /// Implements the <see cref="Bot.Services.Util.BufferBase{SerializableAudioMediaBuffer}" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Services.Util.BufferBase{MeetingOrchestratorBot.Services.Media.SerializableAudioMediaBuffer}" />
+    /// <seealso cref="Bot.Services.Util.BufferBase{SerializableAudioMediaBuffer}" />
     public class AudioProcessor : BufferBase<SerializableAudioMediaBuffer>
     {
         /// <summary>

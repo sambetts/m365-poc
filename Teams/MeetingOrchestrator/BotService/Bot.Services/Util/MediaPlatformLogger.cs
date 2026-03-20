@@ -3,7 +3,7 @@ using Microsoft.Skype.Bots.Media;
 
 using MediaLogLevel = Microsoft.Skype.Bots.Media.LogLevel;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     /// <summary>
     /// Bridges <see cref="IMediaPlatformLogger"/> to <see cref="ILogger"/>

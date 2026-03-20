@@ -1,12 +1,11 @@
 
+using Bot.Services.ServiceSetup;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using MeetingOrchestratorBot.Services.ServiceSetup;
 using System.IO;
 
-namespace MeetingOrchestratorBot.Services.Http
+namespace Bot.Services.Http
 {
     /// <summary>
     /// Initialize the HTTP configuration for ASP.NET Core.

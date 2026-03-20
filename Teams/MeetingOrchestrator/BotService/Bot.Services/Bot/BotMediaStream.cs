@@ -1,18 +1,16 @@
 
-namespace Sample.AudioVideoPlaybackBot.FrontEnd.Bot
+namespace Bot.Services.Bot
 {
+    using global::Bot.Services.ServiceSetup;
+    using global::Bot.Services.Util;
+    using Microsoft.Graph.Communications.Calls.Media;
+    using Microsoft.Graph.Communications.Common.Telemetry;
+    using Microsoft.Skype.Bots.Media;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Bot.Services.Util;
-    using Microsoft.Graph.Communications.Calls.Media;
-    using Microsoft.Graph.Communications.Common.Telemetry;
-    using Microsoft.Skype.Bots.Media;
-    using Microsoft.Skype.Internal.Media.Services.Common;
-    using MeetingOrchestratorBot.Services.Bot;
-    using MeetingOrchestratorBot.Services.ServiceSetup;
 
     /// <summary>
     /// Class responsible for streaming audio and video.

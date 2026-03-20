@@ -1,22 +1,19 @@
-
-using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.ApplicationInsights.AspNetCore.Extensions;
+using Bot.Services.Bot;
+using Bot.Services.Contract;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using MeetingOrchestratorBot.Services.Bot;
-using MeetingOrchestratorBot.Services.Contract;
 using System;
 
-namespace MeetingOrchestratorBot.Services.ServiceSetup
+namespace Bot.Services.ServiceSetup
 {
     /// <summary>
     /// Class ServiceHost.
-    /// Implements the <see cref="MeetingOrchestratorBot.Services.Contract.IServiceHost" />
+    /// Implements the <see cref="IServiceHost" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Services.Contract.IServiceHost" />
+    /// <seealso cref="IServiceHost" />
     public class ServiceHost : IServiceHost
     {
         /// <summary>
@@ -47,7 +44,7 @@ namespace MeetingOrchestratorBot.Services.ServiceSetup
             var config = (AzureSettings)services.BuildServiceProvider().GetRequiredService<IAzureSettings>();
 
             // App Insights logging. We're only interested in info msgs
-            services.AddLogging(loggingBuilder => 
+            services.AddLogging(loggingBuilder =>
                 loggingBuilder.SetMinimumLevel(LogLevel.Information));
 
             // Only add Application Insights if a connection string is configured
@@ -59,6 +56,8 @@ namespace MeetingOrchestratorBot.Services.ServiceSetup
                 });
             }
 
+            services.AddSingleton<IMediaSessionFactory, DefaultMediaSessionFactory>();
+            services.AddSingleton<ICallHandlerFactory, DefaultCallHandlerFactory>();
             services.AddSingleton<IBotService, BotService>();
 
             return this;

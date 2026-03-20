@@ -13,7 +13,7 @@
 // ***********************************************************************
 using System.Runtime.Serialization;
 
-namespace MeetingOrchestratorBot.Model.Models
+namespace Bot.Model.Models
 {
     /// <summary>
     /// Join URL context.

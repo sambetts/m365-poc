@@ -1,7 +1,5 @@
-
-using Microsoft.Graph;
+using Bot.Model.Models;
 using Microsoft.Graph.Models;
-using MeetingOrchestratorBot.Model.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +8,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     /// <summary>
     /// Gets the join information.

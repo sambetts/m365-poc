@@ -1,25 +1,19 @@
 
+using Bot.Services.Contract;
+using Bot.Services.Http;
+using Bot.Services.Util;
 using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.HttpSys;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph.Communications.Common.Telemetry;
-using Microsoft.Skype.Internal.Media.H264;
-using MeetingOrchestratorBot.Services.Bot;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.Http;
-using MeetingOrchestratorBot.Services.Util;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
-namespace MeetingOrchestratorBot.Services.ServiceSetup
+namespace Bot.Services.ServiceSetup
 {
     /// <summary>
     /// Class AppHost.

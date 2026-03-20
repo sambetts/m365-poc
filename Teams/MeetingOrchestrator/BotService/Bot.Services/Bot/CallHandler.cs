@@ -3,25 +3,23 @@
 // Licensed under the MIT license.
 // </copyright>
 
-namespace Sample.AudioVideoPlaybackBot.FrontEnd.Bot
+namespace Bot.Services.Bot
 {
+    using global::Bot.Services.Contract;
+    using global::Bot.Services.ServiceSetup;
+    using global::Bot.Services.Util;
+    using Microsoft.Graph.Communications.Calls;
+    using Microsoft.Graph.Communications.Calls.Media;
+    using Microsoft.Graph.Communications.Common.Telemetry;
+    using Microsoft.Graph.Communications.Resources;
+    using Microsoft.Graph.Models;
+    using Microsoft.Skype.Bots.Media;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Timers;
-    using global::Bot.Services.Util;
-    using Microsoft.Graph;
-    using Microsoft.Graph.Models;
-    using Microsoft.Graph.Communications.Calls;
-    using Microsoft.Graph.Communications.Calls.Media;
-    using Microsoft.Graph.Communications.Common.Telemetry;
-    using Microsoft.Graph.Communications.Resources;
-    using Microsoft.Skype.Bots.Media;
-    using MeetingOrchestratorBot.Services.Bot;
-    using MeetingOrchestratorBot.Services.Contract;
-    using MeetingOrchestratorBot.Services.ServiceSetup;
 
     /// <summary>
     /// Call Handler Logic.

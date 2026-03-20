@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace MeetingOrchestratorBot.Model.Contracts
+namespace Bot.Model.Contracts
 {
     /// <summary>
     /// Interface IInitializable

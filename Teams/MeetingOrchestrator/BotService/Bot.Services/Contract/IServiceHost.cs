@@ -1,10 +1,10 @@
 
+using Bot.Services.ServiceSetup;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MeetingOrchestratorBot.Services.ServiceSetup;
 using System;
 
-namespace MeetingOrchestratorBot.Services.Contract
+namespace Bot.Services.Contract
 {
     /// <summary>
     /// Interface IServiceHost

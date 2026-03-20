@@ -11,14 +11,14 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace MeetingOrchestratorBot.Services.Contract
+namespace Bot.Services.Contract
 {
     /// <summary>
     /// Interface IAzureSettings
-    /// Implements the <see cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
+    /// Implements the <see cref="Bot.Model.Contracts.IInitializable" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
-    public interface IAzureSettings: Model.Contracts.IInitializable
+    /// <seealso cref="Bot.Model.Contracts.IInitializable" />
+    public interface IAzureSettings : Model.Contracts.IInitializable
     {
     }
 }

@@ -11,22 +11,21 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-using Microsoft.Skype.Bots.Media;
+using Bot.Services.Media;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
-using MeetingOrchestratorBot.Services.Media;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     /// <summary>
     /// Class CaptureEvents.
-    /// Implements the <see cref="MeetingOrchestratorBot.Services.Util.BufferBase{System.Object}" />
+    /// Implements the <see cref="Bot.Services.Util.BufferBase{object}" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Services.Util.BufferBase{System.Object}" />
+    /// <seealso cref="Bot.Services.Util.BufferBase{object}" />
     public class CaptureEvents : BufferBase<object>
     {
         /// <summary>
@@ -121,7 +120,8 @@ namespace MeetingOrchestratorBot.Services.Util
             using (FileStream sourceStream = new FileStream($"{fullName}.json", FileMode.Append, FileAccess.Write, FileShare.None, bufferSize: 4096, useAsync: true))
             {
                 await sourceStream.WriteAsync(encodedText, 0, encodedText.Length);
-            };
+            }
+            ;
         }
 
         /// <summary>

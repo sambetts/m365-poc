@@ -12,7 +12,7 @@
 // <summary>HTTP route constants for routing requests to CallController methods.</summary>
 // ***********************************************************************-
 
-namespace MeetingOrchestratorBot.Model.Constants
+namespace Bot.Model.Constants
 {
     /// <summary>
     /// HTTP route constants for routing requests to CallController methods.

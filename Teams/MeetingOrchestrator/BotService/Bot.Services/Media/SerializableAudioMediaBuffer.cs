@@ -11,17 +11,15 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Microsoft.Graph.Communications.Calls;
+using Microsoft.Graph.Models;
 using Microsoft.Skype.Bots.Media;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace MeetingOrchestratorBot.Services.Media
+namespace Bot.Services.Media
 {
     /// <summary>
     /// Class SerializableAudioMediaBuffer.

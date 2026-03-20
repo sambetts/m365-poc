@@ -1,8 +1,7 @@
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MeetingOrchestratorBot.Services.ServiceSetup
+namespace Bot.Services.ServiceSetup
 {
     /// <summary>
     /// Class ServicesExtension.

@@ -1,16 +1,15 @@
-
-using MeetingOrchestratorBot.Services.ServiceSetup;
+using Bot.Services.ServiceSetup;
 using System;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace MeetingOrchestratorBot.Console
+namespace Bot.Console
 {
     /// <summary>
     /// Class Program.
-    /// Implements the <see cref="MeetingOrchestratorBot.Services.ServiceSetup.AppHost" />
+    /// Implements the <see cref="AppHost" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Services.ServiceSetup.AppHost" />
+    /// <seealso cref="AppHost" />
     public class Program : AppHost
     {
         /// <summary>
@@ -33,12 +32,12 @@ namespace MeetingOrchestratorBot.Console
             try
             {
 #endif
-                System.Console.WriteLine("MeetingOrchestratorBot: booting");
+            System.Console.WriteLine("MeetingOrchestratorBot: booting");
 
-                bot.Boot();
-                bot.StartServer();
+            bot.Boot();
+            bot.StartServer();
 
-                System.Console.WriteLine("MeetingOrchestratorBot: running");
+            System.Console.WriteLine("MeetingOrchestratorBot: running");
 #if !DEBUG
             }
             catch (Exception e)

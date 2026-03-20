@@ -11,7 +11,7 @@
 // </copyright>
 // <summary></summary>
 // ***********************************************************************
-namespace MeetingOrchestratorBot.Model.Constants
+namespace Bot.Model.Constants
 {
     /// <summary>
     /// Class AzureConstants.

@@ -16,7 +16,7 @@ using Microsoft.Skype.Bots.Media;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Contract
+namespace Bot.Services.Contract
 {
     /// <summary>
     /// Interface IMediaStream

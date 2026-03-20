@@ -1,22 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Bot.Services.Util
 {
+    using global::Bot.Services.ServiceSetup;
+    using Microsoft.Graph.Communications.Calls.Media;
+    using Microsoft.Graph.Communications.Common.Telemetry;
+    using Microsoft.Skype.Bots.Media;
+    using Microsoft.Skype.Internal.Media.H264;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
-    using Microsoft.Graph.Communications.Calls.Media;
-    using Microsoft.Graph.Communications.Common.Telemetry;
-    using Microsoft.Skype.Bots.Media;
-    using Microsoft.Skype.Internal.Media.H264;
-    using MeetingOrchestratorBot.Services.ServiceSetup;
 
     /// <summary>
     /// The utility class.

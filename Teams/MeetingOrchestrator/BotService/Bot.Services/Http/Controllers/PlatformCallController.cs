@@ -1,17 +1,16 @@
 
+using Bot.Model.Constants;
+using Bot.Services.Contract;
+using Bot.Services.ServiceSetup;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
-using Microsoft.Graph.Models;
 using Microsoft.Graph.Communications.Client;
 using Microsoft.Graph.Communications.Client.Authentication;
 using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Common.Transport;
 using Microsoft.Graph.Communications.Core.Notifications;
-using MeetingOrchestratorBot.Model.Constants;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.ServiceSetup;
+using Microsoft.Graph.Models;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -19,7 +18,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Http.Controllers
+namespace Bot.Services.Http.Controllers
 {
     using ErrorConstants = Microsoft.Graph.Communications.Core.Exceptions.ErrorConstants;
 

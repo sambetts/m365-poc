@@ -1,5 +1,8 @@
+using Bot.Model.Models;
+using Bot.Services.Authentication;
+using Bot.Services.Contract;
+using Bot.Services.ServiceSetup;
 using Bot.Services.Util;
-using Microsoft.Graph;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Calls.Media;
 using Microsoft.Graph.Communications.Client;
@@ -7,20 +10,11 @@ using Microsoft.Graph.Communications.Common;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Graph.Communications.Resources;
 using Microsoft.Graph.Models;
-using Microsoft.Skype.Bots.Media;
-using MeetingOrchestratorBot.Model.Models;
-using MeetingOrchestratorBot.Services.Authentication;
-using MeetingOrchestratorBot.Services.Contract;
-using MeetingOrchestratorBot.Services.ServiceSetup;
-using MeetingOrchestratorBot.Services.Util;
-using Sample.AudioVideoPlaybackBot.FrontEnd.Bot;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Bot;
+namespace Bot.Services.Bot;
 
 /// <summary>
 /// Manages the communications client lifecycle, call handling, and media sessions.
@@ -29,6 +23,8 @@ public class BotService : IDisposable, IBotService
 {
     private readonly IGraphLogger _logger;
     private readonly AzureSettings _settings;
+    private readonly IMediaSessionFactory _mediaSessionFactory;
+    private readonly ICallHandlerFactory _callHandlerFactory;
 
     /// <inheritdoc />
     public ConcurrentDictionary<string, CallHandler> CallHandlers { get; } = new();
@@ -41,10 +37,18 @@ public class BotService : IDisposable, IBotService
     /// </summary>
     /// <param name="logger">The graph logger.</param>
     /// <param name="settings">The Azure settings.</param>
-    public BotService(IGraphLogger logger, IAzureSettings settings)
+    /// <param name="mediaSessionFactory">Factory for creating local media sessions.</param>
+    /// <param name="callHandlerFactory">Factory for creating call handlers.</param>
+    public BotService(
+        IGraphLogger logger,
+        IAzureSettings settings,
+        IMediaSessionFactory mediaSessionFactory,
+        ICallHandlerFactory callHandlerFactory)
     {
         _logger = logger;
         _settings = (AzureSettings)settings;
+        _mediaSessionFactory = mediaSessionFactory;
+        _callHandlerFactory = callHandlerFactory;
     }
 
     /// <inheritdoc />
@@ -75,8 +79,8 @@ public class BotService : IDisposable, IBotService
         builder.SetServiceBaseUrl(_settings.PlaceCallEndpointUrl);
 
         Client = builder.Build();
-        Client.Calls().OnIncoming += CallsOnIncoming;
-        Client.Calls().OnUpdated += CallsOnUpdated;
+        Client.Calls().OnIncoming += OnIncomingCall;
+        Client.Calls().OnUpdated += OnCallsUpdated;
     }
 
     /// <inheritdoc />
@@ -110,7 +114,7 @@ public class BotService : IDisposable, IBotService
         var scenarioId = Guid.NewGuid();
         var (chatInfo, meetingInfo) = JoinInfo.ParseJoinURL(joinCallBody.JoinURL);
         var tenantId = ExtractTenantId(meetingInfo);
-        var mediaSession = CreateLocalMediaSession();
+        var mediaSession = _mediaSessionFactory.Create(Client);
 
         var joinParams = new JoinMeetingParameters(chatInfo, meetingInfo, mediaSession)
         {
@@ -135,7 +139,7 @@ public class BotService : IDisposable, IBotService
         return statefulCall;
     }
 
-    private static string ExtractTenantId(MeetingInfo meetingInfo)
+    internal static string ExtractTenantId(MeetingInfo meetingInfo)
     {
         var organizer = (meetingInfo as OrganizerMeetingInfo)?.Organizer;
         return organizer?.User?.AdditionalData != null
@@ -144,66 +148,17 @@ public class BotService : IDisposable, IBotService
             : null;
     }
 
-    private ILocalMediaSession CreateLocalMediaSession(Guid mediaSessionId = default)
-    {
-        try
-        {
-            var videoSocketSettings = new List<VideoSocketSettings>
-            {
-                new()
-                {
-                    StreamDirections = StreamDirection.Sendrecv,
-                    ReceiveColorFormat = VideoColorFormat.H264,
-                    SupportedSendVideoFormats = SampleConstants.SupportedSendVideoFormats,
-                    MaxConcurrentSendStreams = 1,
-                },
-            };
-
-            for (int i = 0; i < SampleConstants.NumberOfMultiviewSockets; i++)
-            {
-                videoSocketSettings.Add(new VideoSocketSettings
-                {
-                    StreamDirections = StreamDirection.Recvonly,
-                    ReceiveColorFormat = VideoColorFormat.H264,
-                });
-            }
-
-            var vbssSocketSettings = new VideoSocketSettings
-            {
-                StreamDirections = StreamDirection.Recvonly,
-                ReceiveColorFormat = VideoColorFormat.H264,
-                MediaType = MediaType.Vbss,
-                SupportedSendVideoFormats = new List<VideoFormat>
-                {
-                    // fps 1.875 is required for h264 in vbss scenario.
-                    VideoFormat.H264_1920x1080_1_875Fps,
-                },
-            };
-
-            return Client.CreateMediaSession(
-                new AudioSocketSettings
-                {
-                    StreamDirections = StreamDirection.Sendrecv,
-                    SupportedAudioFormat = AudioFormat.Pcm16K,
-                },
-                videoSocketSettings,
-                vbssSocketSettings,
-                mediaSessionId: mediaSessionId);
-        }
-        catch (Exception e)
-        {
-            _logger.Log(TraceLevel.Error, e.Message);
-            throw;
-        }
-    }
-
-    private void CallsOnIncoming(ICallCollection sender, CollectionEventArgs<ICall> args)
+    /// <summary>
+    /// Handles incoming call events. Override in tests to verify behavior
+    /// without a live communications client.
+    /// </summary>
+    protected virtual void OnIncomingCall(ICallCollection sender, CollectionEventArgs<ICall> args)
     {
         args.AddedResources.ForEach(call =>
         {
             IMediaSession mediaSession = Guid.TryParse(call.Id, out Guid callId)
-                ? CreateLocalMediaSession(callId)
-                : CreateLocalMediaSession();
+                ? _mediaSessionFactory.Create(Client, callId)
+                : _mediaSessionFactory.Create(Client);
 
             call?.AnswerAsync(mediaSession).ForgetAndLogExceptionAsync(
                 call.GraphLogger,
@@ -211,11 +166,15 @@ public class BotService : IDisposable, IBotService
         });
     }
 
-    private void CallsOnUpdated(ICallCollection sender, CollectionEventArgs<ICall> args)
+    /// <summary>
+    /// Handles call collection update events (added/removed calls).
+    /// Override in tests to verify handler registration and cleanup.
+    /// </summary>
+    protected virtual void OnCallsUpdated(ICallCollection sender, CollectionEventArgs<ICall> args)
     {
         foreach (var call in args.AddedResources)
         {
-            CallHandlers[call.Id] = new CallHandler(call, _settings);
+            CallHandlers[call.Id] = _callHandlerFactory.Create(call);
         }
 
         foreach (var call in args.RemovedResources)

@@ -13,7 +13,7 @@
 // ***********************************************************************
 using System.IO;
 
-namespace MeetingOrchestratorBot.Services.Util
+namespace Bot.Services.Util
 {
     /// <summary>
     /// Class AudioFileUtils.

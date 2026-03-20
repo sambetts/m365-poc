@@ -1,21 +1,18 @@
-
-using Microsoft.Graph;
-using Microsoft.Graph.Models;
+using Bot.Model.Models;
+using Bot.Services.Bot;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Client;
-using MeetingOrchestratorBot.Model.Models;
-using MeetingOrchestratorBot.Services.Bot;
-using Sample.AudioVideoPlaybackBot.FrontEnd.Bot;
+using Microsoft.Graph.Models;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 
-namespace MeetingOrchestratorBot.Services.Contract
+namespace Bot.Services.Contract
 {
     /// <summary>
     /// Interface IBotService
-    /// Implements the <see cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
+    /// Implements the <see cref="Bot.Model.Contracts.IInitializable" />
     /// </summary>
-    /// <seealso cref="MeetingOrchestratorBot.Model.Contracts.IInitializable" />
+    /// <seealso cref="Bot.Model.Contracts.IInitializable" />
     public interface IBotService : Model.Contracts.IInitializable
     {
         Task ChangeSharingRoleAsync(string callLegId, ScreenSharingRole role);

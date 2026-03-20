@@ -1,8 +1,7 @@
-
 using Newtonsoft.Json;
 using System;
 
-namespace MeetingOrchestratorBot.Model.Models
+namespace Bot.Model.Models
 {
     /// <summary>
     /// Class JoinURLResponse.
