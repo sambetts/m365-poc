@@ -29,7 +29,6 @@ namespace Bot.Services.Bot
         private readonly IGraphLogger logger;
         private AudioVideoFramePlayerSettings audioVideoFramePlayerSettings;
         private AudioVideoFramePlayer audioVideoFramePlayer;
-        private VbssPlayerHandler vbssPlayerHandler;
         private long audioTick;
         private long videoTick;
         private long mediaTick;
@@ -75,10 +74,6 @@ namespace Bot.Services.Bot
             this.videoSockets = this.mediaSession.VideoSockets?.ToList();
 
             this.vbssSocket = this.mediaSession.VbssSocket;
-            if (this.vbssSocket != null)
-            {
-                this.vbssPlayerHandler = new VbssPlayerHandler(this.vbssSocket, this.logger, _settings);
-            }
 
             var ignoreTask = this.StartAudioVideoFramePlayerAsync().ForgetAndLogExceptionAsync(this.logger, "Failed to start the player");
         }
@@ -187,11 +182,6 @@ namespace Bot.Services.Bot
                 await this.audioVideoFramePlayer.ShutdownAsync().ConfigureAwait(false);
             }
 
-            if (this.vbssPlayerHandler != null)
-            {
-                await this.vbssPlayerHandler.ShutdownAsync().ConfigureAwait(false);
-            }
-
             // make sure all the audio and video buffers are disposed, it can happen that,
             // the buffers were not enqueued but the call was disposed if the caller hangs up quickly
             foreach (var audioMediaBuffer in this.audioMediaBuffers)
@@ -236,8 +226,6 @@ namespace Bot.Services.Bot
                 // here we want to keep the AV creation in sync so we take as reference audio.
                 if (e.MediaType == MediaType.Audio)
                 {
-                    // use the past tick as reference to avoid av out of sync
-                    this.CreateAVBuffers(this.mediaTick, replayed: true);
                     this.audioVideoFramePlayer?.EnqueueBuffersAsync(this.audioMediaBuffers, this.videoMediaBuffers).ForgetAndLogExceptionAsync(this.logger, "Failed to enqueue AV buffers");
 
                     this.logger.Info($"Low on audio event raised, enqueued {this.audioMediaBuffers.Count} buffers last audio tick {this.audioTick} and mediatick {this.mediaTick}");
@@ -270,9 +258,6 @@ namespace Bot.Services.Bot
                 this.audioVideoFramePlayer.LowOnFrames += this.OnAudioVideoFramePlayerLowOnFrames;
 
                 // Create AV buffers
-                var currentTick = DateTime.Now.Ticks;
-                this.CreateAVBuffers(currentTick, replayed: false);
-
                 await this.audioVideoFramePlayer.EnqueueBuffersAsync(this.audioMediaBuffers, this.videoMediaBuffers).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -335,9 +320,6 @@ namespace Bot.Services.Bot
                         this.logger.Info($"[VideoSendStatusChangedEventArgs(MediaSendStatus=<{e.MediaSendStatus}> enqueuing new formats: {string.Join(";", this.videoKnownSupportedFormats)}]");
 
                         // Create the AV buffers
-                        var currentTick = DateTime.Now.Ticks;
-                        this.CreateAVBuffers(currentTick, replayed: false);
-
                         this.audioVideoFramePlayer?.EnqueueBuffersAsync(this.audioMediaBuffers, this.videoMediaBuffers).ForgetAndLogExceptionAsync(this.logger);
                     }
                 }
@@ -362,35 +344,6 @@ namespace Bot.Services.Bot
         {
             this.logger.Info($"[VideoKeyFrameNeededEventArgs(MediaType=<{{e.MediaType}}>;SocketId=<{{e.SocketId}}>" +
                              $"VideoFormats=<{string.Join(";", e.VideoFormats.ToList())}>] calling RequestKeyFrame on the videoSocket");
-        }
-
-        /// <summary>
-        /// Create audio video buffers.
-        /// </summary>
-        /// <param name="referenceTick">Current clock tick.</param>
-        /// <param name="replayed">If frame is replayed.</param>
-        private void CreateAVBuffers(long referenceTick, bool replayed)
-        {
-            this.logger.Info("Creating AudioVideoBuffers");
-
-            lock (this.mLock)
-            {
-                this.videoMediaBuffers = Utilities.GetUtils(_settings).CreateVideoMediaBuffers(
-                    referenceTick,
-                    this.videoKnownSupportedFormats,
-                    replayed,
-                    this.logger);
-
-                this.audioMediaBuffers = Utilities.CreateAudioMediaBuffers(
-                    referenceTick,
-                    replayed,
-                    this.logger, _settings);
-
-                // update the tick for next iteration
-                this.audioTick = this.audioMediaBuffers.Last().Timestamp;
-                this.videoTick = this.videoMediaBuffers.Last().Timestamp;
-                this.mediaTick = Math.Max(this.audioTick, this.videoTick);
-            }
         }
     }
 }

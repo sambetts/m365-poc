@@ -136,7 +136,6 @@ namespace Bot.Services.ServiceSetup
         /// <value><c>true</c> if this instance is stereo; otherwise, <c>false</c>.</value>
         public bool IsStereo { get; set; }
 
-        public Dictionary<string, VideoFormat> H264FileLocations { get; } = new Dictionary<string, VideoFormat>();
         /// <summary>
         /// Gets or sets the wav quality.
         /// </summary>
@@ -168,6 +167,44 @@ namespace Bot.Services.ServiceSetup
         public string AudioFileLocation { get; set; }
 
         /// <summary>
+        /// Gets or sets the Azure Speech Services region (e.g. "eastus").
+        /// </summary>
+        public string SpeechRegion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the full Azure resource ID of the Speech resource.
+        /// Required for RBAC auth. Format: /subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.CognitiveServices/accounts/{name}
+        /// </summary>
+        public string SpeechResourceId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the custom domain endpoint of the Speech resource (e.g. "https://myresource.cognitiveservices.azure.com/").
+        /// Required for RBAC auth. The Speech resource must have a custom subdomain enabled.
+        /// </summary>
+        public string SpeechEndpoint { get; set; }
+
+        /// <summary>
+        /// Gets or sets the TTS voice name. Defaults to "en-US-AvaMultilingualNeural" when empty.
+        /// </summary>
+        public string SpeechVoiceName { get; set; } = "en-US-AvaMultilingualNeural";
+
+        /// <summary>
+        /// Gets or sets the relative path to the TTS script text file.
+        /// When set, the bot speaks this script on loop instead of playing video/audio files.
+        /// </summary>
+        public string SpeechScriptFile { get; set; }
+
+        /// <summary>
+        /// Gets the resolved absolute path to the speech script file.
+        /// </summary>
+        public string SpeechScriptFilePath { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether TTS mode is enabled.
+        /// </summary>
+        public bool IsTtsMode => !string.IsNullOrWhiteSpace(SpeechScriptFile);
+
+        /// <summary>
         /// Initializes this instance.
         /// </summary>
         public void Initialize()
@@ -187,23 +224,6 @@ namespace Bot.Services.ServiceSetup
                 int.TryParse(Regex.Match(this.PodName, @"\d+$").Value, out podNumber);
             }
 
-            /*
-             * Files converted with:
-             * 
-                ./ffmpeg.exe -i "C:\Users\sambetts\Desktop\Rick Astley - Never Gonna Give You Up 4K 60 FPS Remastered.mp4" -g 1 -an -crf 35 -vcodec libx264 -movflags faststart -vf "scale=1280:720, fps=29.97" C:\Users\sambetts\Desktop\"rickroll.1280x720x30.h264"
-                ./ffmpeg.exe -i "C:\Users\sambetts\Desktop\Rick Astley - Never Gonna Give You Up 4K 60 FPS Remastered.mp4" -g 1 -an -movflags faststart -vf "scale=640:360, fps=30" "C:\Users\sambetts\Desktop\rickroll.640x360x30.h264"
-                ./ffmpeg.exe -i "C:\Users\sambetts\Desktop\Rick Astley - Never Gonna Give You Up 4K 60 FPS Remastered.mp4" -g 1 -an -movflags faststart -vf "scale=320:180, fps=15" "C:\Users\sambetts\Desktop\rickroll.320x180x15.h264"
-
-                ffmpeg GoP needs to be 1 as Teams Video only seems to work with keyframes? Left to default, video stutters in Teams stream. 
-             */
-
-            // Audio/Video config
-            this.H264FileLocations.Add(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, this.H2641280x720x30FpsFile), VideoFormat.H264_1280x720_30Fps);
-            this.H264FileLocations.Add(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, this.H264320x180x15FpsFile), VideoFormat.H264_320x180_15Fps);
-            this.H264FileLocations.Add(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, this.H264640x360x30xFpsFile), VideoFormat.H264_640x360_30Fps);
-            this.AudioFileLocation = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WavFile);
-
-            Utilities.ValidateVideos(this);
 
 
             // Create structured config objects for service.
@@ -235,6 +255,13 @@ namespace Bot.Services.ServiceSetup
             Console.WriteLine($"{nameof(MediaPlatformSettings.MediaPlatformInstanceSettings.ServiceFqdn)}: {MediaPlatformSettings.MediaPlatformInstanceSettings.ServiceFqdn}.");
             Console.WriteLine($"{nameof(MediaPlatformSettings.ApplicationId)}: {MediaPlatformSettings.ApplicationId}.");
             Console.WriteLine();
+
+            // Resolve speech script file path
+            if (!string.IsNullOrWhiteSpace(SpeechScriptFile))
+            {
+                SpeechScriptFilePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, SpeechScriptFile);
+                Console.WriteLine($"TTS mode enabled. Script file: {SpeechScriptFilePath}");
+            }
 
         }
 

@@ -14,7 +14,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.19.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="3.0.0" />
+    <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.48.2" />
     <PackageReference Include="Microsoft.Graph" Version="5.103.0" />
     <PackageReference Include="Microsoft.Graph.Communications.Calls" Version="1.2.0.15690" />
     <PackageReference Include="NAudio" Version="2.3.0" />

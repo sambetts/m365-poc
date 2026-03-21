@@ -9,16 +9,19 @@ namespace Bot.Services.Bot;
 public class DefaultCallHandlerFactory : ICallHandlerFactory
 {
     private readonly IAzureSettings _settings;
+    private readonly ITextToSpeechService _ttsService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DefaultCallHandlerFactory"/> class.
     /// </summary>
     /// <param name="settings">The Azure settings.</param>
-    public DefaultCallHandlerFactory(IAzureSettings settings)
+    /// <param name="ttsService">The TTS service for speech playback.</param>
+    public DefaultCallHandlerFactory(IAzureSettings settings, ITextToSpeechService ttsService)
     {
         _settings = settings;
+        _ttsService = ttsService;
     }
 
     /// <inheritdoc />
-    public CallHandler Create(ICall call) => new(call, _settings);
+    public CallHandler Create(ICall call) => new(call, _settings, _ttsService);
 }
