@@ -1,3 +1,0 @@
-Hello, and welcome to the meeting. I am the Meeting Orchestrator Bot.
-I will be repeating this message on a loop to confirm that text-to-speech is working correctly.
-Thank you for joining today. If you can hear this message, the bot audio is functioning as expected.

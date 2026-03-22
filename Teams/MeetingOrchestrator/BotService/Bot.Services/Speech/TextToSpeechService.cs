@@ -28,9 +28,12 @@ namespace Bot.Services.Speech
         }
 
         /// <inheritdoc />
-        public async Task<byte[]> SynthesizeToAudioAsync(string text)
+        public async Task<byte[]> SynthesizeToAudioAsync(string text, string? language = null)
         {
             var speechConfig = await CreateSpeechConfigAsync().ConfigureAwait(false);
+
+            if (!string.IsNullOrWhiteSpace(language))
+                speechConfig.SpeechSynthesisLanguage = language;
 
             using var synthesizer = new SpeechSynthesizer(speechConfig, null);
             var result = await synthesizer.SpeakTextAsync(text).ConfigureAwait(false);

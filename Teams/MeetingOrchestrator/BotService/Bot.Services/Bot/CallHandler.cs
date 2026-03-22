@@ -45,6 +45,15 @@ public class CallHandler : HeartbeatHandler
 
     public ICall Call { get; }
 
+    /// <summary>Pauses the speech script between paragraphs.</summary>
+    public void PauseSpeaking() => _audioHandler.Pause();
+
+    /// <summary>Resumes the speech script after a pause.</summary>
+    public void ResumeSpeaking() => _audioHandler.Resume();
+
+    /// <summary>Gets whether speech playback is currently paused.</summary>
+    public bool IsSpeakingPaused => _audioHandler.IsPaused;
+
     protected override Task HeartbeatAsync(ElapsedEventArgs args) => Call.KeepAliveAsync();
 
     protected override void Dispose(bool disposing)
