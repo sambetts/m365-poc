@@ -1,7 +1,6 @@
 using Bot.Services.Bot;
 using Bot.Services.Contract;
 using Bot.Services.ServiceSetup;
-using Bot.Services.Speech;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Calls.Media;
 using Microsoft.Graph.Communications.Common.Telemetry;
@@ -9,7 +8,6 @@ using Microsoft.Graph.Communications.Resources;
 using Microsoft.Graph.Models;
 using Microsoft.Skype.Bots.Media;
 using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
@@ -23,37 +21,26 @@ public class CallHandler : HeartbeatHandler
 {
     public const uint DominantSpeakerNone = DominantSpeakerChangedEventArgs.None;
 
-    private readonly AzureSettings _settings;
-    private readonly ITextToSpeechService _ttsService;
-
-    private SpeechAudioPlayer _speechPlayer;
+    private readonly CallAudioHandler _audioHandler;
 
     public CallHandler(ICall statefulCall, IAzureSettings settings, ITextToSpeechService ttsService)
         : base(TimeSpan.FromMinutes(10), statefulCall?.GraphLogger!)
     {
         Call = statefulCall!;
         Call.OnUpdated += CallOnUpdated;
-        _settings = (AzureSettings)settings;
-        _ttsService = ttsService ?? throw new ArgumentNullException(nameof(ttsService));
 
         Console.WriteLine($"[CallHandler] Constructor called. CallId={Call.Id}, State={Call.Resource.State}");
 
         Call.GetLocalMediaSession().AudioSocket.DominantSpeakerChanged += OnDominantSpeakerChanged;
         Call.Participants.OnUpdated += ParticipantsOnUpdated;
 
-        // Create the player immediately (like EchoBot) — it subscribes to
-        // AudioSendStatusChanged and initialises AudioVideoFramePlayer once Active.
-        _speechPlayer = new SpeechAudioPlayer(
+        _audioHandler = new CallAudioHandler(
             Call.GetLocalMediaSession().AudioSocket,
+            settings,
+            ttsService,
             GraphLogger);
 
-        // Kick off TTS synthesis in the background. Once the PCM bytes are ready
-        // they are enqueued into the player (which waits for AudioSendStatus=Active).
-        _ = Task.Run(async () =>
-        {
-            try { await SynthesizeAndEnqueueAsync().ConfigureAwait(false); }
-            catch (Exception ex) { Console.Error.WriteLine($"[CallHandler] SynthesizeAndEnqueueAsync FAILED: {ex}"); }
-        });
+        _audioHandler.StartSpeaking();
     }
 
     public ICall Call { get; }
@@ -71,8 +58,8 @@ public class CallHandler : HeartbeatHandler
         foreach (var participant in Call.Participants)
             participant.OnUpdated -= OnParticipantUpdated;
 
-        _speechPlayer?.ShutdownAsync().ForgetAndLogExceptionAsync(GraphLogger);
-        _speechPlayer?.Dispose();
+        _audioHandler?.ShutdownAsync().ForgetAndLogExceptionAsync(GraphLogger);
+        _audioHandler?.Dispose();
     }
 
     private void CallOnUpdated(ICall sender, ResourceEventArgs<Call> e)
@@ -99,27 +86,8 @@ public class CallHandler : HeartbeatHandler
     {
     }
 
-    private async Task SynthesizeAndEnqueueAsync()
-    {
-        Console.WriteLine($"[CallHandler] SynthesizeAndEnqueueAsync — reading script from: {_settings.SpeechScriptFilePath}");
-
-        var scriptText = await File.ReadAllTextAsync(_settings.SpeechScriptFilePath).ConfigureAwait(false);
-        Console.WriteLine($"[CallHandler] Script loaded ({scriptText.Length} chars). Synthesizing...");
-
-        var pcmAudio = await _ttsService.SynthesizeToAudioAsync(scriptText).ConfigureAwait(false);
-        Console.WriteLine($"[CallHandler] Synthesized {pcmAudio.Length} bytes of PCM audio. Enqueueing...");
-
-        await _speechPlayer.EnqueueAudioAsync(pcmAudio).ConfigureAwait(false);
-        Console.WriteLine($"[CallHandler] Audio enqueued to player.");
-    }
-
     private void OnDominantSpeakerChanged(object sender, DominantSpeakerChangedEventArgs e)
     {
         Console.WriteLine($"[CallHandler] OnDominantSpeakerChanged: {e.CurrentDominantSpeaker}");
     }
-
-    private IParticipant? GetParticipantFromMSI(uint msi)
-        => Call.Participants.SingleOrDefault(x =>
-            x.Resource.IsInLobby == false &&
-            x.Resource.MediaStreams.Any(y => y.SourceId == msi.ToString()));
 }
