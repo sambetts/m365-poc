@@ -1,6 +1,5 @@
 using Bot.Services.Bot;
 using Bot.Services.Contract;
-using Bot.Services.ServiceSetup;
 using Microsoft.Graph.Communications.Calls;
 using Microsoft.Graph.Communications.Calls.Media;
 using Microsoft.Graph.Communications.Common.Telemetry;
@@ -23,27 +22,33 @@ public class CallHandler : HeartbeatHandler
 
     private readonly CallAudioHandler _audioHandler;
 
-    public CallHandler(ICall statefulCall, IAzureSettings settings, ITextToSpeechService ttsService)
+    public CallHandler(ICall statefulCall, ITextToSpeechService ttsService, string displayName)
         : base(TimeSpan.FromMinutes(10), statefulCall?.GraphLogger!)
     {
         Call = statefulCall!;
+        DisplayName = displayName ?? string.Empty;
         Call.OnUpdated += CallOnUpdated;
 
-        Console.WriteLine($"[CallHandler] Constructor called. CallId={Call.Id}, State={Call.Resource.State}");
+        Console.WriteLine($"[CallHandler] Constructor called. CallId={Call.Id}, DisplayName={DisplayName}, State={Call.Resource.State}");
 
         Call.GetLocalMediaSession().AudioSocket.DominantSpeakerChanged += OnDominantSpeakerChanged;
         Call.Participants.OnUpdated += ParticipantsOnUpdated;
 
         _audioHandler = new CallAudioHandler(
             Call.GetLocalMediaSession().AudioSocket,
-            settings,
             ttsService,
             GraphLogger);
-
-        _audioHandler.StartSpeaking();
     }
 
     public ICall Call { get; }
+
+    /// <summary>The display name the bot used when joining this call.</summary>
+    public string DisplayName { get; }
+
+    /// <summary>
+    /// Starts speaking the given script (JSON or plain text).
+    /// </summary>
+    public void StartScript(string scriptContent) => _audioHandler.StartSpeaking(scriptContent);
 
     /// <summary>Pauses the speech script between paragraphs.</summary>
     public void PauseSpeaking() => _audioHandler.Pause();

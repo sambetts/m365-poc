@@ -13,6 +13,7 @@ public interface ICallHandlerFactory
     /// Creates a new <see cref="CallHandler"/> for the specified call.
     /// </summary>
     /// <param name="call">The stateful call.</param>
+    /// <param name="displayName">The display name the bot used when joining.</param>
     /// <returns>A new <see cref="CallHandler"/> instance.</returns>
-    CallHandler Create(ICall call);
+    CallHandler Create(ICall call, string displayName);
 }

@@ -59,5 +59,10 @@ namespace Bot.Model.Constants
         /// Route for changing screen sharing role request.
         /// </summary>
         public const string OnChangeRoleRoute = "changeRole";
+
+        /// <summary>
+        /// Route for starting a speech script on an active call.
+        /// </summary>
+        public const string StartScript = "startScript";
     }
 }

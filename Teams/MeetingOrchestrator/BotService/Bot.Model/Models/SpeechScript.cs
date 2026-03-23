@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Bot.Services.Speech;
+namespace Bot.Model.Models;
 
 /// <summary>
 /// A structured speech script composed of paragraphs, each with optional

@@ -26,6 +26,12 @@ public class BotService : IDisposable, IBotService
     private readonly IMediaSessionFactory _mediaSessionFactory;
     private readonly ICallHandlerFactory _callHandlerFactory;
 
+    /// <summary>
+    /// Maps ScenarioId → display name so that <see cref="OnCallsUpdated"/>
+    /// can pass the name to the <see cref="CallHandler"/> when the call is established.
+    /// </summary>
+    private readonly ConcurrentDictionary<Guid, string> _pendingDisplayNames = new();
+
     /// <inheritdoc />
     public ConcurrentDictionary<string, CallHandler> CallHandlers { get; } = new();
 
@@ -136,6 +142,10 @@ public class BotService : IDisposable, IBotService
 
         var statefulCall = await Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
         statefulCall.GraphLogger.Info($"Call creation complete: {statefulCall.Id}");
+
+        // Stash the display name so OnCallsUpdated can pass it to the handler.
+        _pendingDisplayNames[scenarioId] = joinCallBody.DisplayName ?? string.Empty;
+
         return statefulCall;
     }
 
@@ -174,7 +184,8 @@ public class BotService : IDisposable, IBotService
     {
         foreach (var call in args.AddedResources)
         {
-            CallHandlers[call.Id] = _callHandlerFactory.Create(call);
+            _pendingDisplayNames.TryRemove(call.ScenarioId, out var displayName);
+            CallHandlers[call.Id] = _callHandlerFactory.Create(call, displayName ?? string.Empty);
         }
 
         foreach (var call in args.RemovedResources)

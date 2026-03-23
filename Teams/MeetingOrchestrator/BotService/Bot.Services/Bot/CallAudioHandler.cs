@@ -1,5 +1,5 @@
+using Bot.Model.Models;
 using Bot.Services.Contract;
-using Bot.Services.ServiceSetup;
 using Bot.Services.Speech;
 using Microsoft.Graph.Communications.Common.Telemetry;
 using Microsoft.Skype.Bots.Media;
@@ -23,7 +23,6 @@ public class CallAudioHandler : IDisposable
     /// <summary>20 ms frame = 640 bytes.</summary>
     private const int FrameSizeBytes = 640;
 
-    private readonly AzureSettings _settings;
     private readonly ITextToSpeechService _ttsService;
     private readonly IGraphLogger _logger;
     private readonly SpeechAudioPlayer _speechPlayer;
@@ -34,11 +33,9 @@ public class CallAudioHandler : IDisposable
 
     public CallAudioHandler(
         IAudioSocket audioSocket,
-        IAzureSettings settings,
         ITextToSpeechService ttsService,
         IGraphLogger logger)
     {
-        _settings = (AzureSettings)settings;
         _ttsService = ttsService ?? throw new ArgumentNullException(nameof(ttsService));
         _logger = logger;
 
@@ -81,23 +78,22 @@ public class CallAudioHandler : IDisposable
     }
 
     /// <summary>
-    /// Kicks off background TTS synthesis and enqueues the resulting audio.
-    /// Call this once after the handler is constructed.
+    /// Kicks off background TTS synthesis and enqueues the resulting audio
+    /// for the given script content (JSON or plain text).
     /// </summary>
-    public void StartSpeaking()
+    public void StartSpeaking(string scriptContent)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(scriptContent);
+
         _ = Task.Run(async () =>
         {
-            try { await SynthesizeAndEnqueueAsync().ConfigureAwait(false); }
+            try { await SynthesizeAndEnqueueAsync(scriptContent).ConfigureAwait(false); }
             catch (Exception ex) { Console.Error.WriteLine($"[CallAudioHandler] SynthesizeAndEnqueueAsync FAILED: {ex}"); }
         });
     }
 
-    private async Task SynthesizeAndEnqueueAsync()
+    private async Task SynthesizeAndEnqueueAsync(string scriptContent)
     {
-        Console.WriteLine($"[CallAudioHandler] Reading script from: {_settings.SpeechScriptFilePath}");
-
-        var scriptContent = await File.ReadAllTextAsync(_settings.SpeechScriptFilePath).ConfigureAwait(false);
         var script = SpeechScript.Parse(scriptContent);
 
         Console.WriteLine($"[CallAudioHandler] Script loaded — {script.Paragraphs.Count} paragraph(s), defaultLanguage={script.DefaultLanguage}");
