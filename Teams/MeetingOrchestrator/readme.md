@@ -1,13 +1,9 @@
-# RickrollBot Setup Guide
-RickrollBot is a "Real-time Media Platform" Teams bot that is designed to Rickroll Teams meetings. In laymans terms it's a bot that can send/receive audio & video in Teams (or other platforms too).
+# Meeting Orchestrator Bot Setup Guide
+Meeting Orchestrator Bot is a "Real-time Media Platform" Teams bot designed to orchestrate bot talks in Teams meetings. In laymans terms it's a bot that can send/receive audio & video in Teams (or other platforms too).
 
-The purpose of RickrollBot is two-fold: a research project to experiment with especially for people interested in these types of bots, and for the lulz too.
+It's designed to run either locally via ngrok (usually), or in Azure Kubernetes Service so it can scale for "production" scenarios.
 
-![Rickoll bot sending the Rickroll via the bots' webcam](rickrollbotscreenshot.jpg)
-
-It's designed to run either locally via ngrok (usually), or in Azure Kubernetes Service so it can scale for "production" scenarios. 
-
-It's not trivial to get running mainly thanks to the fact that these types of bots require TCP-level integration into the host OS. This means they won't work inside the usual context of IIS or any other webserver which would handle a lot of the hassle around SSL and TCP. But this guide should get you there regardless, if you have some patience. It's all in a good cause though: Rick Astley in your Teams meetings. 
+It's not trivial to get running mainly thanks to the fact that these types of bots require TCP-level integration into the host OS. This means they won't work inside the usual context of IIS or any other webserver which would handle a lot of the hassle around SSL and TCP. But this guide should get you there regardless, if you have some patience.
 
 # Infrastructure
 For this to work, we need one domain for signalling and TCP streaming.
@@ -16,10 +12,10 @@ Example domain: **teamsplatforms.net**
 SSL (wildcard): *.teamsplatforms.net
 
 # Common Requirements
-To pull off epic Rickrolls you need:
+To get started you need:
 
 1. Azure subscription on same Azure tenant as Office 365/Teams
-2. Source code: [https://github.com/sambetts/poc-bots/tree/main/RickrollBot](https://github.com/sambetts/poc-bots/tree/main/RickrollBot)
+2. Source code: [https://github.com/sambetts/m365-poc/tree/main/Teams/MeetingOrchestrator](https://github.com/sambetts/m365-poc/tree/main/Teams/MeetingOrchestrator)
 3. Bot permissions in Azure AD application:
     - AccessMedia.All
     - JoinGroupCall.All
@@ -60,13 +56,13 @@ We also need an SSL certificate for the TCP domain, which we can't do directly f
 NGrok TCP tunnel: tcp://1.tcp.ngrok.io:26065 -> localhost:8445
 
 DNS:
-* ngrok domain: rickrollbot.ngrok.io
+* ngrok domain: $botDomain (e.g. meetingorchestrator.ngrok.io)
 * CNAMEs: 
-  * ngrok.teamsplatforms.net -> rickrollbot.ngrok.io
+  * ngrok.teamsplatforms.net -> $botDomain
   * remotemediadev.teamsplatforms.net -> 1.tcp.ngrok.io
 
 Media URL for bot: remotemediadev.teamsplatforms.net
-Signalling: rickrollbot.ngrok.io
+Signalling: $botDomain
 
 Both use same SSL certificate. More details: https://microsoftgraph.github.io/microsoft-graph-comms-samples/docs/articles/Testing.html
 
@@ -99,7 +95,7 @@ The ngrok output should look something like this:
 
     - Region United States
     - tcp://1.tcp.ngrok.io:26065 -> localhost:8445
-    - https://rickrollbot.ngrok.io -> http://localhost:9441
+    - https://$botDomain -> http://localhost:9441
 
 ## Step 3: Generate SSL for Bot Media TCP Endpoint
 As this bot receives audio/video streams it must expose a TCP endpoint with SSL in addition to the normal HTTP endpoints. For dev we must request these certificates manually; in production there is an AKS service we deploy to do it automatically.
@@ -108,13 +104,13 @@ As this bot receives audio/video streams it must expose a TCP endpoint with SSL 
     - In short, you need to use [Certify The Web](https://certifytheweb.com/) to generate SSL certificates via LetsEncrypt (an org that give free SSL cerificates out. Perfect for us).
     - Let's prove we "own" the ngrok domain. Open port 80 of your bot domain with a specific ngrok command (don't use your normal ngrok config file launch):
         - ngrok http 80  --subdomain $botDomain --scheme http 
-        - Example: 'ngrok http 80 --subdomain rickrollbot --region us --scheme http' (example domain is: rickrollbot.ngrok.io)
+        - Example: 'ngrok http 80 --subdomain meetingorchestrator --region us --scheme http' (example domain is: meetingorchestrator.ngrok.io)
     - Now run Certify The Web to validate you own the domain with ngrok running. Follow the UI instructions to generate the certificate. You should see a success message in Certify The Web if validation works. If it doesn't work, check your ngrok config and make sure port 80 is open and forwarding to the right place
 2. The certificate will be installed to your local machine certificate store. Export the certificate with private key as a PFX file and take note of the thumbprint – $certThumbPrint.
 
 ## Step 4: Create netsh HTTP and SSL Bindings
 Because we're hosting this bot outside of IIS, we need to do some once-only configuration to create SSL bindings.
-In "RickrollBot\build" copy "certs-dev-template.bat" to "certs-dev.bat". 
+In "MeetingOrchestrator\build" copy "certs-dev-template.bat" to "certs-dev.bat".
 
 Edit the bat file, *replacing* the following placeholder values:
 - `<CALL_SIGNALING_PORT>` – from `AzureSettings__CallSignalingPort` in `.env`
@@ -126,7 +122,7 @@ Run "certs-dev.bat" with admin priveledges and check output for errors. The firs
 
 ## Step 5: Configure and Run from Visual Studio
 
-1. Open "RickrollBot\BotService\Bot.Console\.env" and update the following values.
+1. Open "MeetingOrchestrator\BotService\Bot.Console\.env" and update the following values.
     - AzureSettings\_\_BotName - $botName
     - AzureSettings\_\_AadAppId - $applicationId
     - AzureSettings\_\_AadTenantId - $azureAdTenantId
@@ -137,6 +133,7 @@ Run "certs-dev.bat" with admin priveledges and check output for errors. The firs
 
 2. Run Visual Studio as administrator and start debugging 'Bot.Console'.
     - Set Bot.Console as the start-up project.
+    - **Important**: Set the Solution Platform to **x64** in the Visual Studio toolbar. All projects target x64 only (required by native media dependencies such as `Microsoft.Skype.Bots.Media`). Building with "Any CPU" will skip all projects.
 
 ## Alternative Dev Approach: Direct Networking to VM
 If for some reason ngrok just isn't working out for you, you can just directly pipe traffic into your virtual machine. It just needs a public endpoint of some kind - a public IP address for example. I wouldn't recommend doing this unless ngrok just doesn't work out because you lose the logging facilities of ngrok, and it's less secure. Here's how anyway.
@@ -160,15 +157,15 @@ First networking. We assume there are no firewalls interfering with the service 
 
 Test localhost from browser (https://localhost:9441/). You should get a 404. 
 
-Test ngrok URL - https://$botDomain (e.g https://rickrollbot.ngrok.io). You should also see a 404.
+Test ngrok URL - https://$botDomain (e.g https://meetingorchestrator.ngrok.io). You should also see a 404.
 
 Next let's check if the bot can join a Teams call.
-    POST to https://rickrollbot.ngrok.io/joinCall
+    POST to https://$botDomain/joinCall
 ```json
 
     {
         "JoinURL": $teamsJoinUrl,
-        "DisplayName": "Rick Astley"
+        "DisplayName": "Meeting Orchestrator"
     }
 ```
 
@@ -176,11 +173,11 @@ Example body:
 ```json
     {
         "JoinURL": "https://teams.microsoft.com/l/meetup-join/19%3ameeting_NTMyM2M4YTYtY2ZiMi00NjkxLWI1YzQtZDA4MzJjM2E4NWFm%40thread.v2/0?context=%7b%22Tid%22%3a%22ffcdb539-892e-4eef-94f6-0d9851c479ba%22%2c%22Oid%22%3a%2248fe59a4-c951-43ca-9d16-972083aa6305%22%7d",
-        "DisplayName": "Rick Astley"
+        "DisplayName": "Meeting Orchestrator"
     }
 ```
 
-And with that, Rick should join your Teams call.
+And with that, the bot should join your Teams call.
 
 ---
 
@@ -211,8 +208,8 @@ For AKS deployments we first need an image of the bot service.
 1. Create an Azure container registry to push/pull bot image to. Basic tier is fine.
 2. With Docker in 'Windows container' mode, build a bot image from the root directory.
     - docker build -f ./build/Dockerfile . -t [TAG]
-        - [TAG] is the FQDN of you container registry + image name, e.g. 'rickrollbot.azurecr.io/rickrollbot:1' 
-3. Push image to container registry with 'docker push'. Take note of version tag (e.g 'rickrollbot.azurecr.io/rickrollbot:1' – this number/value is your $containerTag).
+        - [TAG] is the FQDN of you container registry + image name, e.g. '$acrName.azurecr.io/meetingorchestrator:1' 
+3. Push image to container registry with 'docker push'. Take note of version tag (e.g '$acrName.azurecr.io/meetingorchestrator:1' – this number/value is your $containerTag).
     - You may need to authenticate to your ACR first with 'az acr login --name $acrName'
 
 Get your IP address and DNS setup while the image is downloading and building. DNS needs to be working before we deploy anything in AKS. 
@@ -227,29 +224,29 @@ Script pre-reqs:
 
 1. Create in Azure a public IP address (standard SKU) for bot domain & create/update DNS A-record. Resource-group can be the same as AKS resource. Remember the name you gave it for the next step.
 2. Update your DNS for your $botDomain DNS records to point at your new IP address (new A-record).
-2. From 'ickrollBot\deploy' run 'deploy\setup.ps1' to create AKS + bot architecture, with parameters:
+2. From 'MeetingOrchestrator\deploy' run 'deploy\setup.ps1' to create AKS + bot architecture, with parameters:
     - $azureLocation – example: 'westeurope'
-    - $resourceGroupName – example: 'RickrollBotProd'
+    - $resourceGroupName – example: 'MeetingOrchestratorProd'
     - $publicIpName – example: 'AksIpStandard'
-    - $botDomain – example: 'rickrollbot.teamsplatform.app'
-    - $acrName – example: 'rickrollbot'
-    - $AKSClusterName– example: 'RickrollAKS'
+    - $botDomain – example: 'meetingorchestrator.teamsplatform.app'
+    - $acrName – example: 'meetingorchestrator'
+    - $AKSClusterName– example: 'MeetingOrchestratorAKS'
     - $applicationId – example: '151d9460-b018-4904-8f81-14203ac3cb4f'
     - $applicationSecret – example: '9p96lolQJSD~\*\*\*\*\*\*\*\*\*\*\*\*' (example truncated)
-    - $botName – example: 'RickrollBotProd'
-    - $containerTag – example: '1' (for 'rickrollbot.azurecr.io/rickrollbot:1')
+    - $botName – example: 'MeetingOrchestratorProd'
+    - $containerTag – example: '1' (for '$acrName.azurecr.io/meetingorchestrator:1')
     - $applicationInsightsKey - an Application Insights instrumentation key
 
 If the script fails for some reason, you can just run it again. It'll create & configure AKS, move the IP address to the AKS resource-group if needed, and create the archtecture mentioned above using helm templates. 
 
 ## Step 4: Verify K8 Deployment
-Check the bot pods (i.e the containers running Rickroll bot) are creating and your image is being pulled without any error:
-- kubectl get pods -n rickrollbot
+Check the bot pods (i.e the containers running the bot) are creating and your image is being pulled without any error:
+- kubectl get pods -n meetingorchestrator
 
-    NAME            READY   STATUS              RESTARTS   AGE
-    rickrollbot-0   0/1     ContainerCreating   0          16m
-    rickrollbot-1   0/1     ContainerCreating   0          16m
-    rickrollbot-2   0/1     ContainerCreating   0          16m
+    NAME                      READY   STATUS              RESTARTS   AGE
+    meetingorchestrator-0     0/1     ContainerCreating   0          16m
+    meetingorchestrator-1     0/1     ContainerCreating   0          16m
+    meetingorchestrator-2     0/1     ContainerCreating   0          16m
 
 Status of the pods should eventually say "Running" with 0 restarts. It might take upto an hour to pull the image though. 
 
@@ -262,7 +259,7 @@ It should show:
     nginx-ingress-ingress-nginx-controller   LoadBalancer   10.0.101.115   20.103.XXX.XXX   80:32215/TCP,443:30505/TCP,28550:32010/TCP,28551:32552/TCP,28552:31180/TCP   9h
 
 **Check the TLS service is rununing:**
-- kubectl get cert -n rickrollbot
+- kubectl get cert -n meetingorchestrator
 
 It should show:
 
@@ -275,7 +272,7 @@ Something not right? Check events with:
 ## Reconfigure / Redeploy Service
 If you need to redeploy just the bot image or reconfigure it, you can do so without completely redeploying everything with this:
 
-    helm upgrade rickrollbot ./rickrollbot --namespace rickrollbot --set host=rickrollbot.teamsplatform.app --set public.ip=20.103.XXX.XXX --set image.domain="rickrollbot.azurecr.io" --set image.tag=1 --set scale.replicaCount=1
+    helm upgrade meetingorchestrator ./meetingorchestrator --namespace meetingorchestrator --set host=$botDomain --set public.ip=20.103.XXX.XXX --set image.domain="$acrName.azurecr.io" --set image.tag=1 --set scale.replicaCount=1
 
 If you've upgrade the bot solution; push a new tag to the container registry and apply the new tag with this command. K8 will do the rest!
 
@@ -290,7 +287,7 @@ Next let's check if the bot can join a Teams call.
 
     {
         "JoinURL": $teamsJoinUrl,
-        "DisplayName": "Rick Astley"
+        "DisplayName": "Meeting Orchestrator"
     }
 ```
 
@@ -298,11 +295,11 @@ Example body:
 ```json
     {
         "JoinURL": "https://teams.microsoft.com/l/meetup-join/19%3ameeting_NTMyM2M4YTYtY2ZiMi00NjkxLWI1YzQtZDA4MzJjM2E4NWFm%40thread.v2/0?context=%7b%22Tid%22%3a%22ffcdb539-892e-4eef-94f6-0d9851c479ba%22%2c%22Oid%22%3a%2248fe59a4-c951-43ca-9d16-972083aa6305%22%7d",
-        "DisplayName": "Rick Astley"
+        "DisplayName": "Meeting Orchestrator"
     }
 ```
 
-And with that, Rick should join your Teams call.
+And with that, the bot should join your Teams call.
 
 # Troubleshooting
 Test access to TCP ports:
