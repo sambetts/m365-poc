@@ -48,3 +48,4 @@ Graph/Archive/GraphJSApp/node_modules/js-cookie/dist/js.cookie.mjs
 /Graph/Bookify/bookify.client/obj/Debug
 /Teams/MeetingOrchestrator/ngrok-bot-tunnels.yaml
 /Teams/MeetingOrchestrator/build/certs-dev.bat
+/Teams/MeetingOrchestrator/BotService/BotAdminSite/Bot.Admin.Client/.env
