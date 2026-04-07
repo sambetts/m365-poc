@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/authconfig.ts","./src/main.tsx","./src/vite-env.d.ts","./src/api/apiclient.ts","./src/api/botapi.ts","./src/api/scriptsapi.ts","./src/components/botcontrol.tsx","./src/components/layout.tsx","./src/components/scripteditor.tsx","./src/components/scriptlist.tsx","./src/types/index.ts"],"version":"5.8.3"}

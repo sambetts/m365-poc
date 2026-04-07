@@ -140,11 +140,12 @@ public class BotService : IDisposable, IBotService
             };
         }
 
+        // Stash the display name BEFORE AddAsync so that OnCallsUpdated
+        // can retrieve it when the call-added event fires during AddAsync.
+        _pendingDisplayNames[scenarioId] = joinCallBody.DisplayName ?? string.Empty;
+
         var statefulCall = await Client.Calls().AddAsync(joinParams, scenarioId).ConfigureAwait(false);
         statefulCall.GraphLogger.Info($"Call creation complete: {statefulCall.Id}");
-
-        // Stash the display name so OnCallsUpdated can pass it to the handler.
-        _pendingDisplayNames[scenarioId] = joinCallBody.DisplayName ?? string.Empty;
 
         return statefulCall;
     }
