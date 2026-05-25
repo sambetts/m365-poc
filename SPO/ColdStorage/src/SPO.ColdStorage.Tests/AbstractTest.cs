@@ -14,7 +14,7 @@ public abstract class AbstractTest : IAsyncLifetime
     protected Config? _config;
     protected ILogger _tracer = NullLogger.Instance;
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         var builder = new ConfigurationBuilder()
             .SetBasePath(System.IO.Directory.GetCurrentDirectory())
@@ -30,5 +30,5 @@ public abstract class AbstractTest : IAsyncLifetime
         await DbInitializer.Init(db, _config.DevConfig!);
     }
 
-    public Task DisposeAsync() => Task.CompletedTask;
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

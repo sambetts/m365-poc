@@ -1,4 +1,4 @@
-using FluentAssertions;
+using AwesomeAssertions;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Tests.Adapters;
 using SPO.ColdStorage.Models;
