@@ -47,7 +47,8 @@ namespace SPO.ColdStorage.Tests
             var driveItems = await gc.Drives[uploaded.File.VroomDriveID].Items.GetAsync();
 
             var graphFileInfoList = new System.Collections.Generic.List<DocumentSiteWithMetadata>();
-            var graphFiles = driveItems.Value.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id });
+            var driveItemValues = driveItems?.Value ?? new System.Collections.Generic.List<Microsoft.Graph.Models.DriveItem>();
+            var graphFiles = driveItemValues.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id ?? string.Empty });
             graphFileInfoList.AddRange(graphFiles);
 
             var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _tracer);
@@ -103,7 +104,7 @@ namespace SPO.ColdStorage.Tests
 
             // Check az blob file contents matches original data
             var azDownloadedFile = System.IO.File.ReadAllText(tempLocalFile);
-            Assert.AreEqual(azDownloadedFile, FILE_CONTENTS);
+            Assert.AreEqual(FILE_CONTENTS, azDownloadedFile);
             System.IO.File.Delete(tempLocalFile);
         }
 

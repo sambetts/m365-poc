@@ -71,12 +71,12 @@ public class SiteModelBuilderTests
         _mockConfig.Setup(c => c["BlobContainerName"]).Returns("test-container");
         
         _config = new Config(_mockConfig.Object);
-        _tracer = new DebugTracer(null, "test");
+        _tracer = new DebugTracer(string.Empty, "test");
 
         _testSite = new TargetMigrationSite
         {
             RootURL = "https://test.sharepoint.com/sites/testsite",
-            FilterConfigJson = null
+            FilterConfigJson = string.Empty
         };
 
         _testAdapter = new TestFileAnalyticsAdapter();

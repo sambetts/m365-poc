@@ -20,8 +20,6 @@ public class SiteModelBuilder : BaseComponent, IDisposable
     private readonly SiteListFilterConfig _siteFilterConfig;
     private readonly SiteSnapshotModel _model;
     private readonly IFileAnalyticsProvider _analyticsProvider;
-    private readonly Config _config;
-    private readonly DebugTracer _tracer;
 
     private readonly object _statsLock = new();
     private readonly object _bufferLock = new();
@@ -39,8 +37,6 @@ public class SiteModelBuilder : BaseComponent, IDisposable
         IFileAnalyticsProvider? analyticsProvider = null) : base(config, debugTracer)
     {
         _site = site;
-        _config = config;
-        _tracer = debugTracer;
         _model = new SiteSnapshotModel();
         
         // Use provided adapter or create default Graph adapter

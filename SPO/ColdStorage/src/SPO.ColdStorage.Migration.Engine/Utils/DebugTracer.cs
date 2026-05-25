@@ -22,7 +22,11 @@ namespace SPO.ColdStorage.Migration.Engine
             {
                 Console.WriteLine($"Telemetry: sending runtime data to Application Insights with instrumentation key '{appInsightsKey}'");
                 var configuration = TelemetryConfiguration.CreateDefault();
-                configuration.InstrumentationKey = appInsightsKey;
+                // Application Insights 3.x removed InstrumentationKey-based ingestion; use ConnectionString.
+                // Accept either a raw instrumentation key (GUID) or a full ConnectionString for backwards compatibility.
+                configuration.ConnectionString = appInsightsKey.Contains('=', StringComparison.Ordinal)
+                    ? appInsightsKey
+                    : $"InstrumentationKey={appInsightsKey}";
 
                 this.AppInsights = new TelemetryClient(configuration); ;
             }
