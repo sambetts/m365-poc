@@ -1,15 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Bot.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Identity.Web;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine;
-using System.Threading.Tasks;
 
 namespace Web.Server;
 
@@ -33,16 +28,13 @@ public class Program
         var debugTracer = new DebugTracer(config.AppInsightsInstrumentationKey, "Web.Server");
         builder.Services.AddSingleton(debugTracer);
 
-
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
         // UsageStatsReport
         builder.Services.AddDbContext<SPOColdStorageDbContext>(options =>
             options.UseSqlServer(config.ConnectionStrings.SQLConnectionString));
 
-
         var app = builder.Build();
-
 
         // Ensure DB
         var optionsBuilder = new DbContextOptionsBuilder<SPOColdStorageDbContext>();

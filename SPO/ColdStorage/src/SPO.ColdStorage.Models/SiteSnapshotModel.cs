@@ -1,5 +1,3 @@
-
-
 namespace SPO.ColdStorage.Models;
 /// <summary>
 /// Snapshot of files in a site.
@@ -43,7 +41,6 @@ public class SiteSnapshotModel
             return !r.Any();
         }
     }
-
 
     private List<DocumentSiteWithMetadata>? _docsWithError = null;
     public List<DocumentSiteWithMetadata> DocsWithErrorAny

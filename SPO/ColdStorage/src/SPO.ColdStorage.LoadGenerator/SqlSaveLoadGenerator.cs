@@ -40,7 +40,6 @@ internal class SqlSaveLoadGenerator
             });
         }
 
-
         Console.WriteLine("Saving fakes");
 
         await list.InsertFilesAsync(config, stagingFilesMigrator, DebugTracer.ConsoleOnlyTracer());

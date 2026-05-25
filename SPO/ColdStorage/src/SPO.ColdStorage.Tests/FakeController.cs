@@ -1,8 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using SPO.ColdStorage.Models;
-using System;
-using System.Collections.Generic;
-using System.Net.Http;
 
 namespace SPO.ColdStorage.Tests;
 

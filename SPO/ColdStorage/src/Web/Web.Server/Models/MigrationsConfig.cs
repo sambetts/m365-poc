@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace SPO.ColdStorage.Web.Models;
 
 public class MigrationsConfig

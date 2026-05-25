@@ -13,7 +13,6 @@ public abstract class BaseDBObject
     [Column("id")]
     public int ID { get; set; }
 
-
     public override string ToString()
     {
         return $"{this.GetType().Name} ID={ID}";

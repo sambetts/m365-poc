@@ -17,7 +17,6 @@ public class BlobStorageUploader : BaseComponent
         _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
     }
 
-
     public async Task UploadFileToAzureBlob(string localTempFileName, BaseSharePointFileInfo msg)
     {
         // Create the container and return a container client object

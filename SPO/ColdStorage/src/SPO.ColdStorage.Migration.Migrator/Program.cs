@@ -1,4 +1,3 @@
-﻿
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
 

@@ -10,7 +10,6 @@ public class Config(Microsoft.Extensions.Configuration.IConfiguration config) : 
     [ConfigValue]
     public string KeyVaultUrl { get; set; } = string.Empty;
 
-
     [ConfigValue]
     public string BlobContainerName { get; set; } = string.Empty;
 
@@ -30,7 +29,6 @@ public class Config(Microsoft.Extensions.Configuration.IConfiguration config) : 
 
     [ConfigSection("Dev")]
     public DevConfig DevConfig { get; set; } = null!;
-
 
     [ConfigSection("Search")]
     public SearchConfig SearchConfig { get; set; } = null!;

@@ -1,7 +1,4 @@
 using SPO.ColdStorage.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
 

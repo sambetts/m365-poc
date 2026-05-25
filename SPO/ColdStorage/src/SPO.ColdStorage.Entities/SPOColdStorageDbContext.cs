@@ -69,7 +69,6 @@ public class SPOColdStorageDbContext : DbContext
         => options.UseSqlServer(_config!.ConnectionStrings.SQLConnectionString, op => op.EnableRetryOnFailure());
 }
 
-
 /// <summary>
 /// For EF migrations
 /// </summary>

@@ -27,7 +27,6 @@ public class SPFile : BaseDBObjectWithUrl
 
     public FileDirectory? Directory { get; set; }
 
-
     [Column("access_count")]
     public int? AccessCount { get; set; } = null;
 
@@ -55,7 +54,6 @@ public class SPFile : BaseDBObjectWithUrl
     [Column("file_size")]
     public long FileSize { get; set; } = 0;
 }
-
 
 public class StagingTempFile : BaseSharePointFileInfo
 {

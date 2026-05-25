@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
 
@@ -17,7 +13,6 @@ public class AutoThrottleHttpClient : HttpClient
     private int _concurrentCalls = 0, _throttledCalls = 0, _completedCalls = 0;
     private readonly object _concurrentCallsObj = new(), _throttledCallsObject = new(), _completedCallsObject = new();
 
-
     public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer)
     {
         this.Timeout = TimeSpan.FromHours(1);
@@ -30,7 +25,6 @@ public class AutoThrottleHttpClient : HttpClient
         this.ignoreRetryHeader = ignoreRetryHeader;
         this.debugTracer = debugTracer;
     }
-
 
     #endregion
 
@@ -136,7 +130,6 @@ public class AutoThrottleHttpClient : HttpClient
 
         return response!;
     }
-
 
     public int ConcurrentCalls
     {

@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
 
@@ -15,7 +11,6 @@ public class SiteCollection : BaseGraphObject
 {
     [JsonPropertyName("createdDateTime")]
     public DateTime? CreatedDateTime { get; set; }
-
 
     [JsonPropertyName("lastModifiedDateTime")]
     public DateTime LastModifiedDateTime { get; set; }

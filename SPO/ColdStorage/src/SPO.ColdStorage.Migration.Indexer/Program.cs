@@ -1,5 +1,3 @@
-﻿
-
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
@@ -18,7 +16,6 @@ if (config.HaveAppInsightsConfigured)
 else
     tracer = DebugTracer.ConsoleOnlyTracer();
 
-
 // Init DB
 using (var db = new SPOColdStorageDbContext(config))
 {
@@ -28,6 +25,5 @@ using (var db = new SPOColdStorageDbContext(config))
 // Start discovery
 var discovery = new SharePointContentIndexer(config, tracer);
 await discovery.StartMigrateAllSites();
-
 
 Console.WriteLine("\nAll sites scanned. Finished indexing.");

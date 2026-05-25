@@ -95,7 +95,6 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
                 $"{listResultsAll.IgnoredFiles:N0} files ignored, and {listResultsAll.FoldersFound.Count:N0} folders");
         }
 
-
         // Add unique folders
         listResultsAll.FoldersFound.AddRange(allFolders.Where(newFolderFound => !listResultsAll.FoldersFound.Contains(newFolderFound)));
 

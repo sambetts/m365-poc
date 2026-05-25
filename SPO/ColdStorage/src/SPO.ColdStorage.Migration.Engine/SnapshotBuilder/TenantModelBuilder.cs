@@ -87,7 +87,6 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
         return Task.CompletedTask;
     }
 
-
     async Task<StatsSaveResult> UpdateStats(DocumentSiteWithMetadata updatedFile, SPOColdStorageDbContext db)
     {
         var results = StatsSaveResult.New;

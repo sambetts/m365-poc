@@ -77,7 +77,6 @@ public class ServiceBusMigrationListener : BaseComponent
         {
             _tracer.TrackTrace($"Started migration for: {msg.ServerRelativeFilePath}");
 
-
             // Message completed on success.
             await StartFileMigrationAsync(msg, args);
 
@@ -104,7 +103,6 @@ public class ServiceBusMigrationListener : BaseComponent
         _tracer.TrackException(args.Exception);
         return Task.CompletedTask;
     }
-
 
     private async Task StartFileMigrationAsync(BaseSharePointFileInfo sharePointFileToMigrate, ProcessMessageEventArgs args)
     {

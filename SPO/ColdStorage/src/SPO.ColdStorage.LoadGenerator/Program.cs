@@ -1,4 +1,4 @@
-﻿// Run program to see required args
+// Run program to see required args
 
 using CommandLine;
 using SPO.ColdStorage.LoadGenerator;
@@ -20,12 +20,10 @@ await Parser.Default.ParseArguments<Options>(args).WithParsedAsync(async o =>
         Console.ReadKey();
     }
 
-
     var ctx = await AuthUtils.GetClientContext(o.TargetWeb!, o.TenantId!, o.ClientID!, o.ClientSecret!, o.KeyVaultUrl!, o.BaseServerAddress!, DebugTracer.ConsoleOnlyTracer());
     var gen = new SharePointLoadGenerator(o, DebugTracer.ConsoleOnlyTracer());
     await gen.CreateFiles(o.FileCount);
 
 });
-
 
 Console.WriteLine("All done");

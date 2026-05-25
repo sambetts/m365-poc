@@ -54,7 +54,6 @@ public class SharePointFileDownloader : BaseComponent
 
         _tracer.TrackTrace($"Wrote {fileSize:N0} bytes to '{tempFileName}'.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
 
-
         // Return file name & size
         return (tempFileName, fileSize);
     }

@@ -1,4 +1,4 @@
-﻿using SPO.ColdStorage.Entities;
+using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.Adapters;
@@ -154,7 +154,6 @@ public class SiteModelBuilder : BaseComponent, IDisposable
 
         return _model;
     }
-
 
     private void StopAnalysisStatsUpdates()
     {

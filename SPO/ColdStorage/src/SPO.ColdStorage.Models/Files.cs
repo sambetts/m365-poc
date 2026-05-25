@@ -27,7 +27,6 @@ public class DocumentSiteWithMetadata : DriveItemSharePointFileInfo
     public long VersionHistorySize { get; set; }
 }
 
-
 // https://docs.microsoft.com/en-us/graph/api/resources/itemactivitystat?view=graph-rest-1.0
 public class ItemAnalyticsRepsonse
 {
@@ -43,7 +42,6 @@ public class ItemAnalyticsRepsonse
 
     [JsonPropertyName("endDateTime")]
     public DateTime EndDateTime { get; set; }
-
 
     public class AnalyticsIncompleteData
     {

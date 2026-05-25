@@ -1,7 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SPO.ColdStorage.Models;
-using System;
-using System.Collections.Generic;
 
 namespace SPO.ColdStorage.Tests;
 
@@ -58,7 +56,6 @@ public class ModelTests
         Assert.IsTrue(validMsg1.IsValidInfo);
         Assert.IsTrue(validMsg1.FullSharePointUrl == "https://m365x352268.sharepoint.com/subweb1/whatever");
 
-
         // Invalid folder - has leading/trailing slashes
         var invalidMsg4 = new BaseSharePointFileInfo
         {
@@ -71,7 +68,6 @@ public class ModelTests
         Assert.IsFalse(invalidMsg4.IsValidInfo);
 
     }
-
 
     [TestMethod]
     public void SiteFolderConfigTests()
@@ -97,7 +93,6 @@ public class ModelTests
 
         // Root folder is included if whitelist has no items
         Assert.IsTrue(cfg.IncludeFolderInMigration("Documents", ""));
-
 
         // No config set
         Assert.IsTrue(new SiteListFilterConfig().IncludeListInMigration("Documents"));

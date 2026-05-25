@@ -10,7 +10,6 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
 
     public Web SPWeb { get; set; } = sPWeb;
 
-
     public async Task<List<IListLoader<ListItemCollectionPosition>>> GetLists()
     {
         var lists = new List<IListLoader<ListItemCollectionPosition>>();

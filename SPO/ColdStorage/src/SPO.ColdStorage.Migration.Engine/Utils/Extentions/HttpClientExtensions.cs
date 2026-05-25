@@ -30,7 +30,6 @@ public static class HttpClientExtensions
 
         var response = await httpClient.ExecuteHttpCallWithThrottleRetries(async () => await httpClient.GetAsync(url, completionOption), url);
 
-
         return response!;
     }
 
@@ -58,7 +57,6 @@ public static class HttpClientExtensions
 
         return response;
     }
-
 
     public static async Task<HttpResponseMessage> PostAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, string bodyContent, string mimeType, string boundary, DebugTracer debugTracer)
     {

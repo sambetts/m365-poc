@@ -7,7 +7,6 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
-using System;
 
 namespace SPO.ColdStorage.Migration.Engine.Migration;
 /// <summary>
@@ -25,7 +24,6 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
         _sbSender = _sbClient.CreateSender(_config.ServiceBusQueueName);
         _db = new SPOColdStorageDbContext(_config);
     }
-
 
     /// <summary>
     /// Queue file for migrator to pick-up & migrate

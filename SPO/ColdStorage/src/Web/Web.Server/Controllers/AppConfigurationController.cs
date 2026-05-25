@@ -7,9 +7,6 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Models;
 using SPO.ColdStorage.Web.Models;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Web.Controllers;
 /// <summary>
@@ -23,7 +20,6 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
     private readonly DebugTracer _tracer = tracer;
     private readonly SPOColdStorageDbContext _context = context;
     private readonly Config _config = config;
-
 
     // Generate app ServiceConfiguration + storage configuration + key to read blobs
     // GET: AppConfiguration/ServiceConfiguration
@@ -108,7 +104,6 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
             _tracer.TrackTrace("Error validating authentication to SharePoint Online", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Critical);
             return BadRequest($"Got '{ex.Message}' trying to get a token for SPO authentication. Check service configuration.");
         }
-
 
         // Remove old target configuration & set new
         var oldTargetSites = await _context.TargetSharePointSites.ToListAsync();

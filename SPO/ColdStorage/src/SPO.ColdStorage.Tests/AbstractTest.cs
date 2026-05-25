@@ -3,7 +3,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
 
@@ -23,7 +22,6 @@ public class AbstractTest
             .AddUserSecrets(System.Reflection.Assembly.GetExecutingAssembly())
             .AddEnvironmentVariables()
             .AddJsonFile("appsettings.json", true);
-
 
         var config = builder.Build();
         _config = new Config(config);

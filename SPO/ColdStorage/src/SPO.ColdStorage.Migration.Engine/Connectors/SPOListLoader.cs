@@ -40,7 +40,6 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
             await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
         }
 
-
         // List items
         listItems = _listDef.GetItems(camlQuery);
         spClientList.Load(listItems, l => l.ListItemCollectionPosition);
@@ -145,7 +144,6 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
 
         return pageResults;
     }
-
 
     /// <summary>
     /// Process a single document library item.

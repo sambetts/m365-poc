@@ -36,7 +36,6 @@ public class DebugTracer
 
     public static DebugTracer ConsoleOnlyTracer() { return new DebugTracer(); }
 
-
     #endregion
 
     public void TrackException(Exception ex)

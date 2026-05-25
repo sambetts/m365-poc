@@ -9,9 +9,6 @@ using SPO.ColdStorage.Migration.Engine.Migration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
 
@@ -80,7 +77,6 @@ public class MigrationTests : AbstractTest
         var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
         await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
 
-
         // Discover file in SP with crawler
         var spConnector = new SPOSiteCollectionLoader(_config, _config!.DevConfig.DefaultSharePointSite, _tracer);
         var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _tracer);
@@ -101,7 +97,6 @@ public class MigrationTests : AbstractTest
 
         await blobClient.DownloadToAsync(tempLocalFile);
 
-
         // Check az blob file contents matches original data
         var azDownloadedFile = System.IO.File.ReadAllText(tempLocalFile);
         Assert.AreEqual(FILE_CONTENTS, azDownloadedFile);
@@ -115,7 +110,6 @@ public class MigrationTests : AbstractTest
     public async Task SharePointFileNeedsMigratingTests()
     {
         var migrator = new SharePointFileMigrator(_config!, _tracer);
-
 
         var app = await AuthUtils.GetNewClientApp(_config!);
         var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _tracer);
@@ -185,8 +179,6 @@ public class MigrationTests : AbstractTest
         var m = new SharePointFileDownloader(app, _config!, _tracer);
         await m.DownloadFileToTempDir(testMsg);
     }
-
-
 
     [TestMethod]
     public async Task BlobStorageFileUploadTests()
