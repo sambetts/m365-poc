@@ -2,27 +2,27 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NSubstitute;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
-using SPO.ColdStorage.Tests.Adapters;
 using SPO.ColdStorage.Models;
+using SPO.ColdStorage.Tests.Adapters;
+using Xunit;
 
 namespace SPO.ColdStorage.Tests.SnapshotBuilder;
 
-[TestClass]
 public class SiteModelBuilderTests
 {
-    private IConfiguration _mockConfig = null!;
-    private Config _config = null!;
-    private ILogger _tracer = NullLogger.Instance;
-    private TargetMigrationSite _testSite = null!;
-    private TestFileAnalyticsAdapter _testAdapter = null!;
+    private const string LiveSkipReason = "Requires live SharePoint and Azure connections";
 
-    [TestInitialize]
-    public void TestInitialize()
+    private readonly IConfiguration _mockConfig;
+    private readonly Config _config;
+    private readonly ILogger _tracer = NullLogger.Instance;
+    private readonly TargetMigrationSite _testSite;
+    private readonly TestFileAnalyticsAdapter _testAdapter;
+
+    public SiteModelBuilderTests()
     {
         _mockConfig = Substitute.For<IConfiguration>();
 
@@ -70,7 +70,6 @@ public class SiteModelBuilderTests
         _mockConfig["BlobContainerName"].Returns("test-container");
 
         _config = new Config(_mockConfig);
-        _tracer = NullLogger.Instance;
 
         _testSite = new TargetMigrationSite
         {
@@ -81,13 +80,7 @@ public class SiteModelBuilderTests
         _testAdapter = new TestFileAnalyticsAdapter();
     }
 
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        // Cleanup if needed
-    }
-
-    [TestMethod]
+    [Fact]
     public void Constructor_WithValidParameters_CreatesInstance()
     {
         // Arrange & Act
@@ -97,7 +90,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithNullAdapter_CreatesDefaultGraphAdapter()
     {
         // Arrange & Act
@@ -107,8 +100,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
-    [Ignore("Requires live SharePoint and Azure connections")]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_WithoutCallback_ReturnsModel()
     {
         // Arrange
@@ -122,7 +114,7 @@ public class SiteModelBuilderTests
         result.AllFiles.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Build_WithInvalidBatchSize_ThrowsArgumentOutOfRangeException()
     {
         // Arrange
@@ -135,8 +127,7 @@ public class SiteModelBuilderTests
         act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
-    [TestMethod]
-    [Ignore("Requires live SharePoint and Azure connections")]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_WithTestAdapter_CallsAdapterMethods()
     {
         // Arrange
@@ -168,7 +159,7 @@ public class SiteModelBuilderTests
         // This test validates the builder can be constructed with test adapter
     }
 
-    [TestMethod]
+    [Fact]
     public void BackgroundMetaTasksAll_ReturnsEnumerable()
     {
         // Arrange
@@ -182,11 +173,10 @@ public class SiteModelBuilderTests
         tasks.Should().BeAssignableTo<IEnumerable<Task<BackgroundUpdate>>>();
     }
 
-    [TestMethod]
-    [DataRow(10)]
-    [DataRow(50)]
-    [DataRow(100)]
-    [Ignore("Requires live SharePoint and Azure connections")]
+    [Theory(Skip = LiveSkipReason)]
+    [InlineData(10)]
+    [InlineData(50)]
+    [InlineData(100)]
     public async Task Build_WithDifferentBatchSizes_Succeeds(int batchSize)
     {
         // Arrange
@@ -199,7 +189,7 @@ public class SiteModelBuilderTests
         result.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
@@ -217,8 +207,7 @@ public class SiteModelBuilderTests
         act.Should().NotThrow();
     }
 
-    [TestMethod]
-    [Ignore("Requires live SharePoint and Azure connections")]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_CalledMultipleTimes_ReturnsSameModel()
     {
         // Arrange
@@ -232,7 +221,7 @@ public class SiteModelBuilderTests
         result1.Should().BeSameAs(result2);
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithFilterConfigJson_ParsesConfiguration()
     {
         // Arrange
@@ -249,7 +238,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithInvalidFilterConfigJson_UsesDefaultConfig()
     {
         // Arrange

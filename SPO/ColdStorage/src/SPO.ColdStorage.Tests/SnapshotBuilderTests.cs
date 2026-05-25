@@ -1,22 +1,21 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Entities;
-using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Models;
+using Xunit;
 
-using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Tests;
 
-[TestClass]
-public class SnapshotBuilderTests : AbstractTest
+// Pure unit tests (no live infra) live here without AbstractTest inheritance so that
+// xUnit's IAsyncLifetime doesn't try to load real configuration when they run.
+public class SiteSnapshotModelTests
 {
     /// <summary>
     /// Tests SiteSnapshotModel.AnalysisFinished
     /// </summary>
-    [TestMethod]
+    [Fact]
     public void ModelAnalysisFinishedTests()
     {
         var m = new SiteSnapshotModel();
@@ -28,19 +27,21 @@ public class SnapshotBuilderTests : AbstractTest
         l.Files.AddRange(new DocumentSiteWithMetadata[] { f1, f2 });
 
         m.InvalidateCaches();
-        Assert.IsFalse(m.AnalysisFinished);
+        Assert.False(m.AnalysisFinished);
 
         f1.State = SiteFileAnalysisState.Complete;
         m.InvalidateCaches();
-        Assert.IsFalse(m.AnalysisFinished);
+        Assert.False(m.AnalysisFinished);
 
         f2.State = SiteFileAnalysisState.Complete;
         m.InvalidateCaches();
-        Assert.IsTrue(m.AnalysisFinished);
-
+        Assert.True(m.AnalysisFinished);
     }
+}
 
-    [TestMethod]
+public class SnapshotBuilderTests : AbstractTest
+{
+    [Fact(Skip = "Requires live SQL Server and configured Azure resources")]
     public async Task SnapshotBuilderExtensionsTests()
     {
         var list = new List<SharePointFileInfoWithList>();
@@ -67,7 +68,7 @@ public class SnapshotBuilderTests : AbstractTest
             };
 
             list.Add(newDoc);
-            Assert.IsTrue(newDoc.IsValidInfo);
+            Assert.True(newDoc.IsValidInfo);
         }
 
         using var db = new SPOColdStorageDbContext(_config!);
@@ -76,6 +77,6 @@ public class SnapshotBuilderTests : AbstractTest
         var postInsert = await db.Files.CountAsync();
 
         // Make sure we've actually inserted
-        Assert.IsTrue(postInsert == preInsert + INSERTS);
+        Assert.Equal(preInsert + INSERTS, postInsert);
     }
 }

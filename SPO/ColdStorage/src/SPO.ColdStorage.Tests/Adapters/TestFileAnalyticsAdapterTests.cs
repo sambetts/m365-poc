@@ -1,15 +1,14 @@
 using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Tests.Adapters;
 using SPO.ColdStorage.Models;
+using Xunit;
 
 namespace SPO.ColdStorage.Tests.Adapters;
 
-[TestClass]
 public class TestFileAnalyticsAdapterTests
 {
-    [TestMethod]
+    [Fact]
     public async Task GetFileAnalyticsAsync_WithConfiguredData_ReturnsExpectedResults()
     {
         // Arrange
@@ -45,7 +44,7 @@ public class TestFileAnalyticsAdapterTests
         response.AccessStats.ActorCount.Should().Be(50);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task GetFileAnalyticsAsync_WithoutConfiguredData_ReturnsDefaultResults()
     {
         // Arrange
@@ -70,7 +69,7 @@ public class TestFileAnalyticsAdapterTests
         file.State.Should().Be(SiteFileAnalysisState.Complete);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task GetFileVersionHistoryAsync_WithConfiguredData_ReturnsExpectedVersions()
     {
         // Arrange
@@ -110,7 +109,7 @@ public class TestFileAnalyticsAdapterTests
         versions.Versions[2].Size.Should().Be(3072);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ShouldSkipFileAnalysisAsync_WithConfiguredSkipFile_ReturnsTrue()
     {
         // Arrange
@@ -134,7 +133,7 @@ public class TestFileAnalyticsAdapterTests
         result.Should().BeTrue();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ShouldSkipFileAnalysisAsync_WithoutConfiguredSkipFile_ReturnsFalse()
     {
         // Arrange
@@ -155,7 +154,7 @@ public class TestFileAnalyticsAdapterTests
         result.Should().BeFalse();
     }
 
-    [TestMethod]
+    [Fact]
     public async Task Adapter_TracksCallCounts_Correctly()
     {
         // Arrange
@@ -193,7 +192,7 @@ public class TestFileAnalyticsAdapterTests
         adapter.SkipCheckCount.Should().Be(3);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task ResetCounters_ResetsAllCounters_ToZero()
     {
         // Arrange
@@ -219,7 +218,7 @@ public class TestFileAnalyticsAdapterTests
         adapter.SkipCheckCount.Should().Be(0);
     }
 
-    [TestMethod]
+    [Fact]
     public async Task GetFileAnalyticsAsync_WithMultipleFiles_ProcessesAllFiles()
     {
         // Arrange

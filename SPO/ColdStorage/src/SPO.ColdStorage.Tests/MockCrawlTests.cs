@@ -1,15 +1,17 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Models;
+using Xunit;
 
 namespace SPO.ColdStorage.Tests;
 
-[TestClass]
-public class MockCrawlTests : AbstractTest
+public class MockCrawlTests
 {
+    private readonly ILogger _tracer = NullLogger.Instance;
     private readonly List<SharePointFileInfoWithList> _foundFiles = [];
 
-    [TestMethod]
+    [Fact]
     public async Task MockCrawl()
     {
         const int PAGE_COUNT = 100;
@@ -21,10 +23,10 @@ public class MockCrawlTests : AbstractTest
             (SharePointFileInfoWithList foundFile) => Crawler_SharePointFileFound(foundFile),
             () => CrawlComplete());
 
-        Assert.IsTrue(_foundFiles.Count == PAGE_COUNT * PAGES);
+        Assert.Equal(PAGE_COUNT * PAGES, _foundFiles.Count);
         foreach (var ff in _foundFiles)
         {
-            Assert.IsTrue(_foundFiles.Where(f => f.FullSharePointUrl == ff.FullSharePointUrl).Count() == 1);
+            Assert.Single(_foundFiles, f => f.FullSharePointUrl == ff.FullSharePointUrl);
         }
     }
 

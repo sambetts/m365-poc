@@ -1,23 +1,25 @@
 using Azure.Identity;
 using Azure.Storage.Blobs;
+using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.SharePoint.Client;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Connectors;
 using SPO.ColdStorage.Migration.Engine.Migration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
+using Xunit;
 
-using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Tests;
 
-[TestClass]
+// Integration tests — require live SharePoint Online, Azure Key Vault, Azure Blob storage,
+// and a configured Config (user secrets / env vars). Skipped by default; remove Skip to run locally.
 public class MigrationTests : AbstractTest
 {
+    private const string SkipReason = "Requires live SharePoint, Key Vault, and Azure Storage";
 
-    [TestMethod]
+    [Fact(Skip = SkipReason)]
     public async Task GetDriveItemAnalyticsTests()
     {
         var app = await AuthUtils.GetNewClientApp(_config!);
@@ -50,7 +52,7 @@ public class MigrationTests : AbstractTest
         graphFileInfoList.AddRange(graphFiles);
 
         var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _tracer);
-        Assert.IsTrue(batchAnalytics.UpdateResults.Count == graphFiles.Count());
+        Assert.Equal(graphFiles.Count(), batchAnalytics.UpdateResults.Count);
 
         var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v =>
         {
@@ -62,7 +64,7 @@ public class MigrationTests : AbstractTest
     /// <summary>
     /// Runs nearly all tests without using Service Bus. Creates a new file in SP, then migrates it to Azure Blob, and verifies the contents.
     /// </summary>
-    [TestMethod]
+    [Fact(Skip = SkipReason)]
     public async Task SharePointFileMigrationTests()
     {
         var migrator = new SharePointFileMigrator(_config!, _tracer);
@@ -85,7 +87,7 @@ public class MigrationTests : AbstractTest
 
         // Check it's the right file
         var discoveredFile = allResults.FilesFound.Where(r => r.ServerRelativeFilePath.Contains(fileTitle)).FirstOrDefault();
-        Assert.IsNotNull(discoveredFile);
+        Assert.NotNull(discoveredFile);
 
         // Migrate the file to az blob
         await migrator.MigrateFromSharePointToBlobStorage(discoveredFile, app);
@@ -100,14 +102,14 @@ public class MigrationTests : AbstractTest
 
         // Check az blob file contents matches original data
         var azDownloadedFile = System.IO.File.ReadAllText(tempLocalFile);
-        Assert.AreEqual(FILE_CONTENTS, azDownloadedFile);
+        Assert.Equal(FILE_CONTENTS, azDownloadedFile);
         System.IO.File.Delete(tempLocalFile);
     }
 
     /// <summary>
     /// Checks we don't migrate files that are already in az blob
     /// </summary>
-    [TestMethod]
+    [Fact(Skip = SkipReason)]
     public async Task SharePointFileNeedsMigratingTests()
     {
         var migrator = new SharePointFileMigrator(_config!, _tracer);
@@ -129,7 +131,7 @@ public class MigrationTests : AbstractTest
 
         // Before migration: SharePointFileNeedsMigrating should be true
         var needsMigratingBeforeMigration = await migrator.DoesSharePointFileNeedMigrating(discoveredFile!, containerClient);
-        Assert.IsTrue(needsMigratingBeforeMigration);
+        Assert.True(needsMigratingBeforeMigration);
 
         // Migrate the file to az blob & save result to SQL 
         await migrator.MigrateFromSharePointToBlobStorage(discoveredFile!, app);
@@ -137,7 +139,7 @@ public class MigrationTests : AbstractTest
 
         // Now SharePointFileNeedsMigrating should be false
         var needsMigratingPostMigration = await migrator.DoesSharePointFileNeedMigrating(discoveredFile!, containerClient);
-        Assert.IsFalse(needsMigratingPostMigration);
+        Assert.False(needsMigratingPostMigration);
 
         // Update file with new content and recrawl
         await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + " + extra data"), _tracer);
@@ -146,14 +148,14 @@ public class MigrationTests : AbstractTest
         // Now the file's been updated, it should need a new migration
         var needsMigratingPostEdit = await migrator.DoesSharePointFileNeedMigrating(discoveredFile!, containerClient);
 
-        Assert.IsTrue(needsMigratingPostEdit);
+        Assert.True(needsMigratingPostEdit);
 
         // Migrate again edited file, save to SQL & check status one last time
         await migrator.MigrateFromSharePointToBlobStorage(discoveredFile!, app);
         await migrator.SaveSucessfulFileMigrationToSql(discoveredFile!);
 
         needsMigratingPostMigration = await migrator.DoesSharePointFileNeedMigrating(discoveredFile!, containerClient);
-        Assert.IsFalse(needsMigratingPostMigration);
+        Assert.False(needsMigratingPostMigration);
     }
 
     async Task<BaseSharePointFileInfo?> GetFromIndex(string fileTitle, Microsoft.SharePoint.Client.List targetList)
@@ -166,7 +168,7 @@ public class MigrationTests : AbstractTest
         return discoveredFile;
     }
 
-    [TestMethod]
+    [Fact(Skip = SkipReason)]
     public async Task SharePointFileDownloaderTests()
     {
         var testMsg = new BaseSharePointFileInfo
@@ -181,7 +183,7 @@ public class MigrationTests : AbstractTest
         await m.DownloadFileToTempDir(testMsg);
     }
 
-    [TestMethod]
+    [Fact(Skip = SkipReason)]
     public async Task BlobStorageFileUploadTests()
     {
         var testMsg = new BaseSharePointFileInfo
@@ -201,5 +203,4 @@ public class MigrationTests : AbstractTest
         // Write same file again. Should also work.
         await m.UploadFileToAzureBlob(tempFileName, testMsg);
     }
-
 }
