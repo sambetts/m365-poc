@@ -1,31 +1,29 @@
-﻿using SPO.ColdStorage.Entities.Configuration;
+using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 
-namespace SPO.ColdStorage.Entities
+namespace SPO.ColdStorage.Entities;
+public class DbInitializer
 {
-    public class DbInitializer
+
+    /// <summary>
+    /// Creates new tenant DB if needed
+    /// </summary>
+    /// <returns>If DB was created</returns>
+    public async static Task<bool> Init(SPOColdStorageDbContext context, DevConfig config)
     {
-
-        /// <summary>
-        /// Creates new tenant DB if needed
-        /// </summary>
-        /// <returns>If DB was created</returns>
-        public async static Task<bool> Init(SPOColdStorageDbContext context, DevConfig config)
+        context.Database.EnsureCreated();
+        if (context.TargetSharePointSites.Any() || config == null)
         {
-            context.Database.EnsureCreated();
-            if (context.TargetSharePointSites.Any() || config == null)
-            {
-                return false;
-            }
-
-            // Add default data
-            if (!string.IsNullOrEmpty(config.DefaultSharePointSite))
-            {
-                context.TargetSharePointSites.Add(new TargetMigrationSite { RootURL = config.DefaultSharePointSite });
-                await context.SaveChangesAsync();
-            }
-
-            return true;
+            return false;
         }
+
+        // Add default data
+        if (!string.IsNullOrEmpty(config.DefaultSharePointSite))
+        {
+            context.TargetSharePointSites.Add(new TargetMigrationSite { RootURL = config.DefaultSharePointSite });
+            await context.SaveChangesAsync();
+        }
+
+        return true;
     }
 }

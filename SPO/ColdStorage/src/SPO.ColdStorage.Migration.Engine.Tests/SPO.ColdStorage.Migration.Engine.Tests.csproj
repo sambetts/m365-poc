@@ -1,26 +1,23 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-    <LangVersion>14.0</LangVersion>
+	<TargetFramework>net10.0</TargetFramework>
+	<IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
-    <PackageReference Include="MSTest.TestAdapter" Version="4.2.3" />
-    <PackageReference Include="MSTest.TestFramework" Version="4.2.3" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <!-- FluentAssertions kept at 7.2.2: v8.0+ moved to a commercial license (Xceed). -->
-    <PackageReference Include="FluentAssertions" Version="7.2.2" />
+	<PackageReference Include="Microsoft.NET.Test.Sdk" />
+	<PackageReference Include="MSTest.TestAdapter" />
+	<PackageReference Include="MSTest.TestFramework" />
+	<PackageReference Include="Moq" />
+	<!-- FluentAssertions kept at 7.2.2: v8.0+ moved to a commercial license (Xceed). -->
+	<PackageReference Include="FluentAssertions" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SPO.ColdStorage.Migration.Engine\SPO.ColdStorage.Migration.Engine.csproj" />
-    <ProjectReference Include="..\SPO.ColdStorage.Entities\SPO.ColdStorage.Entities.csproj" />
-    <ProjectReference Include="..\SPO.ColdStorage.Models\SPO.ColdStorage.Models.csproj" />
+	<ProjectReference Include="..\SPO.ColdStorage.Migration.Engine\SPO.ColdStorage.Migration.Engine.csproj" />
+	<ProjectReference Include="..\SPO.ColdStorage.Entities\SPO.ColdStorage.Entities.csproj" />
+	<ProjectReference Include="..\SPO.ColdStorage.Models\SPO.ColdStorage.Models.csproj" />
   </ItemGroup>
 
 </Project>

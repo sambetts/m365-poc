@@ -1,63 +1,61 @@
-﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
-namespace SPO.ColdStorage.Migration.Engine.Migration
+namespace SPO.ColdStorage.Migration.Engine.Migration;
+/// <summary>
+/// Uploads files from local file-system to Azure blob
+/// </summary>
+public class BlobStorageUploader : BaseComponent
 {
-    /// <summary>
-    /// Uploads files from local file-system to Azure blob
-    /// </summary>
-    public class BlobStorageUploader : BaseComponent
+    private BlobServiceClient _blobServiceClient;
+    private BlobContainerClient? _containerClient;
+    public BlobStorageUploader(Config config, DebugTracer debugTracer) : base(config, debugTracer)
     {
-        private BlobServiceClient _blobServiceClient;
-        private BlobContainerClient? _containerClient;
-        public BlobStorageUploader(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+        // Create BlobServiceClient with appropriate authentication based on connection string type
+        _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
+    }
+
+
+    public async Task UploadFileToAzureBlob(string localTempFileName, BaseSharePointFileInfo msg)
+    {
+        // Create the container and return a container client object
+        if (_containerClient == null)
         {
-            // Create BlobServiceClient with appropriate authentication based on connection string type
-            _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
+            this._containerClient = _blobServiceClient.GetBlobContainerClient(_config.BlobContainerName);
         }
 
-
-        public async Task UploadFileToAzureBlob(string localTempFileName, BaseSharePointFileInfo msg)
+        _tracer.TrackTrace($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+        using (var fs = File.OpenRead(localTempFileName))
         {
-            // Create the container and return a container client object
-            if (_containerClient == null)
+            var fileRef = _containerClient.GetBlobClient(msg.ServerRelativeFilePath);
+            var fileExists = await fileRef.ExistsAsync();
+            if (fileExists)
             {
-                this._containerClient = _blobServiceClient.GetBlobContainerClient(_config.BlobContainerName);
-            }
-
-            _tracer.TrackTrace($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
-            using (var fs = File.OpenRead(localTempFileName))
-            {
-                var fileRef = _containerClient.GetBlobClient(msg.ServerRelativeFilePath);
-                var fileExists = await fileRef.ExistsAsync();
-                if (fileExists)
+                // MD5 has the local file
+                byte[] tempFileHash;
+                using (var md5 = System.Security.Cryptography.MD5.Create())
                 {
-                    // MD5 has the local file
-                    byte[] tempFileHash;
-                    using (var md5 = System.Security.Cryptography.MD5.Create())
+                    using (var tempFileStream = File.OpenRead(localTempFileName))
                     {
-                        using (var tempFileStream = File.OpenRead(localTempFileName))
-                        {
-                            tempFileHash = md5.ComputeHash(tempFileStream);
-                        }
+                        tempFileHash = md5.ComputeHash(tempFileStream);
                     }
-
-                    // Get az blob MD5 & compare
-                    var existingProps = await fileRef.GetPropertiesAsync();
-
-                    // For some reason, sometimes the SP hash is null
-                    var match = existingProps.Value.ContentHash != null && existingProps.Value.ContentHash.SequenceEqual(tempFileHash);
-                    if (!match)
-                        await fileRef.UploadAsync(fs, true);
-                    else
-                        _tracer.TrackTrace($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.", 
-                            Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
                 }
+
+                // Get az blob MD5 & compare
+                var existingProps = await fileRef.GetPropertiesAsync();
+
+                // For some reason, sometimes the SP hash is null
+                var match = existingProps.Value.ContentHash != null && existingProps.Value.ContentHash.SequenceEqual(tempFileHash);
+                if (!match)
+                    await fileRef.UploadAsync(fs, true);
                 else
-                    await _containerClient.UploadBlobAsync(msg.ServerRelativeFilePath, fs);
+                    _tracer.TrackTrace($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.", 
+                        Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
             }
+            else
+                await _containerClient.UploadBlobAsync(msg.ServerRelativeFilePath, fs);
         }
     }
 }

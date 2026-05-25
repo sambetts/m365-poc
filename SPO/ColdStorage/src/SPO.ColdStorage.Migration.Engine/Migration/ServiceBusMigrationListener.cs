@@ -1,4 +1,4 @@
-﻿using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
@@ -7,8 +7,7 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 using System.Collections.Concurrent;
 
-namespace SPO.ColdStorage.Migration.Engine
-{
+namespace SPO.ColdStorage.Migration.Engine;
     /// <summary>
     /// Listens for new service bus messages for files to migrate to az blob
     /// </summary>
@@ -181,4 +180,3 @@ namespace SPO.ColdStorage.Migration.Engine
         }
 
     }
-}

@@ -1,10 +1,9 @@
-﻿using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using System.Text;
 
-namespace SPO.ColdStorage.LoadGenerator
-{
+namespace SPO.ColdStorage.LoadGenerator;
     internal class SharePointLoadGenerator
     {
         private readonly Options _options;
@@ -169,4 +168,3 @@ namespace SPO.ColdStorage.LoadGenerator
             }
         }
     }
-}

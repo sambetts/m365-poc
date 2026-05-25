@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+	<!-- Shared, repo-wide build settings for the ColdStorage solution. -->
+	<Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>

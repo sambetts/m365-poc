@@ -1,70 +1,67 @@
-﻿using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 
-namespace SPO.ColdStorage.Migration.Engine
+namespace SPO.ColdStorage.Migration.Engine;
+/// <summary>
+/// Unified console & AppInsights tracer
+/// </summary>
+public class DebugTracer
 {
+    private TelemetryClient? AppInsights { get; set; }
 
-    /// <summary>
-    /// Unified console & AppInsights tracer
-    /// </summary>
-    public class DebugTracer
+    #region Constructors
+
+    private DebugTracer() : this(string.Empty, string.Empty)
     {
-        private TelemetryClient? AppInsights { get; set; }
-
-        #region Constructors
-
-        private DebugTracer() : this(string.Empty, string.Empty)
+    }
+    public DebugTracer(string appInsightsKey, string context)
+    {
+        if (!string.IsNullOrEmpty(appInsightsKey))
         {
+            Console.WriteLine($"Telemetry: sending runtime data to Application Insights with instrumentation key '{appInsightsKey}'");
+            var configuration = TelemetryConfiguration.CreateDefault();
+            // Application Insights 3.x removed InstrumentationKey-based ingestion; use ConnectionString.
+            // Accept either a raw instrumentation key (GUID) or a full ConnectionString for backwards compatibility.
+            configuration.ConnectionString = appInsightsKey.Contains('=', StringComparison.Ordinal)
+                ? appInsightsKey
+                : $"InstrumentationKey={appInsightsKey}";
+
+            this.AppInsights = new TelemetryClient(configuration); ;
         }
-        public DebugTracer(string appInsightsKey, string context)
+        if (!string.IsNullOrEmpty(context) && AppInsights != null)
         {
-            if (!string.IsNullOrEmpty(appInsightsKey))
-            {
-                Console.WriteLine($"Telemetry: sending runtime data to Application Insights with instrumentation key '{appInsightsKey}'");
-                var configuration = TelemetryConfiguration.CreateDefault();
-                // Application Insights 3.x removed InstrumentationKey-based ingestion; use ConnectionString.
-                // Accept either a raw instrumentation key (GUID) or a full ConnectionString for backwards compatibility.
-                configuration.ConnectionString = appInsightsKey.Contains('=', StringComparison.Ordinal)
-                    ? appInsightsKey
-                    : $"InstrumentationKey={appInsightsKey}";
-
-                this.AppInsights = new TelemetryClient(configuration); ;
-            }
-            if (!string.IsNullOrEmpty(context) && AppInsights != null)
-            {
-                AppInsights.Context.Operation.Name = context;
-            }
+            AppInsights.Context.Operation.Name = context;
         }
+    }
 
-        public static DebugTracer ConsoleOnlyTracer() { return new DebugTracer(); }
+    public static DebugTracer ConsoleOnlyTracer() { return new DebugTracer(); }
 
 
-        #endregion
+    #endregion
 
-        public void TrackException(Exception ex)
+    public void TrackException(Exception ex)
+    {
+        if (AppInsights != null)
         {
-            if (AppInsights != null)
-            {
-                AppInsights.TrackException(ex);
-            }
+            AppInsights.TrackException(ex);
         }
+    }
 
-        public void TrackTrace(string sayWut, Microsoft.ApplicationInsights.DataContracts.SeverityLevel severityLevel)
+    public void TrackTrace(string sayWut, Microsoft.ApplicationInsights.DataContracts.SeverityLevel severityLevel)
+    {
+        if (severityLevel != Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose)
         {
-            if (severityLevel != Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose)
-            {
-                Console.WriteLine($"[{DateTime.Now.ToString("G")}] {sayWut}");
-            }
-
-            if (AppInsights != null)
-            {
-                AppInsights.TrackTrace(sayWut, severityLevel);
-            }
+            Console.WriteLine($"[{DateTime.Now.ToString("G")}] {sayWut}");
         }
 
-        public void TrackTrace(string sayWut)
+        if (AppInsights != null)
         {
-            TrackTrace(sayWut, Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Information);
+            AppInsights.TrackTrace(sayWut, severityLevel);
         }
+    }
+
+    public void TrackTrace(string sayWut)
+    {
+        TrackTrace(sayWut, Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Information);
     }
 }
