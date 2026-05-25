@@ -7,6 +7,7 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using System.Security.Cryptography.X509Certificates;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine;
 
 public class AuthUtils
@@ -24,11 +25,11 @@ public class AuthUtils
         return _cachedCert;
 
     }
-    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, DebugTracer tracer)
+    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger tracer)
     {
         return await GetClientContext(siteUrl, tenantId, clientId, clientSecret, keyVaultUrl, baseServerAddress, tracer, null);
     }
-    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, DebugTracer tracer, Action<AuthenticationResult>? authResultDelegate)
+    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger tracer, Action<AuthenticationResult>? authResultDelegate)
     {
         if (string.IsNullOrEmpty(siteUrl))
         {
@@ -78,7 +79,7 @@ public class AuthUtils
 
         return ctx;
     }
-    public async static Task<ClientContext> GetClientContext(IConfidentialClientApplication app, string baseServerAddress, string siteUrl, DebugTracer tracer)
+    public async static Task<ClientContext> GetClientContext(IConfidentialClientApplication app, string baseServerAddress, string siteUrl, ILogger tracer)
     {
         var result = await app.AuthForSharePointOnline(baseServerAddress);
 
@@ -106,7 +107,7 @@ public class AuthUtils
         return app;
     }
 
-    public static async Task<ClientContext> GetClientContext(Config config, string siteUrl, DebugTracer tracer, Action<AuthenticationResult>? authResultDelegate)
+    public static async Task<ClientContext> GetClientContext(Config config, string siteUrl, ILogger tracer, Action<AuthenticationResult>? authResultDelegate)
     {
         return await GetClientContext(siteUrl, config.AzureAdConfig.TenantId!, config.AzureAdConfig.ClientID!,
             config.AzureAdConfig.Secret!, config.KeyVaultUrl, config.BaseServerAddress, tracer, authResultDelegate);

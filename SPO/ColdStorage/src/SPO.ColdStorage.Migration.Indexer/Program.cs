@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
@@ -7,14 +8,8 @@ Console.WriteLine("SPO Cold Storage - SharePoint Indexer");
 var config = ConsoleUtils.GetConfigurationWithDefaultBuilder<Program>();
 ConsoleUtils.PrintCommonStartupDetails();
 
-// Send to application insights or just the stdout?
-DebugTracer tracer;
-if (config.HaveAppInsightsConfigured)
-{
-    tracer = new DebugTracer(config.AppInsightsInstrumentationKey, "Indexer");
-}
-else
-    tracer = DebugTracer.ConsoleOnlyTracer();
+using var loggerFactory = ConsoleUtils.CreateLoggerFactory(config, "Indexer");
+var logger = loggerFactory.CreateLogger<SharePointContentIndexer>();
 
 // Init DB
 using (var db = new SPOColdStorageDbContext(config))
@@ -23,7 +18,7 @@ using (var db = new SPOColdStorageDbContext(config))
 }
 
 // Start discovery
-var discovery = new SharePointContentIndexer(config, tracer);
+var discovery = new SharePointContentIndexer(config, logger);
 await discovery.StartMigrateAllSites();
 
 Console.WriteLine("\nAll sites scanned. Finished indexing.");

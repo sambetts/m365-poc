@@ -10,6 +10,7 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Tests;
 
 [TestClass]
@@ -38,7 +39,7 @@ public class MigrationTests : AbstractTest
         var creds = new ClientSecretCredential(_config.AzureAdConfig.TenantId, _config.AzureAdConfig.ClientID, _config.AzureAdConfig.Secret);
         var gc = new GraphServiceClient(creds);
 
-        var httpClient = new SecureSPThrottledHttpClient(_config!, false, DebugTracer.ConsoleOnlyTracer());
+        var httpClient = new SecureSPThrottledHttpClient(_config!, false, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
 
         // Test batch method with files in doc-lib
         var driveItems = await gc.Drives[uploaded.File.VroomDriveID].Items.GetAsync();

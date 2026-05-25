@@ -7,6 +7,7 @@ using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Tests;
 
 [TestClass]
@@ -71,7 +72,7 @@ public class SnapshotBuilderTests : AbstractTest
 
         using var db = new SPOColdStorageDbContext(_config!);
         var preInsert = await db.Files.CountAsync();
-        await list.InsertFilesAsync(_config!, new StagingFilesMigrator(), DebugTracer.ConsoleOnlyTracer());
+        await list.InsertFilesAsync(_config!, new StagingFilesMigrator(), Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
         var postInsert = await db.Files.CountAsync();
 
         // Make sure we've actually inserted

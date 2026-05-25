@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
 
@@ -7,14 +8,8 @@ Console.WriteLine("This app will listen for messages from service-bus and handle
 var config = ConsoleUtils.GetConfigurationWithDefaultBuilder<Program>();
 ConsoleUtils.PrintCommonStartupDetails();
 
-// Send to application insights or just the stdout?
-DebugTracer tracer;
-if (config.HaveAppInsightsConfigured)
-{
-    tracer = new DebugTracer(config.AppInsightsInstrumentationKey, "Migrator");
-}
-else
-    tracer = DebugTracer.ConsoleOnlyTracer();
+using var loggerFactory = ConsoleUtils.CreateLoggerFactory(config, "Migrator");
+var logger = loggerFactory.CreateLogger<ServiceBusMigrationListener>();
 
-var listener = new ServiceBusMigrationListener(config, tracer);
+var listener = new ServiceBusMigrationListener(config, logger);
 await listener.ListenForFilesToMigrate();

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
@@ -9,14 +10,8 @@ Console.WriteLine("This app will build new space snapshots for configured site-c
 var config = ConsoleUtils.GetConfigurationWithDefaultBuilder<Program>();
 ConsoleUtils.PrintCommonStartupDetails();
 
-// Send to application insights or just the stdout?
-DebugTracer tracer;
-if (config.HaveAppInsightsConfigured)
-{
-    tracer = new DebugTracer(config.AppInsightsInstrumentationKey, "SnapshotBuilder");
-}
-else
-    tracer = DebugTracer.ConsoleOnlyTracer();
+using var loggerFactory = ConsoleUtils.CreateLoggerFactory(config, "SnapshotBuilder");
+var logger = loggerFactory.CreateLogger<TenantModelBuilder>();
 
 // Init DB
 using (var db = new SPOColdStorageDbContext(config))
@@ -24,7 +19,7 @@ using (var db = new SPOColdStorageDbContext(config))
     await DbInitializer.Init(db, config.DevConfig);
 }
 
-var analyser = new TenantModelBuilder(config, tracer);
+var analyser = new TenantModelBuilder(config, logger);
 await analyser.Build();
 
 Console.WriteLine("\nAll sites scanned. Finished building snapshot.");

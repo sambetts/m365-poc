@@ -5,6 +5,7 @@ using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
 using System.Net.Http.Headers;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Migration;
 /// <summary>
 /// Downloads files from SharePoint to local file-system
@@ -13,10 +14,10 @@ public class SharePointFileDownloader : BaseComponent
 {
     private readonly IConfidentialClientApplication _app;
     private readonly SecureSPThrottledHttpClient _client;
-    public SharePointFileDownloader(IConfidentialClientApplication app, Config config, DebugTracer debugTracer) : base(config, debugTracer)
+    public SharePointFileDownloader(IConfidentialClientApplication app, Config config, ILogger ILogger) : base(config, ILogger)
     {
         _app = app;
-        _client = new SecureSPThrottledHttpClient(config, true, debugTracer);
+        _client = new SecureSPThrottledHttpClient(config, true, ILogger);
 
         var productValue = new ProductInfoHeaderValue("SPOColdStorageMigration", "1.0");
         var commentValue = new ProductInfoHeaderValue("(+https://github.com/sambetts/SPOColdStorage)");
@@ -38,7 +39,7 @@ public class SharePointFileDownloader : BaseComponent
         // Write to temp file
         var tempFileName = GetTempFileNameAndCreateDir(sharePointFile);
 
-        _tracer.TrackTrace($"Downloading '{sharePointFile.FullSharePointUrl}'...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+        _tracer.LogDebug($"Downloading '{sharePointFile.FullSharePointUrl}'...");
         var url = $"{sharePointFile.WebUrl}/_api/web/GetFileByServerRelativeUrl('{sharePointFile.ServerRelativeFilePath}')/OpenBinaryStream";
 
         long fileSize = 0;
@@ -52,7 +53,7 @@ public class SharePointFileDownloader : BaseComponent
             fileSize = streamToWriteTo.Length;
         }
 
-        _tracer.TrackTrace($"Wrote {fileSize:N0} bytes to '{tempFileName}'.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+        _tracer.LogDebug($"Wrote {fileSize:N0} bytes to '{tempFileName}'.");
 
         // Return file name & size
         return (tempFileName, fileSize);

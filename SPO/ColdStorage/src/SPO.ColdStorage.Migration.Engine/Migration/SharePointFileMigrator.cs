@@ -8,6 +8,7 @@ using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Migration;
 /// <summary>
 /// The top-level file migration logic for both indexer and migrator.
@@ -18,7 +19,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
     private readonly ServiceBusSender _sbSender;
     private readonly SPOColdStorageDbContext _db;
 
-    public SharePointFileMigrator(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+    public SharePointFileMigrator(Config config, ILogger ILogger) : base(config, ILogger)
     {
         _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
         _sbSender = _sbClient.CreateSender(_config.ServiceBusQueueName);
@@ -36,7 +37,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
             // Send msg to migrate file
             var sbMsg = new ServiceBusMessage(System.Text.Json.JsonSerializer.Serialize(sharePointFileInfo));
             await _sbSender.SendMessageAsync(sbMsg);
-            _tracer.TrackTrace($"+'{sharePointFileInfo.FullSharePointUrl}'...");
+            _tracer.LogWarning($"+'{sharePointFileInfo.FullSharePointUrl}'...");
         }
     }
 
@@ -83,7 +84,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
         }
         catch (Exception ex)
         {
-            _tracer.TrackTrace($"Got errror {ex.Message} uploading file '{tempFileNameAndSize.Item1}' to blob storage. Ignoring.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+            _tracer.LogInformation($"Got errror {ex.Message} uploading file '{tempFileNameAndSize.Item1}' to blob storage. Ignoring.");
             uploadError = ex;
         }
 
@@ -94,7 +95,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
         }
         catch (Exception ex)
         {
-            _tracer.TrackTrace($"Got errror '{ex.Message}' cleaning temp file '{tempFileNameAndSize.Item1}'. Ignoring.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+            _tracer.LogWarning($"Got errror '{ex.Message}' cleaning temp file '{tempFileNameAndSize.Item1}'. Ignoring.");
         }
 
         // Having cleaned up, throw our own exception so service-bus message is retried later

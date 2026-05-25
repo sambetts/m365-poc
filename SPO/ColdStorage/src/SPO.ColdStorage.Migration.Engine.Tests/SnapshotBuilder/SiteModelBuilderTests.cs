@@ -1,6 +1,7 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
@@ -14,7 +15,7 @@ public class SiteModelBuilderTests
 {
     private Moq.Mock<Microsoft.Extensions.Configuration.IConfiguration> _mockConfig = null!;
     private Config _config = null!;
-    private DebugTracer _tracer = null!;
+    private ILogger _tracer = NullLogger.Instance;
     private TargetMigrationSite _testSite = null!;
     private TestFileAnalyticsAdapter _testAdapter = null!;
 
@@ -67,7 +68,7 @@ public class SiteModelBuilderTests
         _mockConfig.Setup(c => c["BlobContainerName"]).Returns("test-container");
         
         _config = new Config(_mockConfig.Object);
-        _tracer = new DebugTracer(string.Empty, "test");
+        _tracer = NullLogger.Instance;
 
         _testSite = new TargetMigrationSite
         {

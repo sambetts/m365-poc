@@ -1,6 +1,7 @@
 using Microsoft.SharePoint.Client;
 using System.Text;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Utils;
 
 public static class SharePointUtils
@@ -8,7 +9,7 @@ public static class SharePointUtils
     /// <summary>
     /// Save file & return new item GUID
     /// </summary>
-    public static async Task<Guid> SaveFile(this List targetList, ClientContext ctx, string fileName, byte[] contents, DebugTracer debugTracer)
+    public static async Task<Guid> SaveFile(this List targetList, ClientContext ctx, string fileName, byte[] contents, ILogger ILogger)
     {
         var fileCreationInfo = new FileCreationInformation
         {
@@ -18,7 +19,7 @@ public static class SharePointUtils
         };
         var uploadFile = targetList.RootFolder.Files.Add(fileCreationInfo);
         ctx.Load(uploadFile);
-        await ctx.ExecuteQueryAsyncWithThrottleRetries(debugTracer);
+        await ctx.ExecuteQueryAsyncWithThrottleRetries(ILogger);
 
         return uploadFile.UniqueId;
     }

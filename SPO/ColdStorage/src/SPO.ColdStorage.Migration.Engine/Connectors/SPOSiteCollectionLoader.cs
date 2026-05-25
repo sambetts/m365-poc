@@ -3,9 +3,10 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
 
-public class SPOSiteCollectionLoader(Config config, string siteUrl, DebugTracer tracer) : BaseSharePointConnector(new SPOTokenManager(config, siteUrl, tracer), tracer), ISiteCollectionLoader<ListItemCollectionPosition>
+public class SPOSiteCollectionLoader(Config config, string siteUrl, ILogger tracer) : BaseSharePointConnector(new SPOTokenManager(config, siteUrl, tracer), tracer), ISiteCollectionLoader<ListItemCollectionPosition>
 {
     public async Task<List<IWebLoader<ListItemCollectionPosition>>> GetWebs()
     {

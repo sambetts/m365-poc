@@ -7,6 +7,7 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 using System.Collections.Concurrent;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine;
 
 /// <summary>
@@ -21,7 +22,7 @@ public class ServiceBusMigrationListener : BaseComponent
     private int _filesProcessedFromQueue = 0;
     const int REPORT_QUEUE_LENGTH_EVERY = 10;
 
-    public ServiceBusMigrationListener(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+    public ServiceBusMigrationListener(Config config, ILogger ILogger) : base(config, ILogger)
     {
         _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
         _receiver = _sbClient.CreateProcessor(_config.ServiceBusQueueName, new ServiceBusProcessorOptions
@@ -51,7 +52,7 @@ public class ServiceBusMigrationListener : BaseComponent
             _receiver.ProcessErrorAsync += ErrorHandler;
 
             // Start processing SB messages
-            _tracer.TrackTrace($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
+            _tracer.LogError($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
             await _receiver.StartProcessingAsync();
 
             // Block infinitely
@@ -75,7 +76,7 @@ public class ServiceBusMigrationListener : BaseComponent
         var msg = System.Text.Json.JsonSerializer.Deserialize<BaseSharePointFileInfo>(body);
         if (msg != null && msg.IsValidInfo)
         {
-            _tracer.TrackTrace($"Started migration for: {msg.ServerRelativeFilePath}");
+            _tracer.LogInformation($"Started migration for: {msg.ServerRelativeFilePath}");
 
             // Message completed on success.
             await StartFileMigrationAsync(msg, args);
@@ -85,13 +86,13 @@ public class ServiceBusMigrationListener : BaseComponent
                 _filesProcessedFromQueue++;
                 if (_filesProcessedFromQueue % REPORT_QUEUE_LENGTH_EVERY == 0)
                 {
-                    _tracer.TrackTrace($"{_filesProcessedFromQueue} files processed...");
+                    _tracer.LogInformation($"{_filesProcessedFromQueue} files processed...");
                 }
             }
         }
         else
         {
-            _tracer.TrackTrace($"Received unrecognised message: '{body}'. Sending to dead-letter queue.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+            _tracer.LogInformation($"Received unrecognised message: '{body}'. Sending to dead-letter queue.");
             await args.DeadLetterMessageAsync(args.Message);
         }
     }
@@ -99,8 +100,8 @@ public class ServiceBusMigrationListener : BaseComponent
     // Handle any errors when receiving SB messages
     Task ErrorHandler(ProcessErrorEventArgs args)
     {
-        _tracer.TrackTrace(args.Exception.Message, Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
-        _tracer.TrackException(args.Exception);
+        _tracer.LogError(args.Exception.Message);
+        _tracer.LogError(args.Exception, "Unhandled exception");
         return Task.CompletedTask;
     }
 
@@ -109,8 +110,7 @@ public class ServiceBusMigrationListener : BaseComponent
         string thisFileRef = sharePointFileToMigrate.FullSharePointUrl;
         if (_ignoreDownloads.Contains(thisFileRef))
         {
-            _tracer.TrackTrace($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.",
-                Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+            _tracer.LogWarning($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.");
             return;
         }
 
@@ -131,9 +131,8 @@ public class ServiceBusMigrationListener : BaseComponent
         }
         catch (Exception ex)
         {
-            _tracer.TrackException(ex);
-            _tracer.TrackTrace($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again",
-                Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+            _tracer.LogError(ex, "Unhandled exception");
+            _tracer.LogError($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again");
 
             await sharePointFileMigrator.SaveErrorForFileMigrationToSql(ex, sharePointFileToMigrate);
 #if DEBUG
@@ -145,8 +144,7 @@ public class ServiceBusMigrationListener : BaseComponent
             // Import done/failed - remove from list of current imports
             if (!_ignoreDownloads.TryTake(out thisFileRef!))
             {
-                _tracer.TrackTrace($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.",
-                    Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                _tracer.LogWarning($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.");
             }
         }
 
@@ -156,13 +154,13 @@ public class ServiceBusMigrationListener : BaseComponent
             try
             {
                 await args.CompleteMessageAsync(args.Message);
-                _tracer.TrackTrace($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize:N0} bytes) migrated succesfully.");
+                _tracer.LogInformation($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize:N0} bytes) migrated succesfully.");
 
             }
             catch (ServiceBusException ex)
             {
-                base._tracer.TrackException(ex);
-                base._tracer.TrackTrace("Couldn't complete SB message: " + ex.Message);
+                base._tracer.LogError(ex, "Unhandled exception");
+                base._tracer.LogInformation("Couldn't complete SB message: " + ex.Message);
 #if DEBUG
                 throw;
 #endif

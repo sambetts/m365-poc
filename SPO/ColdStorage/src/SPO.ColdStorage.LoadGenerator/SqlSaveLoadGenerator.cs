@@ -1,4 +1,4 @@
-using SPO.ColdStorage.Migration.Engine;
+using Microsoft.Extensions.Logging.Abstractions;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Models;
@@ -42,7 +42,7 @@ internal class SqlSaveLoadGenerator
 
         Console.WriteLine("Saving fakes");
 
-        await list.InsertFilesAsync(config, stagingFilesMigrator, DebugTracer.ConsoleOnlyTracer());
+        await list.InsertFilesAsync(config, stagingFilesMigrator, NullLogger.Instance);
 
     }
 }

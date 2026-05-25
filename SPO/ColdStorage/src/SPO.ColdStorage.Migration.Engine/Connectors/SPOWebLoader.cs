@@ -2,6 +2,7 @@ using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
 
 public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePointConnector baseSharePointConnector) : BaseChildLoader(baseSharePointConnector), IWebLoader<ListItemCollectionPosition>
@@ -28,7 +29,7 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
             }
             catch (System.Net.WebException ex)
             {
-                Parent.Tracer.TrackTrace($"Got exception '{ex.Message}' loading data for list ID '{list.Id}' - not configured to analyse.");
+                Parent.Tracer.LogInformation($"Got exception '{ex.Message}' loading data for list ID '{list.Id}' - not configured to analyse.");
             }
 
             if (listReadSuccess)
@@ -36,12 +37,12 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
                 // Do not search through system or hidden lists
                 if (!list.Hidden && !list.IsSystemList)
                 {
-                    Parent.Tracer.TrackTrace($"Found '{list.Title}'...");
+                    Parent.Tracer.LogInformation($"Found '{list.Title}'...");
                     lists.Add(new SPOListLoader(list, Parent));
                 }
                 else
                 {
-                    Parent.Tracer.TrackTrace($"Ignoring system/hidden list '{list.Title}'.");
+                    Parent.Tracer.LogInformation($"Ignoring system/hidden list '{list.Title}'.");
                 }
             }
         }

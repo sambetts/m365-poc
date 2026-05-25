@@ -1,5 +1,6 @@
 using System.Text;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
 
 public class AutoThrottleHttpClient : HttpClient
@@ -8,22 +9,22 @@ public class AutoThrottleHttpClient : HttpClient
     #region Constructor, Props, and Privates
 
     private readonly bool ignoreRetryHeader;
-    private readonly DebugTracer debugTracer;
+    private readonly ILogger ILogger;
     private DateTime? _nextCallEarliestTime = null;
     private int _concurrentCalls = 0, _throttledCalls = 0, _completedCalls = 0;
     private readonly object _concurrentCallsObj = new(), _throttledCallsObject = new(), _completedCallsObject = new();
 
-    public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer)
+    public AutoThrottleHttpClient(bool ignoreRetryHeader, ILogger ILogger)
     {
         this.Timeout = TimeSpan.FromHours(1);
         this.ignoreRetryHeader = ignoreRetryHeader;
-        this.debugTracer = debugTracer;
+        this.ILogger = ILogger;
     }
-    public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer, DelegatingHandler handler) : base(handler)
+    public AutoThrottleHttpClient(bool ignoreRetryHeader, ILogger ILogger, DelegatingHandler handler) : base(handler)
     {
         this.Timeout = TimeSpan.FromHours(1);
         this.ignoreRetryHeader = ignoreRetryHeader;
-        this.debugTracer = debugTracer;
+        this.ILogger = ILogger;
     }
 
     #endregion
@@ -86,8 +87,7 @@ public class AutoThrottleHttpClient : HttpClient
                 if (!ignoreRetryHeader && waitValue.HasValue)
                 {
                     secondsToWait = waitValue.Value;
-                    debugTracer.TrackTrace($"{Constants.THROTTLE_ERROR} for {url}. Waiting to retry for attempt #{retries} (from 'retry-after' header)...",
-                        Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Information);
+                    ILogger.LogInformation($"{Constants.THROTTLE_ERROR} for {url}. Waiting to retry for attempt #{retries} (from 'retry-after' header)...");
                 }
                 else
                 {
@@ -95,16 +95,14 @@ public class AutoThrottleHttpClient : HttpClient
                     if (retries == Constants.MAX_SPO_API_RETRIES)
                     {
                         // Don't try forever
-                        debugTracer.TrackTrace($"{Constants.THROTTLE_ERROR}. Maximum retry attempts {Constants.MAX_SPO_API_RETRIES} has been attempted for {url}.",
-                            Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+                        ILogger.LogError($"{Constants.THROTTLE_ERROR}. Maximum retry attempts {Constants.MAX_SPO_API_RETRIES} has been attempted for {url}.");
 
                         // Allow normal HTTP exception & abort download
                         response.EnsureSuccessStatusCode();
                     }
 
                     // We've not reached throttling max retries...keep retrying
-                    debugTracer.TrackTrace($"{Constants.THROTTLE_ERROR} downloading from REST. Waiting {retries} seconds to try again...",
-                        Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+                    ILogger.LogDebug($"{Constants.THROTTLE_ERROR} downloading from REST. Waiting {retries} seconds to try again...");
 
                     secondsToWait = retries * 2;
                 }

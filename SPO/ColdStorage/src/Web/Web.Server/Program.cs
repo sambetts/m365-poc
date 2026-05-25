@@ -1,10 +1,9 @@
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Bot.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Migration.Engine;
 
 namespace Web.Server;
 
@@ -24,9 +23,15 @@ public class Program
         var config = new Config(builder.Configuration);
         builder.Services.AddSingleton(config);
 
-        // Register DebugTracer for dependency injection
-        var debugTracer = new DebugTracer(config.AppInsightsInstrumentationKey, "Web.Server");
-        builder.Services.AddSingleton(debugTracer);
+        // Wire up Azure Monitor (Application Insights) via OpenTelemetry when configured.
+        if (config.HaveAppInsightsConfigured)
+        {
+            var connectionString = config.AppInsightsInstrumentationKey.Contains('=', StringComparison.Ordinal)
+                ? config.AppInsightsInstrumentationKey
+                : $"InstrumentationKey={config.AppInsightsInstrumentationKey}";
+
+            builder.Services.AddOpenTelemetry().UseAzureMonitor(o => o.ConnectionString = connectionString);
+        }
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 

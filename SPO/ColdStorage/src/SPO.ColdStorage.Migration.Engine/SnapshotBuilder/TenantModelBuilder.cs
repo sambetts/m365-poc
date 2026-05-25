@@ -6,9 +6,10 @@ using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 
-public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseComponent(config, debugTracer)
+public class TenantModelBuilder(Config config, ILogger ILogger) : BaseComponent(config, ILogger)
 {
     private readonly List<Task> _updateTasks = [];
     private readonly StagingFilesMigrator _stagingFilesMigrator = new();
@@ -42,7 +43,7 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
             await AnalyseSites(defaultSitesAll);
         }
         else
-            _tracer.TrackTrace($"Taking snapshot of {sitesToAnalyse.Count} site(s):");
+            _tracer.LogWarning($"Taking snapshot of {sitesToAnalyse.Count} site(s):");
         await AnalyseSites(sitesToAnalyse);
     }
 
@@ -50,7 +51,7 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
     {
         foreach (var s in sitesToAnalyse)
         {
-            _tracer.TrackTrace($"--BEGIN: {s.RootURL}:");
+            _tracer.LogInformation($"--BEGIN: {s.RootURL}:");
             await StartSiteAnalysisAsync(s);
         }
     }
@@ -65,7 +66,7 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
         );
 
         await Task.WhenAll(_updateTasks);
-        _tracer.TrackTrace($"--FINISHED: {site.RootURL}");
+        _tracer.LogInformation($"--FINISHED: {site.RootURL}");
         return siteModel;
     }
 
@@ -75,7 +76,7 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
         {
             int updated = 0, inserted = 0;
             using var db = new SPOColdStorageDbContext(this._config);
-            _tracer.TrackTrace($"Updating {updatedFiles.Count} files to DB from downloaded metadata");
+            _tracer.LogInformation($"Updating {updatedFiles.Count} files to DB from downloaded metadata");
             foreach (var updatedFile in updatedFiles)
             {
                 var r = await UpdateStats(updatedFile, db);
@@ -93,7 +94,7 @@ public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseCo
         var existingFile = await db.Files.Where(f => f.Url == updatedFile.ServerRelativeFilePath).SingleOrDefaultAsync();
         if (existingFile == null)
         {
-            _tracer.TrackTrace($"Got update for a file that we haven't inserted yet...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+            _tracer.LogInformation($"Got update for a file that we haven't inserted yet...");
             existingFile = await updatedFile.GetDbFileForFileInfo(db);
         }
         if (existingFile.AnalysisCompleted.HasValue)

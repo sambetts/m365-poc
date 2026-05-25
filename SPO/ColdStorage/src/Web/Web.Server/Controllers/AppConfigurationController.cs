@@ -2,6 +2,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine;
@@ -15,9 +16,9 @@ namespace SPO.ColdStorage.Web.Controllers;
 [Microsoft.AspNetCore.Authorization.Authorize]
 [ApiController]
 [Route("[controller]")]
-public class AppConfigurationController(SPOColdStorageDbContext context, Config config, DebugTracer tracer) : ControllerBase
+public class AppConfigurationController(SPOColdStorageDbContext context, Config config, ILogger<AppConfigurationController> logger) : ControllerBase
 {
-    private readonly DebugTracer _tracer = tracer;
+    private readonly ILogger<AppConfigurationController> _tracer = logger;
     private readonly SPOColdStorageDbContext _context = context;
     private readonly Config _config = config;
 
@@ -100,8 +101,7 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
         }
         catch (Exception ex)
         {
-            _tracer.TrackException(ex);
-            _tracer.TrackTrace("Error validating authentication to SharePoint Online", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Critical);
+            _tracer.LogCritical(ex, "Error validating authentication to SharePoint Online");
             return BadRequest($"Got '{ex.Message}' trying to get a token for SPO authentication. Check service configuration.");
         }
 
@@ -120,8 +120,7 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
             }
             catch (Exception ex)
             {
-                _tracer.TrackException(ex);
-                _tracer.TrackTrace($"Error validating site '{target.RootURL}'", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+                _tracer.LogError(ex, $"Error validating site '{target.RootURL}'");
                 return BadRequest($"Got '{ex.Message}' validating SPO site URL '{target}'. It's not a valid SharePoint site-collection URL?");
             }
 

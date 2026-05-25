@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Migration.Engine;
 
 namespace SPO.ColdStorage.Tests;
 
@@ -12,7 +13,7 @@ public class AbstractTest
     protected const string FILE_CONTENTS = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor";
 
     protected Config? _config;
-    protected DebugTracer _tracer = DebugTracer.ConsoleOnlyTracer();
+    protected ILogger _tracer = NullLogger.Instance;
 
     [TestInitialize]
     public async Task Init()

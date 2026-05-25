@@ -3,16 +3,17 @@ using SPO.ColdStorage.Models;
 using System.Text;
 using System.Text.Json;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine;
 
 public static class GraphLoader
 {
-    public static async Task<List<P>> LoadGraphPageable<T, P>(this AutoThrottleHttpClient httpClient, string url, DebugTracer debugTracer) where T : GraphPageableResponse<P> where P : BaseGraphObject
+    public static async Task<List<P>> LoadGraphPageable<T, P>(this AutoThrottleHttpClient httpClient, string url, ILogger ILogger) where T : GraphPageableResponse<P> where P : BaseGraphObject
     {
         var allResults = new List<P>();
         var nextUrl = url;
 
-        debugTracer.TrackTrace($"Loading pagable query {url}...");
+        ILogger.LogInformation($"Loading pagable query {url}...");
 
         int pageCount = 0;
         while (!string.IsNullOrEmpty(nextUrl))
@@ -28,10 +29,10 @@ public static class GraphLoader
                 allResults.AddRange(r.PageResults);
                 nextUrl = r.OdataNextLink;
                 pageCount++;
-                debugTracer.TrackTrace($"Loading page {pageCount} ({nextUrl})...");
+                ILogger.LogInformation($"Loading page {pageCount} ({nextUrl})...");
             }
         }
-        debugTracer.TrackTrace($"{allResults.Count} for {url}.");
+        ILogger.LogInformation($"{allResults.Count} for {url}.");
 
         return allResults;
     }

@@ -2,6 +2,7 @@ using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
 
 public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConnector) : BaseChildLoader(baseSharePointConnector), IListLoader<ListItemCollectionPosition>
@@ -92,8 +93,8 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
         }
         catch (System.Net.WebException ex)
         {
-            Parent.Tracer.TrackException(ex);
-            Parent.Tracer.TrackTrace($"Got error reading list: {ex.Message}.");
+            Parent.Tracer.LogError(ex, "Unhandled exception");
+            Parent.Tracer.LogError($"Got error reading list: {ex.Message}.");
         }
 
         // Remember position, if more than 5000 items are in the list
@@ -124,7 +125,7 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
                         }
                         catch (ServerObjectNullReferenceException)
                         {
-                            Parent.Tracer.TrackTrace($"WARNING: Couldn't get Drive info for list {_listDef.Title} on item {itemUrl}. Ignoring.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+                            Parent.Tracer.LogInformation($"WARNING: Couldn't get Drive info for list {_listDef.Title} on item {itemUrl}. Ignoring.");
                             break;
                         }
                     }

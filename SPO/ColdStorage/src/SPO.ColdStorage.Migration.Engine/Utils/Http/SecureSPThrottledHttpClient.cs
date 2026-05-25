@@ -2,11 +2,12 @@ using Microsoft.Identity.Client;
 using SPO.ColdStorage.Entities.Configuration;
 using System.Net.Http.Headers;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
 /// <summary>
 /// HttpClient that can handle HTTP 429s automatically
 /// </summary>
-public class SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, DebugTracer debugTracer) : AutoThrottleHttpClient(ignoreRetryHeader, debugTracer, new SecureSPHandler(config))
+public class SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, ILogger ILogger) : AutoThrottleHttpClient(ignoreRetryHeader, ILogger, new SecureSPHandler(config))
 {
 }
 

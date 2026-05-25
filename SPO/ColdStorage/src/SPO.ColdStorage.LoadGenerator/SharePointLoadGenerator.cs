@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Migration.Engine;
 using SPO.ColdStorage.Migration.Engine.Utils;
@@ -5,10 +7,10 @@ using System.Text;
 
 namespace SPO.ColdStorage.LoadGenerator;
 
-internal class SharePointLoadGenerator(Options options, DebugTracer debugTracer)
+internal class SharePointLoadGenerator(Options options, ILogger logger)
 {
     private readonly Options _options = options;
-    private readonly DebugTracer _debugTracer = debugTracer;
+    private readonly ILogger _debugTracer = logger ?? NullLogger.Instance;
 
     public async Task CreateFiles(int fileCount)
     {
@@ -45,7 +47,7 @@ internal class SharePointLoadGenerator(Options options, DebugTracer debugTracer)
 
     private async Task AddFiles(int fileStartIndex, int filesToInsert, int threadIndex)
     {
-        var ctx = await AuthUtils.GetClientContext(_options.TargetWeb!, _options.TenantId!, _options.ClientID!, _options.ClientSecret!, _options.KeyVaultUrl!, _options.BaseServerAddress!, DebugTracer.ConsoleOnlyTracer());
+        var ctx = await AuthUtils.GetClientContext(_options.TargetWeb!, _options.TenantId!, _options.ClientID!, _options.ClientSecret!, _options.KeyVaultUrl!, _options.BaseServerAddress!, _debugTracer);
 
         var targetLists = await GetAllListsAllWebs(ctx);
 
@@ -83,7 +85,7 @@ internal class SharePointLoadGenerator(Options options, DebugTracer debugTracer)
         var rootWeb = ctx.Web;
         ctx.Load(rootWeb);
         ctx.Load(rootWeb.Webs);
-        await ctx.ExecuteQueryAsyncWithThrottleRetries(DebugTracer.ConsoleOnlyTracer());
+        await ctx.ExecuteQueryAsyncWithThrottleRetries(_debugTracer);
 
         results.AddRange(await GetAllLists(rootWeb, ctx));
 

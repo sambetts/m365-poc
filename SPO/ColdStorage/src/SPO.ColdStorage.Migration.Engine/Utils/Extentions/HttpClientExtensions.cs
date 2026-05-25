@@ -2,16 +2,17 @@ using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Utils;
 
 public static class HttpClientExtensions
 {
-    public static async Task<HttpResponseMessage> GetAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, DebugTracer debugTracer)
+    public static async Task<HttpResponseMessage> GetAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, ILogger ILogger)
     {
         // Default to return when full content is read
-        return await GetAsyncWithThrottleRetries(httpClient, url, HttpCompletionOption.ResponseContentRead, debugTracer);
+        return await GetAsyncWithThrottleRetries(httpClient, url, HttpCompletionOption.ResponseContentRead, ILogger);
     }
-    public static async Task<HttpResponseMessage> GetAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, HttpCompletionOption completionOption, DebugTracer debugTracer)
+    public static async Task<HttpResponseMessage> GetAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, HttpCompletionOption completionOption, ILogger ILogger)
     {
         if (httpClient is null)
         {
@@ -23,9 +24,9 @@ public static class HttpClientExtensions
             throw new ArgumentException($"'{nameof(url)}' cannot be null or empty.", nameof(url));
         }
 
-        if (debugTracer is null)
+        if (ILogger is null)
         {
-            throw new ArgumentNullException(nameof(debugTracer));
+            throw new ArgumentNullException(nameof(ILogger));
         }
 
         var response = await httpClient.ExecuteHttpCallWithThrottleRetries(async () => await httpClient.GetAsync(url, completionOption), url);
@@ -33,7 +34,7 @@ public static class HttpClientExtensions
         return response!;
     }
 
-    public static async Task<HttpResponseMessage> PostAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, object body, DebugTracer debugTracer)
+    public static async Task<HttpResponseMessage> PostAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, object body, ILogger ILogger)
     {
         if (httpClient is null)
         {
@@ -45,9 +46,9 @@ public static class HttpClientExtensions
             throw new ArgumentException($"'{nameof(url)}' cannot be null or empty.", nameof(url));
         }
 
-        if (debugTracer is null)
+        if (ILogger is null)
         {
-            throw new ArgumentNullException(nameof(debugTracer));
+            throw new ArgumentNullException(nameof(ILogger));
         }
 
         var payload = JsonSerializer.Serialize(body);
@@ -58,7 +59,7 @@ public static class HttpClientExtensions
         return response;
     }
 
-    public static async Task<HttpResponseMessage> PostAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, string bodyContent, string mimeType, string boundary, DebugTracer debugTracer)
+    public static async Task<HttpResponseMessage> PostAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, string bodyContent, string mimeType, string boundary, ILogger ILogger)
     {
         if (httpClient is null)
         {
@@ -70,9 +71,9 @@ public static class HttpClientExtensions
             throw new ArgumentException($"'{nameof(url)}' cannot be null or empty.", nameof(url));
         }
 
-        if (debugTracer is null)
+        if (ILogger is null)
         {
-            throw new ArgumentNullException(nameof(debugTracer));
+            throw new ArgumentNullException(nameof(ILogger));
         }
 
         var body = new StringContent(bodyContent);

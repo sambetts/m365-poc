@@ -9,6 +9,7 @@ using SPO.ColdStorage.Models;
 using Microsoft.SharePoint.Client;
 using System.Collections.Concurrent;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 
 /// <summary>
@@ -32,15 +33,15 @@ public class SiteModelBuilder : BaseComponent, IDisposable
 
     public SiteModelBuilder(
         Config config,
-        DebugTracer debugTracer,
+        ILogger ILogger,
         TargetMigrationSite site,
-        IFileAnalyticsProvider? analyticsProvider = null) : base(config, debugTracer)
+        IFileAnalyticsProvider? analyticsProvider = null) : base(config, ILogger)
     {
         _site = site;
         _model = new SiteSnapshotModel();
 
         // Use provided adapter or create default Graph adapter
-        _analyticsProvider = analyticsProvider ?? new GraphFileAnalyticsAdapter(config, site.RootURL, debugTracer);
+        _analyticsProvider = analyticsProvider ?? new GraphFileAnalyticsAdapter(config, site.RootURL, ILogger);
 
         // Figure out what to analyse
         SiteListFilterConfig? siteFilterConfig = null;
@@ -52,7 +53,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             }
             catch (Exception ex)
             {
-                _tracer.TrackTrace($"Couldn't deserialise filter JSon for site '{site.RootURL}': {ex.Message}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                _tracer.LogWarning($"Couldn't deserialise filter JSon for site '{site.RootURL}': {ex.Message}");
             }
         }
 
@@ -102,7 +103,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             }
             catch (System.Net.WebException ex)
             {
-                _tracer.TrackTrace($"ERROR: '{ex.Message}' reading site {_site.RootURL}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+                _tracer.LogError($"ERROR: '{ex.Message}' reading site {_site.RootURL}");
                 return _model;
             }
 
@@ -118,7 +119,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             await crawler.StartSiteCrawl(_siteFilterConfig, (SharePointFileInfoWithList foundFile) => Crawler_SharePointFileFound(foundFile, batchSize, newFilesCallback),
                 () => CrawlComplete(newFilesCallback)).ConfigureAwait(false);
 
-            _tracer.TrackTrace($"STAGE 1/2: Finished crawling site files. Waiting for background update tasks to finish...");
+            _tracer.LogInformation($"STAGE 1/2: Finished crawling site files. Waiting for background update tasks to finish...");
             await Task.WhenAll(BackgroundMetaTasksAll).ConfigureAwait(false);
 
             var filesToGetAnalysisFor = true;
@@ -149,7 +150,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             _model.InvalidateCaches();
             _model.Finished = DateTime.Now;
             var ts = _model.Finished.Value.Subtract(_model.Started);
-            _tracer.TrackTrace($"STAGE 2/2: Finished getting metadata for site files. All done in {ts.TotalMinutes:N2} minutes.");
+            _tracer.LogInformation($"STAGE 2/2: Finished getting metadata for site files. All done in {ts.TotalMinutes:N2} minutes.");
         }
 
         return _model;

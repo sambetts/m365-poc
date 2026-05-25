@@ -3,6 +3,7 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Migration;
 /// <summary>
 /// Uploads files from local file-system to Azure blob
@@ -11,7 +12,7 @@ public class BlobStorageUploader : BaseComponent
 {
     private readonly BlobServiceClient _blobServiceClient;
     private BlobContainerClient? _containerClient;
-    public BlobStorageUploader(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+    public BlobStorageUploader(Config config, ILogger ILogger) : base(config, ILogger)
     {
         // Create BlobServiceClient with appropriate authentication based on connection string type
         _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
@@ -25,7 +26,7 @@ public class BlobStorageUploader : BaseComponent
             this._containerClient = _blobServiceClient.GetBlobContainerClient(_config.BlobContainerName);
         }
 
-        _tracer.TrackTrace($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+        _tracer.LogDebug($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...");
         using var fs = File.OpenRead(localTempFileName);
         var fileRef = _containerClient.GetBlobClient(msg.ServerRelativeFilePath);
         var fileExists = await fileRef.ExistsAsync();
@@ -47,8 +48,7 @@ public class BlobStorageUploader : BaseComponent
             if (!match)
                 await fileRef.UploadAsync(fs, true);
             else
-                _tracer.TrackTrace($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.",
-                    Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+                _tracer.LogDebug($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.");
         }
         else
             await _containerClient.UploadBlobAsync(msg.ServerRelativeFilePath, fs);

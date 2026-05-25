@@ -2,15 +2,16 @@ using Microsoft.Graph;
 using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine;
 /// <summary>
 /// Finds files in a SharePoint site collection
 /// </summary>
-public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConnector, DebugTracer tracer)
+public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConnector, ILogger tracer)
 {
     #region Constructors & Privates
 
-    private readonly DebugTracer _tracer = tracer;
+    private readonly ILogger _tracer = tracer;
     private readonly ISiteCollectionLoader<T> _crawlConnector = crawlConnector;
 
     #endregion
@@ -39,7 +40,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
             }
             else
             {
-                _tracer.TrackTrace($"Skipping list '{list.Title}'");
+                _tracer.LogError($"Skipping list '{list.Title}'");
             }
         }
     }
@@ -61,8 +62,8 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
             }
             catch (ServerException ex)
             {
-                _tracer.TrackTrace($"Error reading list '{parentList.Title}'", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
-                _tracer.TrackTrace(ex.Message, Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
+                _tracer.LogInformation($"Error reading list '{parentList.Title}'");
+                _tracer.LogError(ex.Message);
                 return listResultsAll;
             }
             token = listPage.NextPageToken;
@@ -83,7 +84,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
                     listResultsAll.IgnoredFiles++;
                 }
             }
-            _tracer.TrackTrace($"Loaded {listPage.FilesFound.Count:N0} files and {listPage.FoldersFound.Count:N0} folders from list '{parentList.Title}' on page {pageCount}...");
+            _tracer.LogInformation($"Loaded {listPage.FilesFound.Count:N0} files and {listPage.FoldersFound.Count:N0} folders from list '{parentList.Title}' on page {pageCount}...");
 
             allFolders.AddRange(listPage.FoldersFound);
 
@@ -91,7 +92,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
         }
         if (pageCount > 1)
         {
-            _tracer.TrackTrace($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count:N0} files in scope, " +
+            _tracer.LogInformation($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count:N0} files in scope, " +
                 $"{listResultsAll.IgnoredFiles:N0} files ignored, and {listResultsAll.FoldersFound.Count:N0} folders");
         }
 

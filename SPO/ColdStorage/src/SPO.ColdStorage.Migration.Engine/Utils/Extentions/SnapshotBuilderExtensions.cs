@@ -6,12 +6,13 @@ using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 
 public static class SnapshotBuilderExtensions
 {
     private static readonly SemaphoreSlim ss = new(1, 1);
-    public static async Task InsertFilesAsync(this List<SharePointFileInfoWithList> files, Config config, StagingFilesMigrator stagingFilesMigrator, DebugTracer tracer)
+    public static async Task InsertFilesAsync(this List<SharePointFileInfoWithList> files, Config config, StagingFilesMigrator stagingFilesMigrator, ILogger tracer)
     {
         await ss.WaitAsync();
 
@@ -39,7 +40,7 @@ public static class SnapshotBuilderExtensions
                         }
                         else
                         {
-                            tracer.TrackTrace($"Warning: found invalid file '{insertedFile.FullSharePointUrl}'. Ignoring", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                            tracer.LogWarning($"Warning: found invalid file '{insertedFile.FullSharePointUrl}'. Ignoring");
                         }
                     }
                     await db.StagingFiles.AddRangeAsync(stagingFiles);
@@ -54,8 +55,8 @@ public static class SnapshotBuilderExtensions
             }
             catch (SqlException ex)
             {
-                tracer.TrackException(ex);
-                tracer.TrackTrace($"Got fatal SQL error saving file info block to SQL: {ex.Message}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Critical);
+                tracer.LogError(ex, "Unhandled exception");
+                tracer.LogCritical($"Got fatal SQL error saving file info block to SQL: {ex.Message}");
             }
         }
         finally

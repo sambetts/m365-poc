@@ -12,6 +12,7 @@ using SPO.ColdStorage.Migration.Engine.Migration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine;
 /// <summary>
 /// Finds files to migrate in a SharePoint site-collection
@@ -24,10 +25,10 @@ public class SharePointContentIndexer : BaseComponent
     private BlobContainerClient? _containerClient;
     private readonly SharePointFileMigrator _sharePointFileMigrator;
 
-    public SharePointContentIndexer(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+    public SharePointContentIndexer(Config config, ILogger ILogger) : base(config, ILogger)
     {
         var sbConnectionProps = ServiceBusConnectionStringProperties.Parse(_config.ConnectionStrings.ServiceBus);
-        _tracer.TrackTrace($"Sending new SharePoint files to migrate to service-bus '{sbConnectionProps.Endpoint}'.");
+        _tracer.LogWarning($"Sending new SharePoint files to migrate to service-bus '{sbConnectionProps.Endpoint}'.");
 
         // Create BlobServiceClient with appropriate authentication based on connection string type
         _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
@@ -51,8 +52,7 @@ public class SharePointContentIndexer : BaseComponent
         {
             // 403: No permission to create container (assume it exists)
             // 409: Container already exists
-            _tracer.TrackTrace($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}",
-                Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+            _tracer.LogInformation($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}");
 
             // Verify we can at least access the container
             // Note: ExistsAsync also requires permissions, so handle 403 here too
@@ -67,14 +67,13 @@ public class SharePointContentIndexer : BaseComponent
             {
                 // Service principal lacks RBAC permissions to check container existence
                 // Assume container exists and log warning
-                _tracer.TrackTrace($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.",
-                    Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                _tracer.LogWarning($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.");
             }
         }
 
         using var db = new SPOColdStorageDbContext(this._config);
         var sitesToMigrate = await db.TargetSharePointSites.ToListAsync();
-        _tracer.TrackTrace($"Found {sitesToMigrate.Count} site-collections to migrate.");
+        _tracer.LogWarning($"Found {sitesToMigrate.Count} site-collections to migrate.");
         foreach (var s in sitesToMigrate)
         {
             SiteListFilterConfig? siteFilterConfig = null;
@@ -86,7 +85,7 @@ public class SharePointContentIndexer : BaseComponent
                 }
                 catch (Exception ex)
                 {
-                    _tracer.TrackTrace($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                    _tracer.LogInformation($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}");
                 }
             }
 
@@ -101,7 +100,7 @@ public class SharePointContentIndexer : BaseComponent
     {
         var ctx = await AuthUtils.GetClientContext(_config, siteUrl, _tracer, null);
 
-        _tracer.TrackTrace($"Scanning site-collection '{siteUrl}'...");
+        _tracer.LogInformation($"Scanning site-collection '{siteUrl}'...");
 
         var spConnector = new SPOSiteCollectionLoader(_config, siteUrl, _tracer);
 

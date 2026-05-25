@@ -3,14 +3,15 @@ using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
 
-public abstract class BaseSharePointConnector(SPOTokenManager tokenManager, DebugTracer tracer)
+public abstract class BaseSharePointConnector(SPOTokenManager tokenManager, ILogger tracer)
 {
     private readonly SPOTokenManager tokenManager = tokenManager;
-    private readonly DebugTracer tracer = tracer;
+    private readonly ILogger tracer = tracer;
 
-    public DebugTracer Tracer => tracer;
+    public ILogger Tracer => tracer;
     public SPOTokenManager TokenManager => tokenManager;
 }
 

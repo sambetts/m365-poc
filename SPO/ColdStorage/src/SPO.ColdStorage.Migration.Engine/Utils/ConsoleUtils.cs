@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using SPO.ColdStorage.Entities.Configuration;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
@@ -26,5 +27,29 @@ public class ConsoleUtils
     {
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
         Console.WriteLine($"Start-up: '{assembly?.FullName}'.");
+    }
+
+    /// <summary>
+    /// Creates an <see cref="ILoggerFactory"/> wired up with console logging and (when
+    /// available) Azure Monitor / Application Insights via OpenTelemetry. Use the
+    /// returned factory to obtain <see cref="ILogger{T}"/> instances for components.
+    /// </summary>
+    public static ILoggerFactory CreateLoggerFactory(Config config, string roleName)
+    {
+        return LoggerFactory.Create(builder =>
+        {
+            builder.AddSimpleConsole(options =>
+            {
+                options.SingleLine = false;
+                options.TimestampFormat = "HH:mm:ss ";
+                options.IncludeScopes = true;
+            });
+            builder.SetMinimumLevel(LogLevel.Information);
+
+            if (config.HaveAppInsightsConfigured)
+            {
+                builder.AddOpenTelemetryAzureMonitor(config.AppInsightsInstrumentationKey, roleName);
+            }
+        });
     }
 }
