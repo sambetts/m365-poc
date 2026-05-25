@@ -1,4 +1,4 @@
-﻿using Azure.Messaging.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using SPO.ColdStorage.Entities;
 using SPO.ColdStorage.Entities.Configuration;
@@ -7,178 +7,171 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 using System.Collections.Concurrent;
 
-namespace SPO.ColdStorage.Migration.Engine
-{
-    /// <summary>
-    /// Listens for new service bus messages for files to migrate to az blob
-    /// </summary>
-    public class ServiceBusMigrationListener : BaseComponent
-    {
-        private ServiceBusClient _sbClient;
-        private ServiceBusProcessor _receiver;
-        private ConcurrentBag<string> _ignoreDownloads = new();     // Files that are in progress of have errored
-        private object _lockObj = new object();
-        private int _filesProcessedFromQueue = 0;
-        const int REPORT_QUEUE_LENGTH_EVERY = 10;
+using Microsoft.Extensions.Logging;
+namespace SPO.ColdStorage.Migration.Engine;
 
-        public ServiceBusMigrationListener(Config config, DebugTracer debugTracer) : base(config, debugTracer)
+/// <summary>
+/// Listens for new service bus messages for files to migrate to az blob
+/// </summary>
+public class ServiceBusMigrationListener : BaseComponent
+{
+    private readonly ServiceBusClient _sbClient;
+    private readonly ServiceBusProcessor _receiver;
+    private readonly ConcurrentBag<string> _ignoreDownloads = [];     // Files that are in progress of have errored
+    private readonly object _lockObj = new();
+    private int _filesProcessedFromQueue = 0;
+    const int REPORT_QUEUE_LENGTH_EVERY = 10;
+
+    public ServiceBusMigrationListener(Config config, ILogger ILogger) : base(config, ILogger)
+    {
+        _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
+        _receiver = _sbClient.CreateProcessor(_config.ServiceBusQueueName, new ServiceBusProcessorOptions
         {
-            _sbClient = ServiceBusClientFactory.Create(_config.ConnectionStrings.ServiceBus, _config);
-            _receiver = _sbClient.CreateProcessor(_config.ServiceBusQueueName, new ServiceBusProcessorOptions
+            MaxConcurrentCalls = 10,
+            PrefetchCount = 0,
+            ReceiveMode = ServiceBusReceiveMode.PeekLock,
+            MaxAutoLockRenewalDuration = TimeSpan.FromHours(24),        // Queue should be configured for 5 minute lock timeout
+            AutoCompleteMessages = false                                // Messages are completed only when the migrator has succeeded to migrate the file
+        });
+    }
+
+    public async Task ListenForFilesToMigrate()
+    {
+        try
+        {
+            // Start an initial DB session to avoid threads configuring context
+            using (var db = new SPOColdStorageDbContext(_config))
             {
-                MaxConcurrentCalls = 10,
-                PrefetchCount = 0,
-                ReceiveMode = ServiceBusReceiveMode.PeekLock,
-                MaxAutoLockRenewalDuration = TimeSpan.FromHours(24),        // Queue should be configured for 5 minute lock timeout
-                AutoCompleteMessages = false                                // Messages are completed only when the migrator has succeeded to migrate the file
-            });
+                await db.TargetSharePointSites.CountAsync();
+            }
+
+            // Add handler to process messages
+            _receiver.ProcessMessageAsync += MessageHandler;
+
+            // Add handler to process any errors
+            _receiver.ProcessErrorAsync += ErrorHandler;
+
+            // Start processing SB messages
+            _tracer.LogError($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
+            await _receiver.StartProcessingAsync();
+
+            // Block infinitely
+            while (true)
+            {
+                await Task.Delay(1000);
+            }
+        }
+        finally
+        {
+            // Calling DisposeAsync on client types is required to ensure that network resources and other unmanaged objects are properly cleaned up.
+            await _receiver.DisposeAsync();
+            await _sbClient.DisposeAsync();
+        }
+    }
+
+    // Handle received SB messages
+    async Task MessageHandler(ProcessMessageEventArgs args)
+    {
+        string body = args.Message.Body.ToString();
+        var msg = System.Text.Json.JsonSerializer.Deserialize<BaseSharePointFileInfo>(body);
+        if (msg != null && msg.IsValidInfo)
+        {
+            _tracer.LogInformation($"Started migration for: {msg.ServerRelativeFilePath}");
+
+            // Message completed on success.
+            await StartFileMigrationAsync(msg, args);
+
+            lock (_lockObj)
+            {
+                _filesProcessedFromQueue++;
+                if (_filesProcessedFromQueue % REPORT_QUEUE_LENGTH_EVERY == 0)
+                {
+                    _tracer.LogInformation($"{_filesProcessedFromQueue} files processed...");
+                }
+            }
+        }
+        else
+        {
+            _tracer.LogInformation($"Received unrecognised message: '{body}'. Sending to dead-letter queue.");
+            await args.DeadLetterMessageAsync(args.Message);
+        }
+    }
+
+    // Handle any errors when receiving SB messages
+    Task ErrorHandler(ProcessErrorEventArgs args)
+    {
+        _tracer.LogError(args.Exception.Message);
+        _tracer.LogError(args.Exception, "Unhandled exception");
+        return Task.CompletedTask;
+    }
+
+    private async Task StartFileMigrationAsync(BaseSharePointFileInfo sharePointFileToMigrate, ProcessMessageEventArgs args)
+    {
+        string thisFileRef = sharePointFileToMigrate.FullSharePointUrl;
+        if (_ignoreDownloads.Contains(thisFileRef))
+        {
+            _tracer.LogWarning($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.");
+            return;
         }
 
-        public async Task ListenForFilesToMigrate()
+        _ignoreDownloads.Add(thisFileRef);
+
+        // Begin migration on common class
+        using var sharePointFileMigrator = new SharePointFileMigrator(_config, _tracer);
+        // Find/create SP context
+        var app = await AuthUtils.GetNewClientApp(_config);
+
+        long migratedFileSize = 0;
+        bool success = false;
+        try
         {
+            // Start migration
+            migratedFileSize = await sharePointFileMigrator.MigrateFromSharePointToBlobStorage(sharePointFileToMigrate, app);
+            success = true;
+        }
+        catch (Exception ex)
+        {
+            _tracer.LogError(ex, "Unhandled exception");
+            _tracer.LogError($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again");
+
+            await sharePointFileMigrator.SaveErrorForFileMigrationToSql(ex, sharePointFileToMigrate);
+#if DEBUG
+            throw;
+#endif
+        }
+        finally
+        {
+            // Import done/failed - remove from list of current imports
+            if (!_ignoreDownloads.TryTake(out thisFileRef!))
+            {
+                _tracer.LogWarning($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.");
+            }
+        }
+
+        if (success)
+        {
+            // Complete the message. messages is deleted from the queue. 
             try
             {
-                // Start an initial DB session to avoid threads configuring context
-                using (var db = new SPOColdStorageDbContext(_config))
-                {
-                    await db.TargetSharePointSites.CountAsync();
-                }
+                await args.CompleteMessageAsync(args.Message);
+                _tracer.LogInformation($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize:N0} bytes) migrated succesfully.");
 
-                // Add handler to process messages
-                _receiver.ProcessMessageAsync += MessageHandler;
-
-                // Add handler to process any errors
-                _receiver.ProcessErrorAsync += ErrorHandler;
-
-                // Start processing SB messages
-                _tracer.TrackTrace($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
-                await _receiver.StartProcessingAsync();
-
-                // Block infinitely
-                while (true)
-                {
-                    await Task.Delay(1000);
-                }
             }
-            finally
+            catch (ServiceBusException ex)
             {
-                // Calling DisposeAsync on client types is required to ensure that network resources and other unmanaged objects are properly cleaned up.
-                await _receiver.DisposeAsync();
-                await _sbClient.DisposeAsync();
-            }
-        }
-
-        // Handle received SB messages
-        async Task MessageHandler(ProcessMessageEventArgs args)
-        {
-            string body = args.Message.Body.ToString();
-            var msg = System.Text.Json.JsonSerializer.Deserialize<BaseSharePointFileInfo>(body);
-            if (msg != null && msg.IsValidInfo)
-            {
-                _tracer.TrackTrace($"Started migration for: {msg.ServerRelativeFilePath}");
-
-
-                // Message completed on success.
-                await StartFileMigrationAsync(msg, args);
-
-                lock (_lockObj)
-                {
-                    _filesProcessedFromQueue++;
-                    if (_filesProcessedFromQueue % REPORT_QUEUE_LENGTH_EVERY == 0)
-                    {
-                        _tracer.TrackTrace($"{_filesProcessedFromQueue} files processed...");
-                    }
-                }
-            }
-            else
-            {
-                _tracer.TrackTrace($"Received unrecognised message: '{body}'. Sending to dead-letter queue.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
-                await args.DeadLetterMessageAsync(args.Message);
-            }
-        }
-
-        // Handle any errors when receiving SB messages
-        Task ErrorHandler(ProcessErrorEventArgs args)
-        {
-            _tracer.TrackTrace(args.Exception.Message, Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
-            _tracer.TrackException(args.Exception);
-            return Task.CompletedTask;
-        }
-
-
-        private async Task StartFileMigrationAsync(BaseSharePointFileInfo sharePointFileToMigrate, ProcessMessageEventArgs args)
-        {
-            string thisFileRef = sharePointFileToMigrate.FullSharePointUrl;
-            if (_ignoreDownloads.Contains(thisFileRef))
-            {
-                _tracer.TrackTrace($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.",
-                    Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
-                return;
-            }
-
-            _ignoreDownloads.Add(thisFileRef);
-
-            // Begin migration on common class
-            using (var sharePointFileMigrator = new SharePointFileMigrator(_config, _tracer))
-            {
-                // Find/create SP context
-                var app = await AuthUtils.GetNewClientApp(_config);
-
-                long migratedFileSize = 0;
-                bool success = false;
-                try
-                {
-                    // Start migration
-                    migratedFileSize = await sharePointFileMigrator.MigrateFromSharePointToBlobStorage(sharePointFileToMigrate, app);
-                    success = true;
-                }
-                catch (Exception ex)
-                {
-                    _tracer.TrackException(ex);
-                    _tracer.TrackTrace($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again",
-                        Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error);
-
-                    await sharePointFileMigrator.SaveErrorForFileMigrationToSql(ex, sharePointFileToMigrate);
+                base._tracer.LogError(ex, "Unhandled exception");
+                base._tracer.LogInformation("Couldn't complete SB message: " + ex.Message);
 #if DEBUG
-                    throw;
+                throw;
 #endif
-                }
-                finally
-                {
-                    // Import done/failed - remove from list of current imports
-                    if (!_ignoreDownloads.TryTake(out thisFileRef!))
-                    {
-                        _tracer.TrackTrace($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.",
-                            Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
-                    }
-                }
-
-                if (success)
-                {
-                    // Complete the message. messages is deleted from the queue. 
-                    try
-                    {
-                        await args.CompleteMessageAsync(args.Message);
-                        _tracer.TrackTrace($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize.ToString("N0")} bytes) migrated succesfully.");
-
-                    }
-                    catch (ServiceBusException ex)
-                    {
-                        base._tracer.TrackException(ex);
-                        base._tracer.TrackTrace("Couldn't complete SB message: " + ex.Message);
-#if DEBUG
-                        throw;
-#endif
-                    }
-                    await sharePointFileMigrator.SaveSucessfulFileMigrationToSql(sharePointFileToMigrate);
-                }
-                else
-                {
-                    // Leave for processing later
-                    await args.AbandonMessageAsync(args.Message);
-                }
             }
+            await sharePointFileMigrator.SaveSucessfulFileMigrationToSql(sharePointFileToMigrate);
         }
-
+        else
+        {
+            // Leave for processing later
+            await args.AbandonMessageAsync(args.Message);
+        }
     }
+
 }

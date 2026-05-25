@@ -1,52 +1,48 @@
-﻿using Microsoft.SharePoint.Client;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Microsoft.SharePoint.Client;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace SPO.ColdStorage.Migration.Engine.Utils
+using Microsoft.Extensions.Logging;
+namespace SPO.ColdStorage.Migration.Engine.Utils;
+
+public static class SharePointUtils
 {
-    public static class SharePointUtils
+    /// <summary>
+    /// Save file & return new item GUID
+    /// </summary>
+    public static async Task<Guid> SaveFile(this List targetList, ClientContext ctx, string fileName, byte[] contents, ILogger ILogger)
     {
-        /// <summary>
-        /// Save file & return new item GUID
-        /// </summary>
-        public static async Task<Guid> SaveFile(this List targetList, ClientContext ctx, string fileName, byte[] contents, DebugTracer debugTracer)
+        var fileCreationInfo = new FileCreationInformation
         {
-            var fileCreationInfo = new FileCreationInformation
-            {
-                Content = contents,
-                Overwrite = true,
-                Url = fileName
-            };
-            var uploadFile = targetList.RootFolder.Files.Add(fileCreationInfo);
-            ctx.Load(uploadFile);
-            await ctx.ExecuteQueryAsyncWithThrottleRetries(debugTracer);
+            Content = contents,
+            Overwrite = true,
+            Url = fileName
+        };
+        var uploadFile = targetList.RootFolder.Files.Add(fileCreationInfo);
+        ctx.Load(uploadFile);
+        await ctx.ExecuteQueryAsyncWithThrottleRetries(ILogger);
 
-            return uploadFile.UniqueId;
-        }
+        return uploadFile.UniqueId;
+    }
 
-        /// <summary>
-        /// Fully load a document listitem
-        /// </summary>
-        public static async Task<ListItem> FullLoadListItemDoc(this ListItem targetItem, ClientContext ctx)
-        {
+    /// <summary>
+    /// Fully load a document listitem
+    /// </summary>
+    public static async Task<ListItem> FullLoadListItemDoc(this ListItem targetItem, ClientContext ctx)
+    {
 
-            ctx.Load(targetItem,
-                        item => item.Id,
-                        item => item.FileSystemObjectType,
-                        item => item["Modified"],
-                        item => item["Editor"],
-                        item => item.File.Exists,
-                        item => item.File.ServerRelativeUrl,
-                        item => item.File.VroomItemID,
-                        item => item.File.VroomDriveID
-                        );
+        ctx.Load(targetItem,
+                    item => item.Id,
+                    item => item.FileSystemObjectType,
+                    item => item["Modified"],
+                    item => item["Editor"],
+                    item => item.File.Exists,
+                    item => item.File.ServerRelativeUrl,
+                    item => item.File.VroomItemID,
+                    item => item.File.VroomDriveID
+                    );
 
-            await ctx.ExecuteQueryAsync();
+        await ctx.ExecuteQueryAsync();
 
-            return targetItem;
-        }
+        return targetItem;
     }
 }

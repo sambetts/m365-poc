@@ -1,43 +1,39 @@
-﻿using Microsoft.Identity.Client;
+using Microsoft.Identity.Client;
 using SPO.ColdStorage.Entities.Configuration;
 using System.Net.Http.Headers;
 
-namespace SPO.ColdStorage.Migration.Engine.Utils.Http
+using Microsoft.Extensions.Logging;
+namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
+/// <summary>
+/// HttpClient that can handle HTTP 429s automatically
+/// </summary>
+public class SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, ILogger ILogger) : AutoThrottleHttpClient(ignoreRetryHeader, ILogger, new SecureSPHandler(config))
 {
-    /// <summary>
-    /// HttpClient that can handle HTTP 429s automatically
-    /// </summary>
-    public class SecureSPThrottledHttpClient : AutoThrottleHttpClient
+}
+
+public class SecureSPHandler : DelegatingHandler
+{
+    protected Config _config;
+    private AuthenticationResult? auth = null;
+    public SecureSPHandler(Config config)
     {
-        public SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, DebugTracer debugTracer) : base(ignoreRetryHeader, debugTracer, new SecureSPHandler(config))
-        {
-        }
+        _config = config;
+        InnerHandler = new HttpClientHandler();
     }
 
-    public class SecureSPHandler : DelegatingHandler
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        protected Config _config;
-        private AuthenticationResult? auth = null;
-        public SecureSPHandler(Config config)
+
+        // Get auth for REST
+        var app = await AuthUtils.GetNewClientApp(_config);
+
+        if (auth == null || auth.ExpiresOn < DateTimeOffset.Now.AddMinutes(5))
         {
-            _config = config;
-            InnerHandler = new HttpClientHandler();
+            auth = await app.AuthForSharePointOnline(_config.BaseServerAddress);
         }
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-
-            // Get auth for REST
-            var app = await AuthUtils.GetNewClientApp(_config);
-
-            if (auth == null || auth.ExpiresOn < DateTimeOffset.Now.AddMinutes(5))
-            {
-                auth = await app.AuthForSharePointOnline(_config.BaseServerAddress);
-            }
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
-
-            return await base.SendAsync(request, cancellationToken);
-        }
-
+        return await base.SendAsync(request, cancellationToken);
     }
+
 }

@@ -7,6 +7,7 @@ using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
 
+using Microsoft.Extensions.Logging;
 namespace SPO.ColdStorage.Migration.Engine.Adapters;
 
 /// <summary>
@@ -18,18 +19,18 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
     private readonly Config _config;
     private readonly string _siteUrl;
     private readonly SecureSPThrottledHttpClient _httpClient;
-    private readonly DebugTracer _tracer;
+    private readonly ILogger _tracer;
     private readonly SPOColdStorageDbContext _db;
 
     public GraphFileAnalyticsAdapter(
         Config config,
         string siteUrl,
-        DebugTracer tracer)
+        ILogger tracer)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _siteUrl = siteUrl ?? throw new ArgumentNullException(nameof(siteUrl));
         _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
-        
+
         _httpClient = new SecureSPThrottledHttpClient(_config, true, _tracer);
         _db = new SPOColdStorageDbContext(_config);
     }
@@ -80,7 +81,7 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
             var cutoffDate = DateTime.Now.AddHours(-skipHours);
             if (existingFile.AnalysisCompleted.Value > cutoffDate)
             {
-                _tracer.TrackTrace($"Skipping analysis for {fileInfo.ServerRelativeFilePath} - already analyzed at {existingFile.AnalysisCompleted.Value}");
+                _tracer.LogInformation($"Skipping analysis for {fileInfo.ServerRelativeFilePath} - already analyzed at {existingFile.AnalysisCompleted.Value}");
                 return true;
             }
         }

@@ -1,12 +1,7 @@
-﻿namespace SPO.ColdStorage.Entities.Configuration
-{
-    public class DevConfig : BaseConfig
-    {
-        public DevConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : base(config)
-        {
-        }
+namespace SPO.ColdStorage.Entities.Configuration;
 
-        [ConfigValue(true)]
-        public string DefaultSharePointSite { get; set; } = string.Empty;
-    }
+public class DevConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : BaseConfig(config)
+{
+    [ConfigValue(true)]
+    public string DefaultSharePointSite { get; set; } = string.Empty;
 }

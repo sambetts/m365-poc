@@ -1,37 +1,31 @@
-﻿using Microsoft.SharePoint.Client;
+using Microsoft.SharePoint.Client;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
-namespace SPO.ColdStorage.Migration.Engine.Connectors
+using Microsoft.Extensions.Logging;
+namespace SPO.ColdStorage.Migration.Engine.Connectors;
+
+public class SPOSiteCollectionLoader(Config config, string siteUrl, ILogger tracer) : BaseSharePointConnector(new SPOTokenManager(config, siteUrl, tracer), tracer), ISiteCollectionLoader<ListItemCollectionPosition>
 {
-    public class SPOSiteCollectionLoader : BaseSharePointConnector, ISiteCollectionLoader<ListItemCollectionPosition>
+    public async Task<List<IWebLoader<ListItemCollectionPosition>>> GetWebs()
     {
-        public SPOSiteCollectionLoader(Config config, string siteUrl, DebugTracer tracer) : base(new SPOTokenManager(config, siteUrl, tracer), tracer)
+        var webs = new List<IWebLoader<ListItemCollectionPosition>>();
+
+        var spClient = await TokenManager.GetOrRefreshContext();
+        var rootWeb = spClient.Web;
+        await TokenManager.EnsureContextWebIsLoaded(spClient);
+        spClient.Load(rootWeb.Webs);
+        await spClient.ExecuteQueryAsyncWithThrottleRetries(Tracer);
+
+        webs.Add(new SPOWebLoader(spClient.Web, spClient, this));
+
+        foreach (var subSweb in rootWeb.Webs)
         {
+            webs.Add(new SPOWebLoader(subSweb, spClient, this));
         }
 
-        public async Task<List<IWebLoader<ListItemCollectionPosition>>> GetWebs()
-        {
-            var webs = new List<IWebLoader<ListItemCollectionPosition>>();
-
-            var spClient = await TokenManager.GetOrRefreshContext();
-            var rootWeb = spClient.Web;
-            await TokenManager.EnsureContextWebIsLoaded(spClient);
-            spClient.Load(rootWeb.Webs);
-            await spClient.ExecuteQueryAsyncWithThrottleRetries(Tracer);
-
-            webs.Add(new SPOWebLoader(spClient.Web, spClient, this));
-
-            foreach (var subSweb in rootWeb.Webs)
-            {
-                webs.Add(new SPOWebLoader(subSweb, spClient, this));
-            }
-
-            return webs;
-        }
+        return webs;
     }
-
-
-
 }
+

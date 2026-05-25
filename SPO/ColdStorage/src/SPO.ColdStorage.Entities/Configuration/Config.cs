@@ -1,49 +1,39 @@
-﻿namespace SPO.ColdStorage.Entities.Configuration
+namespace SPO.ColdStorage.Entities.Configuration;
+
+public class Config(Microsoft.Extensions.Configuration.IConfiguration config) : BaseConfig(config)
 {
+    [ConfigValue]
+    public string BaseServerAddress { get; set; } = string.Empty;
 
-    public class Config : BaseConfig
-    {
-        public Config(Microsoft.Extensions.Configuration.IConfiguration config) : base(config)
-        {
-        }
+    public string ServiceBusQueueName => "filediscovery";
 
+    [ConfigValue]
+    public string KeyVaultUrl { get; set; } = string.Empty;
 
-        [ConfigValue]
-        public string BaseServerAddress { get; set; } = string.Empty;
+    [ConfigValue]
+    public string BlobContainerName { get; set; } = string.Empty;
 
-        public string ServiceBusQueueName => "filediscovery";
+    [ConfigValue(true)]
+    public string AppInsightsInstrumentationKey { get; set; } = string.Empty;
 
-        [ConfigValue]
-        public string KeyVaultUrl { get; set; } = string.Empty;
+    public bool HaveAppInsightsConfigured => !string.IsNullOrEmpty(AppInsightsInstrumentationKey);
 
+    [ConfigValue(true)]
+    public int AnalysisSkipHours { get; set; } = 24;
 
-        [ConfigValue]
-        public string BlobContainerName { get; set; } = string.Empty;
+    [ConfigSection("AzureAd")]
+    public AzureAdConfig AzureAdConfig { get; set; } = null!;
 
-        [ConfigValue(true)]
-        public string AppInsightsInstrumentationKey { get; set; } = string.Empty;
+    [ConfigSection("ConnectionStrings")]
+    public ConnectionStrings ConnectionStrings { get; set; } = null!;
 
-        public bool HaveAppInsightsConfigured => !string.IsNullOrEmpty(AppInsightsInstrumentationKey);
+    [ConfigSection("Dev")]
+    public DevConfig DevConfig { get; set; } = null!;
 
-        [ConfigValue(true)]
-        public int AnalysisSkipHours { get; set; } = 24;
+    [ConfigSection("Search")]
+    public SearchConfig SearchConfig { get; set; } = null!;
+}
 
-        [ConfigSection("AzureAd")]
-        public AzureAdConfig AzureAdConfig { get; set; } = null!;
-
-        [ConfigSection("ConnectionStrings")]
-        public ConnectionStrings ConnectionStrings { get; set; } = null!;
-
-        [ConfigSection("Dev")]
-        public DevConfig DevConfig { get; set; } = null!;
-
-
-        [ConfigSection("Search")]
-        public SearchConfig SearchConfig { get; set; } = null!;
-    }
-
-    public class ConfigException : Exception
-    {
-        public ConfigException(string message) : base(message) { }
-    }
+public class ConfigException(string message) : Exception(message)
+{
 }

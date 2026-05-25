@@ -16,7 +16,7 @@ public interface IFileAnalyticsProvider
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Background update with analytics results</returns>
     Task<BackgroundUpdate> GetFileAnalyticsAsync(
-        IReadOnlyList<DocumentSiteWithMetadata> files, 
+        IReadOnlyList<DocumentSiteWithMetadata> files,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -26,7 +26,7 @@ public interface IFileAnalyticsProvider
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Background update with version history results</returns>
     Task<BackgroundUpdate> GetFileVersionHistoryAsync(
-        IReadOnlyList<DocumentSiteWithMetadata> files, 
+        IReadOnlyList<DocumentSiteWithMetadata> files,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -37,7 +37,7 @@ public interface IFileAnalyticsProvider
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if file should be skipped</returns>
     Task<bool> ShouldSkipFileAnalysisAsync(
-        DriveItemSharePointFileInfo fileInfo, 
+        DriveItemSharePointFileInfo fileInfo,
         int skipHours,
         CancellationToken cancellationToken = default);
 }

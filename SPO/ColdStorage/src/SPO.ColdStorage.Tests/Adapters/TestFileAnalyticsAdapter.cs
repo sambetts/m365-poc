@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using SPO.ColdStorage.Migration.Engine.Adapters;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
 using SPO.ColdStorage.Models;
@@ -118,11 +114,11 @@ public class TestFileAnalyticsAdapter : IFileAnalyticsProvider
                 // Default single version
                 var defaultVersion = new DriveItemVersionInfo
                 {
-                    Versions = 
+                    Versions =
                     [
-                        new DriveItemVersion 
-                        { 
-                            Id = "1.0", 
+                        new DriveItemVersion
+                        {
+                            Id = "1.0",
                             LastModifiedDateTime = DateTime.UtcNow,
                             Size = 1024
                         }

@@ -1,90 +1,86 @@
-using FluentAssertions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SPO.ColdStorage.Entities;
+using AwesomeAssertions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 using SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
-using SPO.ColdStorage.Migration.Engine.Tests.Adapters;
 using SPO.ColdStorage.Models;
+using SPO.ColdStorage.Migration.Engine.Tests.Adapters;
+using Xunit;
 
 namespace SPO.ColdStorage.Migration.Engine.Tests.SnapshotBuilder;
 
-[TestClass]
 public class SiteModelBuilderTests
 {
-    private Moq.Mock<Microsoft.Extensions.Configuration.IConfiguration> _mockConfig = null!;
-    private Config _config = null!;
-    private DebugTracer _tracer = null!;
-    private TargetMigrationSite _testSite = null!;
-    private TestFileAnalyticsAdapter _testAdapter = null!;
+    private const string LiveSkipReason = "Requires live SharePoint and Azure connections";
 
-    [TestInitialize]
-    public void TestInitialize()
+    private readonly IConfiguration _mockConfig;
+    private readonly Config _config;
+    private readonly ILogger _tracer = NullLogger.Instance;
+    private readonly TargetMigrationSite _testSite;
+    private readonly TestFileAnalyticsAdapter _testAdapter;
+
+    public SiteModelBuilderTests()
     {
-        _mockConfig = new Moq.Mock<Microsoft.Extensions.Configuration.IConfiguration>();
-        
-        // Mock AzureAd section
-        var mockAzureAdSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
-        mockAzureAdSection.Setup(s => s["Instance"]).Returns("https://login.microsoftonline.com/");
-        mockAzureAdSection.Setup(s => s["Domain"]).Returns("test.onmicrosoft.com");
-        mockAzureAdSection.Setup(s => s["TenantId"]).Returns("test-tenant-id");
-        mockAzureAdSection.Setup(s => s["ClientId"]).Returns("test-client-id");
-        mockAzureAdSection.Setup(s => s["ClientID"]).Returns("test-client-id");  // Case-sensitive duplicate
-        mockAzureAdSection.Setup(s => s["CallbackPath"]).Returns("/signin-oidc");
-        mockAzureAdSection.Setup(s => s["Secret"]).Returns("test-secret");
-        _mockConfig.Setup(c => c.GetSection("AzureAd")).Returns(mockAzureAdSection.Object);
-        
-        // Mock ConnectionStrings section
-        var mockConnectionStringsSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
-        mockConnectionStringsSection.Setup(s => s["ServiceBus"]).Returns("Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test;EntityPath=test");
-        mockConnectionStringsSection.Setup(s => s["Storage"]).Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test;EndpointSuffix=core.windows.net");
-        mockConnectionStringsSection.Setup(s => s["SQLConnectionString"]).Returns("Server=localhost;Database=TestDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
-        _mockConfig.Setup(c => c.GetSection("ConnectionStrings")).Returns(mockConnectionStringsSection.Object);
-        
-        // Mock Dev section
-        var mockDevSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
-        mockDevSection.Setup(s => s["SearchServiceEndPoint"]).Returns("https://test.search.windows.net");
-        mockDevSection.Setup(s => s["SearchServiceAdminApiKey"]).Returns("test-admin-key");
-        mockDevSection.Setup(s => s["SearchServiceQueryApiKey"]).Returns("test-query-key");
-        _mockConfig.Setup(c => c.GetSection("Dev")).Returns(mockDevSection.Object);
-        
-        // Mock Search section (reusing Dev section values)
-        var mockSearchSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
-        mockSearchSection.Setup(s => s["SearchServiceEndPoint"]).Returns("https://test.search.windows.net");
-        mockSearchSection.Setup(s => s["SearchServiceAdminApiKey"]).Returns("test-admin-key");
-        mockSearchSection.Setup(s => s["SearchServiceQueryApiKey"]).Returns("test-query-key");
-        _mockConfig.Setup(c => c.GetSection("Search")).Returns(mockSearchSection.Object);
-        
-        _mockConfig.Setup(c => c["AnalysisSkipHours"]).Returns("24");
-        _mockConfig.Setup(c => c["SPOTenantName"]).Returns("test");
-        _mockConfig.Setup(c => c["SPOClientId"]).Returns("test-client-id");
-        _mockConfig.Setup(c => c["SPOUserName"]).Returns("test@test.com");
-        _mockConfig.Setup(c => c["BaseServerAddress"]).Returns("https://test.com");
-        _mockConfig.Setup(c => c["DBConnectionString"]).Returns("Server=test;Database=test");
-        _mockConfig.Setup(c => c["InstrumentationKey"]).Returns("test-key");
-        _mockConfig.Setup(c => c["KeyVaultUrl"]).Returns("https://test.vault.azure.net");
-        _mockConfig.Setup(c => c["StorageConnectionString"]).Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test");
-        _mockConfig.Setup(c => c["BlobContainerName"]).Returns("test-container");
-        
-        _config = new Config(_mockConfig.Object);
-        _tracer = new DebugTracer(null, "test");
+        _mockConfig = Substitute.For<IConfiguration>();
+
+        // AzureAd section
+        var azureAdSection = Substitute.For<IConfigurationSection>();
+        azureAdSection["Instance"].Returns("https://login.microsoftonline.com/");
+        azureAdSection["Domain"].Returns("test.onmicrosoft.com");
+        azureAdSection["TenantId"].Returns("test-tenant-id");
+        azureAdSection["ClientId"].Returns("test-client-id");
+        azureAdSection["ClientID"].Returns("test-client-id");  // Case-sensitive duplicate
+        azureAdSection["CallbackPath"].Returns("/signin-oidc");
+        azureAdSection["Secret"].Returns("test-secret");
+        _mockConfig.GetSection("AzureAd").Returns(azureAdSection);
+
+        // ConnectionStrings section
+        var connectionStringsSection = Substitute.For<IConfigurationSection>();
+        connectionStringsSection["ServiceBus"].Returns("Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test;EntityPath=test");
+        connectionStringsSection["Storage"].Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test;EndpointSuffix=core.windows.net");
+        connectionStringsSection["SQLConnectionString"].Returns("Server=localhost;Database=TestDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
+        _mockConfig.GetSection("ConnectionStrings").Returns(connectionStringsSection);
+
+        // Dev section
+        var devSection = Substitute.For<IConfigurationSection>();
+        devSection["SearchServiceEndPoint"].Returns("https://test.search.windows.net");
+        devSection["SearchServiceAdminApiKey"].Returns("test-admin-key");
+        devSection["SearchServiceQueryApiKey"].Returns("test-query-key");
+        _mockConfig.GetSection("Dev").Returns(devSection);
+
+        // Search section (reusing Dev section values)
+        var searchSection = Substitute.For<IConfigurationSection>();
+        searchSection["SearchServiceEndPoint"].Returns("https://test.search.windows.net");
+        searchSection["SearchServiceAdminApiKey"].Returns("test-admin-key");
+        searchSection["SearchServiceQueryApiKey"].Returns("test-query-key");
+        _mockConfig.GetSection("Search").Returns(searchSection);
+
+        _mockConfig["AnalysisSkipHours"].Returns("24");
+        _mockConfig["SPOTenantName"].Returns("test");
+        _mockConfig["SPOClientId"].Returns("test-client-id");
+        _mockConfig["SPOUserName"].Returns("test@test.com");
+        _mockConfig["BaseServerAddress"].Returns("https://test.com");
+        _mockConfig["DBConnectionString"].Returns("Server=test;Database=test");
+        _mockConfig["InstrumentationKey"].Returns("test-key");
+        _mockConfig["KeyVaultUrl"].Returns("https://test.vault.azure.net");
+        _mockConfig["StorageConnectionString"].Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test");
+        _mockConfig["BlobContainerName"].Returns("test-container");
+
+        _config = new Config(_mockConfig);
 
         _testSite = new TargetMigrationSite
         {
             RootURL = "https://test.sharepoint.com/sites/testsite",
-            FilterConfigJson = null
+            FilterConfigJson = string.Empty
         };
 
         _testAdapter = new TestFileAnalyticsAdapter();
     }
 
-    [TestCleanup]
-    public void TestCleanup()
-    {
-        // Cleanup if needed
-    }
-
-    [TestMethod]
+    [Fact]
     public void Constructor_WithValidParameters_CreatesInstance()
     {
         // Arrange & Act
@@ -94,7 +90,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithNullAdapter_CreatesDefaultGraphAdapter()
     {
         // Arrange & Act
@@ -104,7 +100,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_WithoutCallback_ReturnsModel()
     {
         // Arrange
@@ -118,7 +114,7 @@ public class SiteModelBuilderTests
         result.AllFiles.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Build_WithInvalidBatchSize_ThrowsArgumentOutOfRangeException()
     {
         // Arrange
@@ -131,7 +127,7 @@ public class SiteModelBuilderTests
         act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
 
-    [TestMethod]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_WithTestAdapter_CallsAdapterMethods()
     {
         // Arrange
@@ -147,7 +143,7 @@ public class SiteModelBuilderTests
 
         _testAdapter.SetVersionData("test-item-1", new DriveItemVersionInfo
         {
-            Versions = 
+            Versions =
             [
                 new DriveItemVersion { Id = "1.0", Size = 1024 },
                 new DriveItemVersion { Id = "2.0", Size = 2048 }
@@ -163,7 +159,7 @@ public class SiteModelBuilderTests
         // This test validates the builder can be constructed with test adapter
     }
 
-    [TestMethod]
+    [Fact]
     public void BackgroundMetaTasksAll_ReturnsEnumerable()
     {
         // Arrange
@@ -177,10 +173,10 @@ public class SiteModelBuilderTests
         tasks.Should().BeAssignableTo<IEnumerable<Task<BackgroundUpdate>>>();
     }
 
-    [DataTestMethod]
-    [DataRow(10)]
-    [DataRow(50)]
-    [DataRow(100)]
+    [Theory(Skip = LiveSkipReason)]
+    [InlineData(10)]
+    [InlineData(50)]
+    [InlineData(100)]
     public async Task Build_WithDifferentBatchSizes_Succeeds(int batchSize)
     {
         // Arrange
@@ -193,7 +189,7 @@ public class SiteModelBuilderTests
         result.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
@@ -211,7 +207,7 @@ public class SiteModelBuilderTests
         act.Should().NotThrow();
     }
 
-    [TestMethod]
+    [Fact(Skip = LiveSkipReason)]
     public async Task Build_CalledMultipleTimes_ReturnsSameModel()
     {
         // Arrange
@@ -225,7 +221,7 @@ public class SiteModelBuilderTests
         result1.Should().BeSameAs(result2);
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithFilterConfigJson_ParsesConfiguration()
     {
         // Arrange
@@ -242,7 +238,7 @@ public class SiteModelBuilderTests
         builder.Should().NotBeNull();
     }
 
-    [TestMethod]
+    [Fact]
     public void Constructor_WithInvalidFilterConfigJson_UsesDefaultConfig()
     {
         // Arrange

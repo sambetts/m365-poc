@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
+namespace SPO.ColdStorage.Web.Models;
 
-namespace SPO.ColdStorage.Web.Models
+public class MigrationsConfig
 {
-    public class MigrationsConfig
-    {
-        public List<string> TargetSites { get; set; } = new();
-    }
+    public List<string> TargetSites { get; set; } = [];
 }

@@ -1,9 +1,8 @@
-﻿namespace SPO.ColdStorage.Migration.Engine.Utils
+namespace SPO.ColdStorage.Migration.Engine.Utils;
+
+internal class ConfigurationWithDefaultBuilder
 {
-    internal class ConfigurationWithDefaultBuilder
+    public ConfigurationWithDefaultBuilder()
     {
-        public ConfigurationWithDefaultBuilder()
-        {
-        }
     }
 }
