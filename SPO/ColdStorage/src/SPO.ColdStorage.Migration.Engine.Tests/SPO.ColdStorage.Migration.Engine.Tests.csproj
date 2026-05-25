@@ -9,7 +9,11 @@
 	<PackageReference Include="Microsoft.NET.Test.Sdk" />
 	<PackageReference Include="MSTest.TestAdapter" />
 	<PackageReference Include="MSTest.TestFramework" />
-	<PackageReference Include="Moq" />
+	<PackageReference Include="NSubstitute" />
+	<PackageReference Include="NSubstitute.Analyzers.CSharp">
+	  <PrivateAssets>all</PrivateAssets>
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
 	<!-- FluentAssertions kept at 7.2.2: v8.0+ moved to a commercial license (Xceed). -->
 	<PackageReference Include="FluentAssertions" />
   </ItemGroup>
