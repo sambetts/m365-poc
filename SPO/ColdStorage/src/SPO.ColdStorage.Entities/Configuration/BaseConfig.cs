@@ -1,6 +1,7 @@
 using System.Reflection;
 
 namespace SPO.ColdStorage.Entities.Configuration;
+
 public abstract class BaseConfig
 {
     /// <summary>
@@ -55,11 +56,8 @@ public abstract class BaseConfig
     }
 }
 
-public class ConfigurationMissingException: Exception
+public class ConfigurationMissingException(string propertyName) : Exception($"Missing required configuration value '{propertyName}'")
 {
-    public ConfigurationMissingException(string propertyName) : base($"Missing required configuration value '{propertyName}'")
-    { 
-    }
 }
 
 /// <summary>
@@ -68,7 +66,7 @@ public class ConfigurationMissingException: Exception
 public class ConfigValueAttribute : Attribute
 {
     public ConfigValueAttribute() { }
-    public ConfigValueAttribute(bool optional) 
+    public ConfigValueAttribute(bool optional)
     {
         this.Optional = optional;
     }
@@ -78,11 +76,7 @@ public class ConfigValueAttribute : Attribute
 /// <summary>
 /// Property has a sub-section
 /// </summary>
-public class ConfigSectionAttribute: Attribute
+public class ConfigSectionAttribute(string sectionName) : Attribute
 {
-    public ConfigSectionAttribute(string sectionName)
-    { 
-        SectionName = sectionName;
-    }
-    public string SectionName { get; set; } = string.Empty;
+    public string SectionName { get; set; } = sectionName;
 }

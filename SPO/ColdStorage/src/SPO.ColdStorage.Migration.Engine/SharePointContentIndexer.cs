@@ -20,9 +20,9 @@ public class SharePointContentIndexer : BaseComponent
 {
     #region Constructors & Privates
 
-    private BlobServiceClient _blobServiceClient;
+    private readonly BlobServiceClient _blobServiceClient;
     private BlobContainerClient? _containerClient;
-    private SharePointFileMigrator _sharePointFileMigrator;
+    private readonly SharePointFileMigrator _sharePointFileMigrator;
 
     public SharePointContentIndexer(Config config, DebugTracer debugTracer) : base(config, debugTracer)
     {
@@ -51,9 +51,9 @@ public class SharePointContentIndexer : BaseComponent
         {
             // 403: No permission to create container (assume it exists)
             // 409: Container already exists
-            _tracer.TrackTrace($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}", 
+            _tracer.TrackTrace($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}",
                 Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
-                
+
             // Verify we can at least access the container
             // Note: ExistsAsync also requires permissions, so handle 403 here too
             try
@@ -67,36 +67,33 @@ public class SharePointContentIndexer : BaseComponent
             {
                 // Service principal lacks RBAC permissions to check container existence
                 // Assume container exists and log warning
-                _tracer.TrackTrace($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.", 
+                _tracer.TrackTrace($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.",
                     Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
             }
         }
 
-        using (var db = new SPOColdStorageDbContext(this._config))
+        using var db = new SPOColdStorageDbContext(this._config);
+        var sitesToMigrate = await db.TargetSharePointSites.ToListAsync();
+        _tracer.TrackTrace($"Found {sitesToMigrate.Count} site-collections to migrate.");
+        foreach (var s in sitesToMigrate)
         {
-            var sitesToMigrate = await db.TargetSharePointSites.ToListAsync();
-            _tracer.TrackTrace($"Found {sitesToMigrate.Count} site-collections to migrate.");
-            foreach (var s in sitesToMigrate)
+            SiteListFilterConfig? siteFilterConfig = null;
+            if (!string.IsNullOrEmpty(s.FilterConfigJson))
             {
-                SiteListFilterConfig? siteFilterConfig = null;
-                if (!string.IsNullOrEmpty(s.FilterConfigJson))
+                try
                 {
-                    try
-                    {
-                        siteFilterConfig = SiteListFilterConfig.FromJson(s.FilterConfigJson);
-                    }
-                    catch (Exception ex)
-                    {
-                        _tracer.TrackTrace($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
-                    }
+                    siteFilterConfig = SiteListFilterConfig.FromJson(s.FilterConfigJson);
                 }
-                    
-                // Instantiate "allow all" config if none can be found in the DB
-                if (siteFilterConfig == null)
-                    siteFilterConfig = new SiteListFilterConfig();
-
-                await StartSiteMigration(s.RootURL, siteFilterConfig);
+                catch (Exception ex)
+                {
+                    _tracer.TrackTrace($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning);
+                }
             }
+
+            // Instantiate "allow all" config if none can be found in the DB
+            siteFilterConfig ??= new SiteListFilterConfig();
+
+            await StartSiteMigration(s.RootURL, siteFilterConfig);
         }
     }
 

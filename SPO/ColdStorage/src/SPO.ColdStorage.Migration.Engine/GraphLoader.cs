@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine;
+
 public static class GraphLoader
 {
     public static async Task<List<P>> LoadGraphPageable<T, P>(this AutoThrottleHttpClient httpClient, string url, DebugTracer debugTracer) where T : GraphPageableResponse<P> where P : BaseGraphObject

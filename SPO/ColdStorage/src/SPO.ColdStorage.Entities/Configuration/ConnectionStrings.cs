@@ -5,12 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Entities.Configuration;
-public class ConnectionStrings : BaseConfig
-{
-    public ConnectionStrings(Microsoft.Extensions.Configuration.IConfigurationSection config) : base(config)
-    {
-    }
 
+public class ConnectionStrings(Microsoft.Extensions.Configuration.IConfigurationSection config) : BaseConfig(config)
+{
     [ConfigValue]
     public string Storage { get; set; } = string.Empty;
 

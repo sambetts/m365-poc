@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
+
 public static class SharePointUtils
 {
     /// <summary>

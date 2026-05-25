@@ -118,11 +118,11 @@ public class TestFileAnalyticsAdapter : IFileAnalyticsProvider
                 // Default single version
                 var defaultVersion = new DriveItemVersionInfo
                 {
-                    Versions = 
+                    Versions =
                     [
-                        new DriveItemVersion 
-                        { 
-                            Id = "1.0", 
+                        new DriveItemVersion
+                        {
+                            Id = "1.0",
                             LastModifiedDateTime = DateTime.UtcNow,
                             Size = 1024
                         }

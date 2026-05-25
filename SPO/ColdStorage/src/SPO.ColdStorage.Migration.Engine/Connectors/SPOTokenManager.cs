@@ -4,20 +4,15 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
-public class SPOTokenManager
+
+public class SPOTokenManager(Config config, string siteUrl, DebugTracer tracer)
 {
-    private readonly Config _config;
-    private readonly string _siteUrl;
-    private readonly DebugTracer _tracer;
+    private readonly Config _config = config;
+    private readonly string _siteUrl = siteUrl;
+    private readonly DebugTracer _tracer = tracer;
     private AuthenticationResult? _contextAuthResult = null;
     protected ClientContext? _context = null;
 
-    public SPOTokenManager(Config config, string siteUrl, DebugTracer tracer)
-    {
-        _config = config;
-        _siteUrl = siteUrl;
-        _tracer = tracer;
-    }
     public async Task<ClientContext> GetOrRefreshContext()
     {
         return await GetOrRefreshContext(null)!;

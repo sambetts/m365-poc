@@ -51,7 +51,7 @@ public class DebugTracer
     {
         if (severityLevel != Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose)
         {
-            Console.WriteLine($"[{DateTime.Now.ToString("G")}] {sayWut}");
+            Console.WriteLine($"[{DateTime.Now:G}] {sayWut}");
         }
 
         if (AppInsights != null)

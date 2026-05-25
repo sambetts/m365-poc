@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 
 namespace SPO.ColdStorage.Tests;
+
 [Route("api/[controller]")]
 public class ValuesController : Controller
 {

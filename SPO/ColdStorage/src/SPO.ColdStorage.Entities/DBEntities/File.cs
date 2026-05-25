@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SPO.ColdStorage.Entities.DBEntities;
+
 [Table("files")]
 public class SPFile : BaseDBObjectWithUrl
 {

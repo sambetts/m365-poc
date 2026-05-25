@@ -5,12 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Entities.Configuration;
-public class AzureAdConfig : BaseConfig
-{
-    public AzureAdConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : base(config)
-    {
-    }
 
+public class AzureAdConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : BaseConfig(config)
+{
     [ConfigValue]
     public string? Secret { get; set; } = string.Empty;
 

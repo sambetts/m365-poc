@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
+
 public interface ISiteCollectionLoader<T>
 {
     public Task<List<IWebLoader<T>>> GetWebs();
@@ -26,14 +27,14 @@ public interface IListLoader<T>
 
 public class PageResponse<T> : BaseSiteCrawlContents
 {
-    public T? NextPageToken { get; set; } = default(T);
+    public T? NextPageToken { get; set; } = default;
 }
 
 public class BaseSiteCrawlContents
 {
-    public List<SharePointFileInfoWithList> FilesFound { get; set; } = new();
+    public List<SharePointFileInfoWithList> FilesFound { get; set; } = [];
 
-    public List<string> FoldersFound { get; set; } = new();
+    public List<string> FoldersFound { get; set; } = [];
 }
 
 public class SiteCrawlContentsAndStats : BaseSiteCrawlContents

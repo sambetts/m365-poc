@@ -1,6 +1,7 @@
 using CommandLine;
 
 namespace SPO.ColdStorage.LoadGenerator;
+
 public class Options
 {
 

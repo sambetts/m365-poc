@@ -3,16 +3,13 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
-public class SPOListLoader : BaseChildLoader, IListLoader<ListItemCollectionPosition>
+
+public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConnector) : BaseChildLoader(baseSharePointConnector), IListLoader<ListItemCollectionPosition>
 {
     private List? _listDef = null;
-    public SPOListLoader(List list, BaseSharePointConnector baseSharePointConnector) : base(baseSharePointConnector)
-    {
-        this.ListId = list.Id;
-        this.Title = list.Title;
-    }
-    public string Title { get; set; }
-    public Guid ListId { get; set; }
+
+    public string Title { get; set; } = list.Title;
+    public Guid ListId { get; set; } = list.Id;
 
     public async Task<PageResponse<ListItemCollectionPosition>> GetListItems(ListItemCollectionPosition? position)
     {
@@ -20,11 +17,13 @@ public class SPOListLoader : BaseChildLoader, IListLoader<ListItemCollectionPosi
         var pageResults = new PageResponse<ListItemCollectionPosition>();
 
         // List get-all query
-        var camlQuery = new CamlQuery();
-        camlQuery.ViewXml = "<View Scope=\"RecursiveAll\"><Query>" +
-            "<OrderBy><FieldRef Name='ID' Ascending='TRUE'/></OrderBy></Query>" +
-            "<RowLimit Paged=\"TRUE\">5000</RowLimit>" +
-            "</View>";
+        var camlQuery = new CamlQuery
+        {
+            ViewXml = "<View Scope=\"RecursiveAll\"><Query>" +
+                "<OrderBy><FieldRef Name='ID' Ascending='TRUE'/></OrderBy></Query>" +
+                "<RowLimit Paged=\"TRUE\">5000</RowLimit>" +
+                "</View>"
+        };
 
         // Large-list support & paging
         ListItemCollection listItems = null!;
@@ -40,7 +39,7 @@ public class SPOListLoader : BaseChildLoader, IListLoader<ListItemCollectionPosi
             spClientList.Load(_listDef, l => l.BaseType, l => l.ItemCount, l => l.RootFolder, list => list.Title);
             await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
         }
-            
+
 
         // List items
         listItems = _listDef.GetItems(camlQuery);
@@ -186,7 +185,7 @@ public class SPOListLoader : BaseChildLoader, IListLoader<ListItemCollectionPosi
             if (dir!.StartsWith(listModel.ServerRelativeUrl))
             {
                 // Truncate list URL from dir value of item
-                dir = dir.Substring(listModel.ServerRelativeUrl.Length).TrimStart("/".ToCharArray());
+                dir = dir[listModel.ServerRelativeUrl.Length..].TrimStart("/".ToCharArray());
             }
         }
         else
@@ -199,13 +198,13 @@ public class SPOListLoader : BaseChildLoader, IListLoader<ListItemCollectionPosi
 
         var dt = DateTime.MinValue;
         DateTime? createdDate = null;
-            
+
         // Parse creation date if available
         if (item.FieldValues.ContainsKey("Created") && DateTime.TryParse(item.FieldValues["Created"]?.ToString(), out var createdDt))
         {
             createdDate = createdDt;
         }
-            
+
         if (DateTime.TryParse(item.FieldValues["Modified"]?.ToString(), out dt))
         {
             var authorFieldObj = item.FieldValues["Editor"];

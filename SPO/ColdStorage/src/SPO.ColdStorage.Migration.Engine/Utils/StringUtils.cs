@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
+
 public class StringUtils
 {
     public static string Base64Encode(string plainText)

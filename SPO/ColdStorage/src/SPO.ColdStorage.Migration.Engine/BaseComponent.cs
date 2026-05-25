@@ -7,15 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine;
-public abstract class BaseComponent
+
+public abstract class BaseComponent(Config config, DebugTracer debugTracer)
 {
 
-    protected Config _config;
-    protected DebugTracer _tracer;
-
-    public BaseComponent(Config config, DebugTracer debugTracer)
-    {
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-        _tracer = debugTracer;
-    }
+    protected Config _config = config ?? throw new ArgumentNullException(nameof(config));
+    protected DebugTracer _tracer = debugTracer;
 }

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using SPO.ColdStorage.Entities.Configuration;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
+
 public class ConsoleUtils
 {
     public static Config GetConfigurationWithDefaultBuilder<T>() where T : class

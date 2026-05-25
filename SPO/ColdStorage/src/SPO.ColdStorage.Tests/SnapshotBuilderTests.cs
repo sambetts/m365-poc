@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
+
 [TestClass]
 public class SnapshotBuilderTests : AbstractTest
 {
@@ -26,7 +27,7 @@ public class SnapshotBuilderTests : AbstractTest
 
         var f1 = new DocumentSiteWithMetadata { State = SiteFileAnalysisState.AnalysisPending };
         var f2 = new DocumentSiteWithMetadata { State = SiteFileAnalysisState.AnalysisInProgress };
-        l.Files.AddRange(new DocumentSiteWithMetadata []{ f1, f2 });
+        l.Files.AddRange(new DocumentSiteWithMetadata[] { f1, f2 });
 
         m.InvalidateCaches();
         Assert.IsFalse(m.AnalysisFinished);
@@ -71,14 +72,12 @@ public class SnapshotBuilderTests : AbstractTest
             Assert.IsTrue(newDoc.IsValidInfo);
         }
 
-        using (var db = new SPOColdStorageDbContext(_config!))
-        {
-            var preInsert = await db.Files.CountAsync();
-            await list.InsertFilesAsync(_config!, new StagingFilesMigrator(), DebugTracer.ConsoleOnlyTracer());
-            var postInsert = await db.Files.CountAsync();
+        using var db = new SPOColdStorageDbContext(_config!);
+        var preInsert = await db.Files.CountAsync();
+        await list.InsertFilesAsync(_config!, new StagingFilesMigrator(), DebugTracer.ConsoleOnlyTracer());
+        var postInsert = await db.Files.CountAsync();
 
-            // Make sure we've actually inserted
-            Assert.IsTrue(postInsert == preInsert + INSERTS);
-        }
+        // Make sure we've actually inserted
+        Assert.IsTrue(postInsert == preInsert + INSERTS);
     }
 }

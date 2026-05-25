@@ -35,20 +35,18 @@ public class StagingFilesMigrator
         var assembly = Assembly.GetExecutingAssembly();
 
         // Format: "{Namespace}.{Folder}.{filename}.{Extension}"
-        var manifests = assembly.GetManifestResourceNames();
+        _ = assembly.GetManifestResourceNames();
 
-        using (var stream = assembly.GetManifestResourceStream(resourcePath))
-            if (stream != null)
-            {
-                using (var reader = new StreamReader(stream))
-                {
-                    return reader.ReadToEnd();
-                }
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException(nameof(resourcePath), $"No resource found by name '{resourcePath}'");
-            }
+        using var stream = assembly.GetManifestResourceStream(resourcePath);
+        if (stream != null)
+        {
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(resourcePath), $"No resource found by name '{resourcePath}'");
+        }
     }
 
 }

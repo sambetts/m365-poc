@@ -11,17 +11,14 @@ public class SiteSnapshotModel
     public DateTime Started { get; set; } = DateTime.Now;
     public DateTime? Finished { get; set; }
 
-    public List<SiteList> Lists { get; set; } = new List<SiteList>();
+    public List<SiteList> Lists { get; set; } = [];
 
     private List<DocLib>? _docLibsCache = null;
     public List<DocLib> AllDocLibs
     {
         get
         {
-            if (_docLibsCache == null)
-            {
-                _docLibsCache = Lists.Where(f => f.GetType() == typeof(DocLib)).Cast<DocLib>().ToList();
-            }
+            _docLibsCache ??= [.. Lists.Where(f => f.GetType() == typeof(DocLib)).Cast<DocLib>()];
             return _docLibsCache;
         }
     }
@@ -31,11 +28,7 @@ public class SiteSnapshotModel
     {
         get
         {
-            if (_allFilesCache == null)
-            {
-                _allFilesCache = Lists.SelectMany(l => l.Files).ToList();
-
-            }
+            _allFilesCache ??= [.. Lists.SelectMany(l => l.Files)];
             return _allFilesCache;
         }
     }
@@ -71,10 +64,7 @@ public class SiteSnapshotModel
     {
         get
         {
-            if (_docsCompleted == null)
-            {
-                _docsCompleted = DocsByState(SiteFileAnalysisState.Complete);
-            }
+            _docsCompleted ??= DocsByState(SiteFileAnalysisState.Complete);
             return _docsCompleted;
         }
     }
@@ -93,9 +83,7 @@ public class SiteSnapshotModel
 
     public DocumentSiteWithMetadata UpdateDocItemAndInvalidateCaches(DriveItemSharePointFileInfo updatedDocInfo, ItemAnalyticsRepsonse.AnalyticsItemActionStat accessStats, VersionStorageInfo? versionStorageInfo)
     {
-        var docLib = AllDocLibs.Where(l => l.DriveId == updatedDocInfo.DriveId).SingleOrDefault();
-        if (docLib == null) throw new ArgumentOutOfRangeException(nameof(updatedDocInfo), $"No library in model for drive Id {updatedDocInfo.DriveId}");
-
+        var docLib = AllDocLibs.Where(l => l.DriveId == updatedDocInfo.DriveId).SingleOrDefault() ?? throw new ArgumentOutOfRangeException(nameof(updatedDocInfo), $"No library in model for drive Id {updatedDocInfo.DriveId}");
         var file = docLib.Documents.Where(d => d.GraphItemId == updatedDocInfo.GraphItemId).SingleOrDefault();
         if (file != null)
         {

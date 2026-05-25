@@ -29,7 +29,7 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _siteUrl = siteUrl ?? throw new ArgumentNullException(nameof(siteUrl));
         _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
-        
+
         _httpClient = new SecureSPThrottledHttpClient(_config, true, _tracer);
         _db = new SPOColdStorageDbContext(_config);
     }

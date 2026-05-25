@@ -12,7 +12,7 @@ public class SiteListFilterConfig
     /// <summary>
     /// Lists to filter on. If empty will allow all lists
     /// </summary>
-    public List<ListFolderConfig> ListFilterConfig { get; set; } = new List<ListFolderConfig>();
+    public List<ListFolderConfig> ListFilterConfig { get; set; } = [];
 
     #region Rules Calculation
 
@@ -25,7 +25,7 @@ public class SiteListFilterConfig
         else
         {
             var listConfig = FindListFolderConfig(listTitle);
-            if (listConfig != null) 
+            if (listConfig != null)
                 return listConfig;
             else
                 return new ListFolderConfig();      // Allow all
@@ -98,7 +98,7 @@ public class ListFolderConfig
 {
     public string ListTitle { get; set; } = string.Empty;
 
-    public List<string> FolderWhiteList { get; set; } = new List<string>();
+    public List<string> FolderWhiteList { get; set; } = [];
     public bool IncludeFolderInMigration(string url)
     {
         if (FolderWhiteList.Count == 0)
@@ -107,7 +107,7 @@ public class ListFolderConfig
         }
         else
         {
-            return FolderWhiteList.Where(f=> f.ToLower() == url.ToLower()).Any();
+            return FolderWhiteList.Where(f => f.ToLower() == url.ToLower()).Any();
         }
     }
 

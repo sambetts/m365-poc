@@ -2,6 +2,7 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Entities.DBEntities;
 
 namespace SPO.ColdStorage.Entities;
+
 public class DbInitializer
 {
 

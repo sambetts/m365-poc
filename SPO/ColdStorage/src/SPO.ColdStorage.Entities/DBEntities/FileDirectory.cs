@@ -22,5 +22,5 @@ public class FileDirectory : BaseDBObject
     /// <summary>
     /// Files in this directory
     /// </summary>
-    public ICollection<SPFile> Files { get; set; } = new List<SPFile>();
+    public ICollection<SPFile> Files { get; set; } = [];
 }

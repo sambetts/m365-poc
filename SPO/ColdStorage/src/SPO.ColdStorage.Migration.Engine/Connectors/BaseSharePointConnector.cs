@@ -4,27 +4,17 @@ using SPO.ColdStorage.Entities.Configuration;
 using SPO.ColdStorage.Migration.Engine.Utils;
 
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
-public abstract class BaseSharePointConnector
-{
-    private readonly SPOTokenManager tokenManager;
-    private readonly DebugTracer tracer;
 
-    public BaseSharePointConnector(SPOTokenManager tokenManager, DebugTracer tracer)
-    {
-        this.tokenManager = tokenManager;
-        this.tracer = tracer;
-    }
+public abstract class BaseSharePointConnector(SPOTokenManager tokenManager, DebugTracer tracer)
+{
+    private readonly SPOTokenManager tokenManager = tokenManager;
+    private readonly DebugTracer tracer = tracer;
 
     public DebugTracer Tracer => tracer;
     public SPOTokenManager TokenManager => tokenManager;
 }
 
-public abstract class BaseChildLoader
+public abstract class BaseChildLoader(BaseSharePointConnector parent)
 {
-    public BaseChildLoader(BaseSharePointConnector parent)
-    {
-        Parent = parent;
-    }
-
-    public BaseSharePointConnector Parent { get; }
+    public BaseSharePointConnector Parent { get; } = parent;
 }

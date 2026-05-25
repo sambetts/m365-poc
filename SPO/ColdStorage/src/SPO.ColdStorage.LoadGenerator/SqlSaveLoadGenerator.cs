@@ -4,6 +4,7 @@ using SPO.ColdStorage.Migration.Engine.Utils.Extentions;
 using SPO.ColdStorage.Models;
 
 namespace SPO.ColdStorage.LoadGenerator;
+
 internal class SqlSaveLoadGenerator
 {
     public static async Task Go(Entities.Configuration.Config config)
@@ -23,12 +24,12 @@ internal class SqlSaveLoadGenerator
     {
 
         var list = new List<SharePointFileInfoWithList>();
-        var spList = new SiteList(){ ServerRelativeUrl = $"/list{DateTime.Now.Ticks}" };
+        var spList = new SiteList() { ServerRelativeUrl = $"/list{DateTime.Now.Ticks}" };
 
         for (int i = 0; i < docsToInsert; i++)
         {
-            list.Add(new DocumentSiteWithMetadata 
-            { 
+            list.Add(new DocumentSiteWithMetadata
+            {
                 AccessCount = i,
                 Author = $"Author {i}",
                 List = spList,

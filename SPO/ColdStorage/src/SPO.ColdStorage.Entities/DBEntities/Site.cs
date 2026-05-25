@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Entities.DBEntities;
+
 [Table("sites")]
 public class Site : BaseDBObjectWithUrl
 {

@@ -26,7 +26,7 @@ public class SiteModelBuilderTests
     public void TestInitialize()
     {
         _mockConfig = new Moq.Mock<Microsoft.Extensions.Configuration.IConfiguration>();
-        
+
         // Mock AzureAd section
         var mockAzureAdSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
         mockAzureAdSection.Setup(s => s["Instance"]).Returns("https://login.microsoftonline.com/");
@@ -37,28 +37,28 @@ public class SiteModelBuilderTests
         mockAzureAdSection.Setup(s => s["CallbackPath"]).Returns("/signin-oidc");
         mockAzureAdSection.Setup(s => s["Secret"]).Returns("test-secret");
         _mockConfig.Setup(c => c.GetSection("AzureAd")).Returns(mockAzureAdSection.Object);
-        
+
         // Mock ConnectionStrings section
         var mockConnectionStringsSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
         mockConnectionStringsSection.Setup(s => s["ServiceBus"]).Returns("Endpoint=sb://test.servicebus.windows.net/;SharedAccessKeyName=test;SharedAccessKey=test;EntityPath=test");
         mockConnectionStringsSection.Setup(s => s["Storage"]).Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test;EndpointSuffix=core.windows.net");
         mockConnectionStringsSection.Setup(s => s["SQLConnectionString"]).Returns("Server=localhost;Database=TestDb;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
         _mockConfig.Setup(c => c.GetSection("ConnectionStrings")).Returns(mockConnectionStringsSection.Object);
-        
+
         // Mock Dev section
         var mockDevSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
         mockDevSection.Setup(s => s["SearchServiceEndPoint"]).Returns("https://test.search.windows.net");
         mockDevSection.Setup(s => s["SearchServiceAdminApiKey"]).Returns("test-admin-key");
         mockDevSection.Setup(s => s["SearchServiceQueryApiKey"]).Returns("test-query-key");
         _mockConfig.Setup(c => c.GetSection("Dev")).Returns(mockDevSection.Object);
-        
+
         // Mock Search section (reusing Dev section values)
         var mockSearchSection = new Moq.Mock<Microsoft.Extensions.Configuration.IConfigurationSection>();
         mockSearchSection.Setup(s => s["SearchServiceEndPoint"]).Returns("https://test.search.windows.net");
         mockSearchSection.Setup(s => s["SearchServiceAdminApiKey"]).Returns("test-admin-key");
         mockSearchSection.Setup(s => s["SearchServiceQueryApiKey"]).Returns("test-query-key");
         _mockConfig.Setup(c => c.GetSection("Search")).Returns(mockSearchSection.Object);
-        
+
         _mockConfig.Setup(c => c["AnalysisSkipHours"]).Returns("24");
         _mockConfig.Setup(c => c["SPOTenantName"]).Returns("test");
         _mockConfig.Setup(c => c["SPOClientId"]).Returns("test-client-id");
@@ -69,7 +69,7 @@ public class SiteModelBuilderTests
         _mockConfig.Setup(c => c["KeyVaultUrl"]).Returns("https://test.vault.azure.net");
         _mockConfig.Setup(c => c["StorageConnectionString"]).Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test");
         _mockConfig.Setup(c => c["BlobContainerName"]).Returns("test-container");
-        
+
         _config = new Config(_mockConfig.Object);
         _tracer = new DebugTracer(string.Empty, "test");
 
@@ -153,7 +153,7 @@ public class SiteModelBuilderTests
 
         _testAdapter.SetVersionData("test-item-1", new DriveItemVersionInfo
         {
-            Versions = 
+            Versions =
             [
                 new DriveItemVersion { Id = "1.0", Size = 1024 },
                 new DriveItemVersion { Id = "2.0", Size = 2048 }

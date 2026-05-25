@@ -7,8 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Entities.DBEntities;
+
 [Table("users")]
-public class User :BaseDBObject
+public class User : BaseDBObject
 {
     [Column("email")]
     public string Email { get; set; } = string.Empty;

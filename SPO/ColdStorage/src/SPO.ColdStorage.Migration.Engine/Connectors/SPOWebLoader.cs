@@ -3,16 +3,12 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using SPO.ColdStorage.Models;
 
 namespace SPO.ColdStorage.Migration.Engine.Connectors;
-public class SPOWebLoader : BaseChildLoader, IWebLoader<ListItemCollectionPosition>
-{
-    private readonly ClientContext _clientContext;
 
-    public SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePointConnector baseSharePointConnector) : base(baseSharePointConnector)
-    {
-        SPWeb = sPWeb;
-        _clientContext = clientContext;
-    }
-    public Web SPWeb { get; set; } = null!;
+public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePointConnector baseSharePointConnector) : BaseChildLoader(baseSharePointConnector), IWebLoader<ListItemCollectionPosition>
+{
+    private readonly ClientContext _clientContext = clientContext;
+
+    public Web SPWeb { get; set; } = sPWeb;
 
 
     public async Task<List<IListLoader<ListItemCollectionPosition>>> GetLists()

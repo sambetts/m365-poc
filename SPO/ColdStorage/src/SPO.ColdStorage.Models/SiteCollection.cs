@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
+
 public class SiteCollectionsResult : GraphPageableResponse<SiteCollection>
 {
 }

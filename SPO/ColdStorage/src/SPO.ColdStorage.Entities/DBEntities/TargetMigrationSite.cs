@@ -3,6 +3,7 @@ using SPO.ColdStorage.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SPO.ColdStorage.Entities.DBEntities;
+
 [Table("target_migration_sites")]
 public class TargetMigrationSite : BaseDBObject
 {

@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
+
 [TestClass]
 public class MigrationTests : AbstractTest
 {
@@ -46,14 +47,14 @@ public class MigrationTests : AbstractTest
         var driveItems = await gc.Drives[uploaded.File.VroomDriveID].Items.GetAsync();
 
         var graphFileInfoList = new System.Collections.Generic.List<DocumentSiteWithMetadata>();
-        var driveItemValues = driveItems?.Value ?? new System.Collections.Generic.List<Microsoft.Graph.Models.DriveItem>();
+        var driveItemValues = driveItems?.Value ?? [];
         var graphFiles = driveItemValues.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id ?? string.Empty });
         graphFileInfoList.AddRange(graphFiles);
 
         var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _tracer);
         Assert.IsTrue(batchAnalytics.UpdateResults.Count == graphFiles.Count());
 
-        var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v => 
+        var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v =>
         {
             var analytics = v as ItemAnalyticsRepsonse;
             return analytics?.AccessStats != null && analytics.AccessStats.ActionCount > 0;

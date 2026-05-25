@@ -4,48 +4,34 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
-public abstract class BaseMockLoader
-{
-    protected BaseMockLoader(int itemsPerPage, int pages)
-    {
-        ItemsPerPage = itemsPerPage;  
-        Pages = pages;
-    }
-    public int ItemsPerPage { get; set; } = 0;
-    public int Pages { get; set; } = 0;
-}
-public class MockSiteLoader : BaseMockLoader, ISiteCollectionLoader<int?>
-{
-    public MockSiteLoader(int itemsPerPage, int pages) : base(itemsPerPage, pages)
-    {
-    }
 
+public abstract class BaseMockLoader(int itemsPerPage, int pages)
+{
+    public int ItemsPerPage { get; set; } = itemsPerPage;
+    public int Pages { get; set; } = pages;
+}
+public class MockSiteLoader(int itemsPerPage, int pages) : BaseMockLoader(itemsPerPage, pages), ISiteCollectionLoader<int?>
+{
     public Task<List<IWebLoader<int?>>> GetWebs()
     {
-        var list = new List<IWebLoader<int?>>();
-        list.Add(new MockWebLoader(ItemsPerPage, Pages));
+        var list = new List<IWebLoader<int?>>
+        {
+            new MockWebLoader(ItemsPerPage, Pages)
+        };
         return Task.FromResult(list);
     }
 }
 
-public class MockWebLoader : BaseMockLoader, IWebLoader<int?>
+public class MockWebLoader(int itemsPerPage, int pages) : BaseMockLoader(itemsPerPage, pages), IWebLoader<int?>
 {
-    public MockWebLoader(int itemsPerPage, int pages) : base(itemsPerPage, pages)
-    {
-    }
-
     public Task<List<IListLoader<int?>>> GetLists()
     {
         return Task.FromResult(new List<IListLoader<int?>>() { new MockListLoader(ItemsPerPage, Pages) });
     }
 }
 
-public class MockListLoader : BaseMockLoader, IListLoader<int?>
+public class MockListLoader(int itemsPerPage, int pages) : BaseMockLoader(itemsPerPage, pages), IListLoader<int?>
 {
-    public MockListLoader(int itemsPerPage, int pages) : base(itemsPerPage, pages)
-    {
-    }
-
     public string Title { get; set; } = "Mock list";
     public Guid ListId { get; set; } = Guid.Empty;
 

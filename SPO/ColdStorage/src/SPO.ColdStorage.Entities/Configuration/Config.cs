@@ -1,11 +1,7 @@
 namespace SPO.ColdStorage.Entities.Configuration;
-public class Config : BaseConfig
+
+public class Config(Microsoft.Extensions.Configuration.IConfiguration config) : BaseConfig(config)
 {
-    public Config(Microsoft.Extensions.Configuration.IConfiguration config) : base(config)
-    {
-    }
-
-
     [ConfigValue]
     public string BaseServerAddress { get; set; } = string.Empty;
 
@@ -40,7 +36,6 @@ public class Config : BaseConfig
     public SearchConfig SearchConfig { get; set; } = null!;
 }
 
-public class ConfigException : Exception
+public class ConfigException(string message) : Exception(message)
 {
-    public ConfigException(string message) : base(message) { }
 }

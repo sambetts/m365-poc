@@ -1,4 +1,5 @@
 namespace SPO.ColdStorage.Web.Models;
+
 public class ServiceConfiguration
 {
     public StorageInfo StorageInfo { get; set; } = new StorageInfo();

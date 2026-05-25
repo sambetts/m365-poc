@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
+
 public class AutoThrottleHttpClient : HttpClient
 {
 
@@ -14,7 +15,7 @@ public class AutoThrottleHttpClient : HttpClient
     private readonly DebugTracer debugTracer;
     private DateTime? _nextCallEarliestTime = null;
     private int _concurrentCalls = 0, _throttledCalls = 0, _completedCalls = 0;
-    private object _concurrentCallsObj = new object(), _throttledCallsObject = new object(), _completedCallsObject = new object();
+    private readonly object _concurrentCallsObj = new(), _throttledCallsObject = new(), _completedCallsObject = new();
 
 
     public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer)
@@ -23,7 +24,7 @@ public class AutoThrottleHttpClient : HttpClient
         this.ignoreRetryHeader = ignoreRetryHeader;
         this.debugTracer = debugTracer;
     }
-    public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer, DelegatingHandler handler) :base(handler)
+    public AutoThrottleHttpClient(bool ignoreRetryHeader, DebugTracer debugTracer, DelegatingHandler handler) : base(handler)
     {
         this.Timeout = TimeSpan.FromHours(1);
         this.ignoreRetryHeader = ignoreRetryHeader;

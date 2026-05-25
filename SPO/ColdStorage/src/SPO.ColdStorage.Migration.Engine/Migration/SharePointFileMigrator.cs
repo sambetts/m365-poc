@@ -15,9 +15,9 @@ namespace SPO.ColdStorage.Migration.Engine.Migration;
 /// </summary>
 public class SharePointFileMigrator : BaseComponent, IDisposable
 {
-    private ServiceBusClient _sbClient;
-    private ServiceBusSender _sbSender;
-    private SPOColdStorageDbContext _db;
+    private readonly ServiceBusClient _sbClient;
+    private readonly ServiceBusSender _sbSender;
+    private readonly SPOColdStorageDbContext _db;
 
     public SharePointFileMigrator(Config config, DebugTracer debugTracer) : base(config, debugTracer)
     {
@@ -146,6 +146,6 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
 
     public void Dispose()
     {
-        _db.Dispose(); 
+        _db.Dispose();
     }
 }

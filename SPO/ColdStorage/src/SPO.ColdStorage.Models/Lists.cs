@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
+
 public class SiteList : IEquatable<SiteList>
 {
     public SiteList() { }
@@ -16,7 +17,7 @@ public class SiteList : IEquatable<SiteList>
 
     public string Title { get; set; } = string.Empty;
     public string ServerRelativeUrl { get; set; } = string.Empty;
-    public List<BaseSharePointFileInfo> Files { get; set; } = new List<BaseSharePointFileInfo>();
+    public List<BaseSharePointFileInfo> Files { get; set; } = [];
 
     public bool Equals(SiteList? other)
     {
@@ -30,9 +31,8 @@ public class DocLib : SiteList
     public DocLib() { }
     public DocLib(SiteList l) : base(l)
     {
-        if (l is DocLib)
+        if (l is DocLib lib)
         {
-            var lib = (DocLib)l;
             this.DriveId = lib.DriveId;
             this.Delta = lib.Delta;
             this.Files = lib.Files;
@@ -40,7 +40,7 @@ public class DocLib : SiteList
     }
     public string DriveId { get; set; } = string.Empty;
 
-    public List<DocumentSiteWithMetadata> Documents => Files.Where(f => f.GetType() == typeof(DocumentSiteWithMetadata)).Cast<DocumentSiteWithMetadata>().ToList();
+    public List<DocumentSiteWithMetadata> Documents => [.. Files.Where(f => f.GetType() == typeof(DocumentSiteWithMetadata)).Cast<DocumentSiteWithMetadata>()];
     public string Delta { get; set; } = string.Empty;
 }
 

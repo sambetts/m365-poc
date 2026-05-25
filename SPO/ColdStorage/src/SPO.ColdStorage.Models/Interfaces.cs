@@ -6,13 +6,14 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
+
 public abstract class GraphPageableResponse<T> where T : BaseGraphObject
 {
     [JsonPropertyName("@odata.nextLink")]
     public string OdataNextLink { get; set; } = string.Empty;
 
     [JsonPropertyName("value")]
-    public List<T> PageResults { get; set; } = new List<T>();
+    public List<T> PageResults { get; set; } = [];
 }
 
 public abstract class BaseGraphObject

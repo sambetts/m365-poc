@@ -7,47 +7,43 @@ using SPO.ColdStorage.Migration.Engine.Utils.Http;
 using SPO.ColdStorage.Models;
 
 namespace SPO.ColdStorage.Migration.Engine.SnapshotBuilder;
-public class TenantModelBuilder : BaseComponent
+
+public class TenantModelBuilder(Config config, DebugTracer debugTracer) : BaseComponent(config, debugTracer)
 {
-    private List<Task> _updateTasks = new();
-    private StagingFilesMigrator _stagingFilesMigrator = new();
-    public TenantModelBuilder(Config config, DebugTracer debugTracer) : base(config, debugTracer)
-    {
-    }
+    private readonly List<Task> _updateTasks = [];
+    private readonly StagingFilesMigrator _stagingFilesMigrator = new();
 
     public async Task Build()
     {
-        using (var db = new SPOColdStorageDbContext(this._config))
+        using var db = new SPOColdStorageDbContext(this._config);
+        // Clean staging table 1st
+        await _stagingFilesMigrator.CleanStagingAll(db);
+
+        // Start analysis
+        var sitesToAnalyse = await db.TargetSharePointSites.ToListAsync();
+
+        if (sitesToAnalyse.Count == 0)
         {
-            // Clean staging table 1st
-            await _stagingFilesMigrator.CleanStagingAll(db);
+            // Analyse all site-collections
+            var url = $"https://graph.microsoft.com/beta/sites";
+            var httpClient = new GraphThrottledHttpClient(_config, false, _tracer);
 
-            // Start analysis
-            var sitesToAnalyse = await db.TargetSharePointSites.ToListAsync();
+            var sites = await httpClient.LoadGraphPageable<SiteCollectionsResult, SiteCollection>(url, _tracer);
 
-            if (sitesToAnalyse.Count == 0)
+            var defaultSitesAll = new List<TargetMigrationSite>();
+            if (sites != null)
             {
-                // Analyse all site-collections
-                var url = $"https://graph.microsoft.com/beta/sites";
-                var httpClient = new GraphThrottledHttpClient(_config, false, _tracer);
-
-                var sites = await httpClient.LoadGraphPageable<SiteCollectionsResult, SiteCollection>(url, _tracer);
-
-                var defaultSitesAll = new List<TargetMigrationSite>();
-                if (sites != null)
+                foreach (var sp in sites)
                 {
-                    foreach (var sp in sites)
-                    {
-                        defaultSitesAll.Add(new TargetMigrationSite { RootURL = sp.WebUrl });
-                    }
+                    defaultSitesAll.Add(new TargetMigrationSite { RootURL = sp.WebUrl });
                 }
-
-                await AnalyseSites(defaultSitesAll);
             }
-            else
-                _tracer.TrackTrace($"Taking snapshot of {sitesToAnalyse.Count} site(s):");
-            await AnalyseSites(sitesToAnalyse);
+
+            await AnalyseSites(defaultSitesAll);
         }
+        else
+            _tracer.TrackTrace($"Taking snapshot of {sitesToAnalyse.Count} site(s):");
+        await AnalyseSites(sitesToAnalyse);
     }
 
     async Task AnalyseSites(IEnumerable<TargetMigrationSite> sitesToAnalyse)
@@ -78,17 +74,15 @@ public class TenantModelBuilder : BaseComponent
         _updateTasks.Add(Task.Run(async () =>
         {
             int updated = 0, inserted = 0;
-            using (var db = new SPOColdStorageDbContext(this._config))
+            using var db = new SPOColdStorageDbContext(this._config);
+            _tracer.TrackTrace($"Updating {updatedFiles.Count} files to DB from downloaded metadata");
+            foreach (var updatedFile in updatedFiles)
             {
-                _tracer.TrackTrace($"Updating {updatedFiles.Count} files to DB from downloaded metadata");
-                foreach (var updatedFile in updatedFiles)
-                {
-                    var r = await UpdateStats(updatedFile, db);
-                    if (r == StatsSaveResult.New) inserted++;
-                    else if (r == StatsSaveResult.Updated) updated++;
-                }
-                await db.SaveChangesAsync();
+                var r = await UpdateStats(updatedFile, db);
+                if (r == StatsSaveResult.New) inserted++;
+                else if (r == StatsSaveResult.Updated) updated++;
             }
+            await db.SaveChangesAsync();
         }));
         return Task.CompletedTask;
     }

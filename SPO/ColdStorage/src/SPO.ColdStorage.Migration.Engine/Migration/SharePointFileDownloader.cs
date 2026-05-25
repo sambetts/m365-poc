@@ -46,15 +46,13 @@ public class SharePointFileDownloader : BaseComponent
         // Get response but don't buffer full content (which will buffer overlflow for large files)
         using (var response = await _client.GetAsyncWithThrottleRetries(url, HttpCompletionOption.ResponseHeadersRead, _tracer))
         {
-            using (var streamToReadFrom = await response.Content.ReadAsStreamAsync())
-            using (var streamToWriteTo = File.Open(tempFileName, FileMode.Create))
-            {
-                await streamToReadFrom.CopyToAsync(streamToWriteTo);
-                fileSize = streamToWriteTo.Length;
-            }
+            using var streamToReadFrom = await response.Content.ReadAsStreamAsync();
+            using var streamToWriteTo = File.Open(tempFileName, FileMode.Create);
+            await streamToReadFrom.CopyToAsync(streamToWriteTo);
+            fileSize = streamToWriteTo.Length;
         }
 
-        _tracer.TrackTrace($"Wrote {fileSize.ToString("N0")} bytes to '{tempFileName}'.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
+        _tracer.TrackTrace($"Wrote {fileSize:N0} bytes to '{tempFileName}'.", Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Verbose);
 
 
         // Return file name & size

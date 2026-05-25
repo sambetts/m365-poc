@@ -1,10 +1,7 @@
 namespace SPO.ColdStorage.Entities.Configuration;
-public class SearchConfig : BaseConfig
-{
-    public SearchConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : base(config)
-    {
-    }
 
+public class SearchConfig(Microsoft.Extensions.Configuration.IConfigurationSection config) : BaseConfig(config)
+{
     [ConfigValue(true)]
     public string IndexName { get; set; } = string.Empty;
 

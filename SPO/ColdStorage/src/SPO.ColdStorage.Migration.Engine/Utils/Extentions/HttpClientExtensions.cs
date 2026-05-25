@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
+
 public static class HttpClientExtensions
 {
     public static async Task<HttpResponseMessage> GetAsyncWithThrottleRetries(this SecureSPThrottledHttpClient httpClient, string url, DebugTracer debugTracer)

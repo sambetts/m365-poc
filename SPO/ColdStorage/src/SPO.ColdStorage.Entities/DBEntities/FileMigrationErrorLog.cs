@@ -2,6 +2,7 @@ using SPO.ColdStorage.Entities.Abstract;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SPO.ColdStorage.Entities.DBEntities;
+
 [Table("file_migration_errors")]
 public class FileMigrationErrorLog : BaseFileRelatedClass
 {

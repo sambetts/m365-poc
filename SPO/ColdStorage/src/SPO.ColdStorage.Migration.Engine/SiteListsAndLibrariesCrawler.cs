@@ -6,18 +6,12 @@ namespace SPO.ColdStorage.Migration.Engine;
 /// <summary>
 /// Finds files in a SharePoint site collection
 /// </summary>
-public class SiteListsAndLibrariesCrawler<T>
+public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConnector, DebugTracer tracer)
 {
     #region Constructors & Privates
 
-    private readonly DebugTracer _tracer;
-    private readonly ISiteCollectionLoader<T> _crawlConnector;
-
-    public SiteListsAndLibrariesCrawler(ISiteCollectionLoader<T> crawlConnector, DebugTracer tracer)
-    {
-        _crawlConnector = crawlConnector;
-        this._tracer = tracer;
-    }
+    private readonly DebugTracer _tracer = tracer;
+    private readonly ISiteCollectionLoader<T> _crawlConnector = crawlConnector;
 
     #endregion
 
@@ -54,7 +48,7 @@ public class SiteListsAndLibrariesCrawler<T>
         PageResponse<T>? listPage = null;
 
         var listResultsAll = new SiteCrawlContentsAndStats();
-        T? token = default(T);
+        T? token = default;
 
         var allFolders = new List<string>();
 
@@ -89,7 +83,7 @@ public class SiteListsAndLibrariesCrawler<T>
                     listResultsAll.IgnoredFiles++;
                 }
             }
-            _tracer.TrackTrace($"Loaded {listPage.FilesFound.Count.ToString("N0")} files and {listPage.FoldersFound.Count.ToString("N0")} folders from list '{parentList.Title}' on page {pageCount}...");
+            _tracer.TrackTrace($"Loaded {listPage.FilesFound.Count:N0} files and {listPage.FoldersFound.Count:N0} folders from list '{parentList.Title}' on page {pageCount}...");
 
             allFolders.AddRange(listPage.FoldersFound);
 
@@ -97,8 +91,8 @@ public class SiteListsAndLibrariesCrawler<T>
         }
         if (pageCount > 1)
         {
-            _tracer.TrackTrace($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count.ToString("N0")} files in scope, " +
-                $"{listResultsAll.IgnoredFiles.ToString("N0")} files ignored, and {listResultsAll.FoldersFound.Count.ToString("N0")} folders");
+            _tracer.TrackTrace($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count:N0} files in scope, " +
+                $"{listResultsAll.IgnoredFiles:N0} files ignored, and {listResultsAll.FoldersFound.Count:N0} folders");
         }
 
 

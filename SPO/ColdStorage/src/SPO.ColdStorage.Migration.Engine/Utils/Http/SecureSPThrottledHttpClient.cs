@@ -6,11 +6,8 @@ namespace SPO.ColdStorage.Migration.Engine.Utils.Http;
 /// <summary>
 /// HttpClient that can handle HTTP 429s automatically
 /// </summary>
-public class SecureSPThrottledHttpClient : AutoThrottleHttpClient
+public class SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, DebugTracer debugTracer) : AutoThrottleHttpClient(ignoreRetryHeader, debugTracer, new SecureSPHandler(config))
 {
-    public SecureSPThrottledHttpClient(Config config, bool ignoreRetryHeader, DebugTracer debugTracer) : base(ignoreRetryHeader, debugTracer, new SecureSPHandler(config))
-    {
-    }
 }
 
 public class SecureSPHandler : DelegatingHandler

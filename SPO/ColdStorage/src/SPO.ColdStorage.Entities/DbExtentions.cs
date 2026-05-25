@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Entities;
+
 public static class DbExtentions
 {
 

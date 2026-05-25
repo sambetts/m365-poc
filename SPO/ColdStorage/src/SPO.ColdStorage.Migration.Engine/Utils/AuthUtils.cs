@@ -8,6 +8,7 @@ using SPO.ColdStorage.Migration.Engine.Utils;
 using System.Security.Cryptography.X509Certificates;
 
 namespace SPO.ColdStorage.Migration.Engine;
+
 public class AuthUtils
 {
     private static X509Certificate2? _cachedCert = null;
@@ -113,7 +114,7 @@ public class AuthUtils
 
     public static async Task<IConfidentialClientApplication> GetNewClientApp(Config config)
     {
-        return await GetNewClientApp(config.AzureAdConfig.TenantId!, 
+        return await GetNewClientApp(config.AzureAdConfig.TenantId!,
             config.AzureAdConfig.ClientID!, config.AzureAdConfig.Secret!, config.KeyVaultUrl);
     }
 }

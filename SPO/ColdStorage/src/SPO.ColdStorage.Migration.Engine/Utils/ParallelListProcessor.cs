@@ -13,7 +13,7 @@ public class ParallelListProcessor<T>
 {
     private readonly int _maxItemsPerChunk;
     private readonly int? maxThreads;
-    private SemaphoreSlim? _maxTaskLock;
+    private readonly SemaphoreSlim? _maxTaskLock;
     public ParallelListProcessor(int maxItemsPerChunk, int? maxThreads)
     {
         if (maxItemsPerChunk < 1)

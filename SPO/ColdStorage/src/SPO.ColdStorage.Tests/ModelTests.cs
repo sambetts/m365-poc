@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 
 namespace SPO.ColdStorage.Tests;
+
 [TestClass]
 public class ModelTests
 {
@@ -18,9 +19,9 @@ public class ModelTests
 
         // File path doesn't contain web
         var invalidMsg1 = new BaseSharePointFileInfo
-        { 
-            ServerRelativeFilePath = "/whatever", 
-            SiteUrl = "https://m365x352268.sharepoint.com", 
+        {
+            ServerRelativeFilePath = "/whatever",
+            SiteUrl = "https://m365x352268.sharepoint.com",
             WebUrl = "https://m365x352268.sharepoint.com/subweb1",
             LastModified = DateTime.Now
         };
@@ -77,12 +78,12 @@ public class ModelTests
     {
         var cfg = new SiteListFilterConfig()
         {
-            ListFilterConfig = new List<ListFolderConfig>
-                        {
+            ListFilterConfig =
+                        [
                             new ListFolderConfig{ ListTitle = "Documents" },
-                            new ListFolderConfig{ ListTitle = "Custom List", 
-                                FolderWhiteList = new List<string>{ "Subfolder", "Subfolder/Another subfolder" } }
-                        }
+                            new ListFolderConfig{ ListTitle = "Custom List",
+                                FolderWhiteList = ["Subfolder", "Subfolder/Another subfolder"] }
+                        ]
         };
         Assert.IsTrue(cfg.IncludeListInMigration("Documents"));
         Assert.IsFalse(cfg.IncludeListInMigration("Docs"));

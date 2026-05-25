@@ -4,7 +4,7 @@ namespace SPO.ColdStorage.Models;
 /// <summary>
 /// SharePoint Online file metadata for base file-type
 /// </summary>
-public class BaseSharePointFileInfo 
+public class BaseSharePointFileInfo
 {
     public BaseSharePointFileInfo() { }
     public BaseSharePointFileInfo(BaseSharePointFileInfo driveArg) : this()
@@ -60,17 +60,17 @@ public class BaseSharePointFileInfo
     /// Calculated.
     /// </summary>
     [JsonIgnore]
-    public bool IsValidInfo => !string.IsNullOrEmpty(ServerRelativeFilePath) && 
-        !string.IsNullOrEmpty(SiteUrl) && 
-        !string.IsNullOrEmpty(WebUrl) && 
-        this.LastModified > DateTime.MinValue && 
+    public bool IsValidInfo => !string.IsNullOrEmpty(ServerRelativeFilePath) &&
+        !string.IsNullOrEmpty(SiteUrl) &&
+        !string.IsNullOrEmpty(WebUrl) &&
+        this.LastModified > DateTime.MinValue &&
         this.WebUrl.StartsWith(this.SiteUrl) &&
         this.FullSharePointUrl.StartsWith(this.WebUrl) &&
         ValidSubFolderIfSpecified;
 
     bool ValidSubFolderIfSpecified
     {
-        get 
+        get
         {
             if (string.IsNullOrEmpty(Subfolder))
             {
@@ -94,7 +94,7 @@ public class BaseSharePointFileInfo
     [JsonIgnore]
     public string FullSharePointUrl
     {
-        get 
+        get
         {
             // Strip out relative web part of file URL
             const string DOMAIN = "sharepoint.com";
@@ -105,7 +105,7 @@ public class BaseSharePointFileInfo
 
                 if (ServerRelativeFilePath.StartsWith(webMinusServer))
                 {
-                    var filePathWithoutWeb = ServerRelativeFilePath.Substring(webMinusServer.Length, ServerRelativeFilePath.Length - webMinusServer.Length);
+                    var filePathWithoutWeb = ServerRelativeFilePath[webMinusServer.Length..];
 
                     return WebUrl + filePathWithoutWeb;
                 }
@@ -139,7 +139,7 @@ public class SharePointFileInfoWithList : BaseSharePointFileInfo
 
 public class DriveItemSharePointFileInfo : SharePointFileInfoWithList
 {
-    public DriveItemSharePointFileInfo() :base() { }
+    public DriveItemSharePointFileInfo() : base() { }
     public DriveItemSharePointFileInfo(DriveItemSharePointFileInfo driveArg) : base(driveArg)
     {
         this.DriveId = driveArg.DriveId;

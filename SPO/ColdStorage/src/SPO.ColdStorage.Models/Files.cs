@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 
 namespace SPO.ColdStorage.Models;
+
 public enum SiteFileAnalysisState
 {
     Unknown,

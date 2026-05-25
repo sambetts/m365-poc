@@ -6,10 +6,11 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
+
 [TestClass]
 public class MockCrawlTests : AbstractTest
 {
-    private List<SharePointFileInfoWithList> _foundFiles = new();
+    private readonly List<SharePointFileInfoWithList> _foundFiles = [];
 
     [TestMethod]
     public async Task MockCrawl()
@@ -26,7 +27,7 @@ public class MockCrawlTests : AbstractTest
         Assert.IsTrue(_foundFiles.Count == PAGE_COUNT * PAGES);
         foreach (var ff in _foundFiles)
         {
-            Assert.IsTrue(_foundFiles.Where(f=> f.FullSharePointUrl == ff.FullSharePointUrl).Count() == 1);
+            Assert.IsTrue(_foundFiles.Where(f => f.FullSharePointUrl == ff.FullSharePointUrl).Count() == 1);
         }
     }
 

@@ -18,18 +18,11 @@ namespace SPO.ColdStorage.Web.Controllers;
 [Microsoft.AspNetCore.Authorization.Authorize]
 [ApiController]
 [Route("[controller]")]
-public class AppConfigurationController : ControllerBase
+public class AppConfigurationController(SPOColdStorageDbContext context, Config config, DebugTracer tracer) : ControllerBase
 {
-    private readonly DebugTracer _tracer;
-    private readonly SPOColdStorageDbContext _context;
-    private readonly Config _config;
-
-    public AppConfigurationController(SPOColdStorageDbContext context, Config config, DebugTracer tracer)
-    {
-        _tracer = tracer;
-        this._context = context;
-        this._config = config;
-    }
+    private readonly DebugTracer _tracer = tracer;
+    private readonly SPOColdStorageDbContext _context = context;
+    private readonly Config _config = config;
 
 
     // Generate app ServiceConfiguration + storage configuration + key to read blobs
@@ -45,7 +38,7 @@ public class AppConfigurationController : ControllerBase
             AccountSasResourceTypes.Container | AccountSasResourceTypes.Object);
 
         // Return for react app
-        return new ServiceConfiguration 
+        return new ServiceConfiguration
         {
             StorageInfo = new StorageInfo
             {
@@ -53,10 +46,10 @@ public class AppConfigurationController : ControllerBase
                 SharedAccessToken = sasUri.Query,
                 ContainerName = _config.BlobContainerName
             },
-            SearchConfiguration = new SearchConfiguration 
+            SearchConfiguration = new SearchConfiguration
             {
                 IndexName = _config.SearchConfig.IndexName,
-                QueryKey = _config.SearchConfig.QueryKey, 
+                QueryKey = _config.SearchConfig.QueryKey,
                 ServiceName = _config.SearchConfig.ServiceName
             }
         };

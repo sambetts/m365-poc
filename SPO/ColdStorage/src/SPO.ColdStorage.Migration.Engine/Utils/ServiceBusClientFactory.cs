@@ -69,7 +69,7 @@ public static class ServiceBusClientFactory
         }
 
         throw new ArgumentException(
-            "Invalid Service Bus connection string format - no Endpoint or valid namespace found", 
+            "Invalid Service Bus connection string format - no Endpoint or valid namespace found",
             nameof(serviceBusEndpoint));
     }
 }

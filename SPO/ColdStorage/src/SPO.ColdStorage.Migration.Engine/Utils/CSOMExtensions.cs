@@ -2,6 +2,7 @@ using Microsoft.SharePoint.Client;
 using System.Net;
 
 namespace SPO.ColdStorage.Migration.Engine.Utils;
+
 public static class CSOMExtensions
 {
     public static async Task ExecuteQueryAsyncWithThrottleRetries(this ClientContext clientContext, DebugTracer tracer)
@@ -42,11 +43,9 @@ public static class CSOMExtensions
             }
             catch (WebException ex)
             {
-                var response = ex.Response as HttpWebResponse;
-                    
                 // Check if request was throttled - http status code 429
                 // Check is request failed due to server unavailable - http status code 503
-                if (response != null && (response.StatusCode == (HttpStatusCode)429 || response.StatusCode == (HttpStatusCode)503))
+                if (ex.Response is HttpWebResponse response && (response.StatusCode == (HttpStatusCode)429 || response.StatusCode == (HttpStatusCode)503))
                 {
                     var clientRequestData = ex.Data["ClientRequest"];
                     if (clientRequestData != null)
@@ -76,7 +75,7 @@ public static class CSOMExtensions
                     await Task.Delay(retryAfterInterval * 1000);
 
                     // Increase counters
-                    backoffIntervalSeconds = backoffIntervalSeconds * 2;
+                    backoffIntervalSeconds *= 2;
                 }
                 else
                 {

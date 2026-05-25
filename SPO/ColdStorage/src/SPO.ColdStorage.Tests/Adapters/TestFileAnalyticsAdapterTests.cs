@@ -80,7 +80,7 @@ public class TestFileAnalyticsAdapterTests
         var adapter = new TestFileAnalyticsAdapter();
         var versionInfo = new DriveItemVersionInfo
         {
-            Versions = 
+            Versions =
             [
                 new DriveItemVersion { Id = "1.0", Size = 1024 },
                 new DriveItemVersion { Id = "2.0", Size = 2048 },
@@ -126,7 +126,7 @@ public class TestFileAnalyticsAdapterTests
             WebUrl = "https://test.sharepoint.com/sites/test",
             ServerRelativeFilePath = "/sites/test/file.docx"
         };
-        
+
         // FullSharePointUrl will be calculated from these properties
         adapter.SetFileToSkip(fileInfo.FullSharePointUrl);
 

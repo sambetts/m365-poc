@@ -6,10 +6,11 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Models;
+
 public class DriveItemVersionInfo
 {
     [JsonPropertyName("value")]
-    public List<DriveItemVersion> Versions { get; set; } = new List<DriveItemVersion>();
+    public List<DriveItemVersion> Versions { get; set; } = [];
 }
 
 

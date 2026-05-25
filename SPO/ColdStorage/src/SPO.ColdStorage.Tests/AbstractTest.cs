@@ -6,6 +6,7 @@ using SPO.ColdStorage.Migration.Engine;
 using System.Threading.Tasks;
 
 namespace SPO.ColdStorage.Tests;
+
 public class AbstractTest
 {
 
@@ -28,9 +29,7 @@ public class AbstractTest
         _config = new Config(config);
 
         // Init DB
-        using (var db = new SPOColdStorageDbContext(_config!))
-        {
-            await DbInitializer.Init(db, _config.DevConfig!);
-        }
+        using var db = new SPOColdStorageDbContext(_config!);
+        await DbInitializer.Init(db, _config.DevConfig!);
     }
 }
