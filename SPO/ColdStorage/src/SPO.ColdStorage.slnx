@@ -5,16 +5,16 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Tests/">
-    <Project Path="SPO.ColdStorage.LoadGenerator/SPO.ColdStorage.LoadGenerator.csproj" />
-    <Project Path="SPO.ColdStorage.Migration.Engine.Tests/SPO.ColdStorage.Migration.Engine.Tests.csproj" />
-    <Project Path="SPO.ColdStorage.Tests/SPO.ColdStorage.Tests.csproj" />
+    <Project Path="LoadGenerator/LoadGenerator.csproj" />
+    <Project Path="Migration.Engine.Tests/Migration.Engine.Tests.csproj" />
+    <Project Path="Tests/Tests.csproj" />
   </Folder>
-  <Project Path="SPO.ColdStorage.Entities/SPO.ColdStorage.Entities.csproj" />
-  <Project Path="SPO.ColdStorage.Migration.Engine/SPO.ColdStorage.Migration.Engine.csproj" />
-  <Project Path="SPO.ColdStorage.Migration.Indexer/SPO.ColdStorage.Migration.Indexer.csproj" />
-  <Project Path="SPO.ColdStorage.Migration.Migrator/SPO.ColdStorage.Migration.Migrator.csproj" />
-  <Project Path="SPO.ColdStorage.Migration.SiteSnapshotBuilder/SPO.ColdStorage.Migration.SiteSnapshotBuilder.csproj" />
-  <Project Path="SPO.ColdStorage.Models/SPO.ColdStorage.Models.csproj" />
+  <Project Path="Entities/Entities.csproj" />
+  <Project Path="Migration.Engine/Migration.Engine.csproj" />
+  <Project Path="Migration.Indexer/Migration.Indexer.csproj" />
+  <Project Path="Migration.Migrator/Migration.Migrator.csproj" />
+  <Project Path="Migration.SiteSnapshotBuilder/Migration.SiteSnapshotBuilder.csproj" />
+  <Project Path="Models/Models.csproj" />
   <Project Path="Web/web.client/web.client.esproj">
     <Build Solution="*|Any CPU" />
     <Deploy Solution="*|Any CPU" />
