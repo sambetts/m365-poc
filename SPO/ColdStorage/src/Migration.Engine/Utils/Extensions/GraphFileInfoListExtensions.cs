@@ -14,19 +14,19 @@ public static class GraphFileInfoListExtensions
         this List<DocumentSiteWithMetadata> graphFiles,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer)
+        ILogger logger)
     {
-        return GetDriveItemsAnalyticsCore(graphFiles, baseSiteAddress, httpClient, tracer);
+        return GetDriveItemsAnalyticsCore(graphFiles, baseSiteAddress, httpClient, logger);
     }
 
     private static async Task<BackgroundUpdate> GetDriveItemsAnalyticsCore(
         List<DocumentSiteWithMetadata> graphFiles,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer)
+        ILogger logger)
     {
         var fileSuccessResults = new Dictionary<DocumentSiteWithMetadata, object>(graphFiles.Count);
-        var tasks = graphFiles.Select(file => ProcessAnalyticsAsync(file, baseSiteAddress, httpClient, tracer, fileSuccessResults));
+        var tasks = graphFiles.Select(file => ProcessAnalyticsAsync(file, baseSiteAddress, httpClient, logger, fileSuccessResults));
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
@@ -37,7 +37,7 @@ public static class GraphFileInfoListExtensions
         DocumentSiteWithMetadata fileToUpdate,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer,
+        ILogger logger,
         Dictionary<DocumentSiteWithMetadata, object> results)
     {
         await _rateLimiter.WaitAsync().ConfigureAwait(false);
@@ -47,11 +47,11 @@ public static class GraphFileInfoListExtensions
 
             try
             {
-                using var analyticsResponse = await httpClient.GetAsyncWithThrottleRetries(url, tracer).ConfigureAwait(false);
+                using var analyticsResponse = await httpClient.GetAsyncWithThrottleRetries(url, logger).ConfigureAwait(false);
                 var analyticsResponseBody = await analyticsResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 analyticsResponse.EnsureSuccessStatusCode();
-                var activitiesResponse = JsonSerializer.Deserialize<ItemAnalyticsRepsonse>(analyticsResponseBody) ?? new ItemAnalyticsRepsonse();
+                var activitiesResponse = JsonSerializer.Deserialize<ItemAnalyticsResponse>(analyticsResponseBody) ?? new ItemAnalyticsResponse();
                 fileToUpdate.State = SiteFileAnalysisState.Complete;
 
                 lock (results)
@@ -65,14 +65,14 @@ public static class GraphFileInfoListExtensions
                     ? SiteFileAnalysisState.TransientError
                     : SiteFileAnalysisState.FatalError;
 
-                tracer.LogError(ex, "Unhandled exception");
-                tracer.LogError($"Got HTTP exception {ex.Message} getting analytics data for drive item {fileToUpdate.GraphItemId}");
+                logger.LogError(ex, "Unhandled exception");
+                logger.LogError($"Got HTTP exception {ex.Message} getting analytics data for drive item {fileToUpdate.GraphItemId}");
             }
             catch (Exception ex)
             {
                 fileToUpdate.State = SiteFileAnalysisState.FatalError;
-                tracer.LogError(ex, "Unhandled exception");
-                tracer.LogError($"Got general exception {ex.Message} getting analytics data for drive item {fileToUpdate.GraphItemId}");
+                logger.LogError(ex, "Unhandled exception");
+                logger.LogError($"Got general exception {ex.Message} getting analytics data for drive item {fileToUpdate.GraphItemId}");
             }
         }
         finally
@@ -85,19 +85,19 @@ public static class GraphFileInfoListExtensions
         this List<DocumentSiteWithMetadata> graphFiles,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer)
+        ILogger logger)
     {
-        return GetDriveItemsHistoryCore(graphFiles, baseSiteAddress, httpClient, tracer);
+        return GetDriveItemsHistoryCore(graphFiles, baseSiteAddress, httpClient, logger);
     }
 
     private static async Task<BackgroundUpdate> GetDriveItemsHistoryCore(
         List<DocumentSiteWithMetadata> graphFiles,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer)
+        ILogger logger)
     {
         var fileSuccessResults = new Dictionary<DocumentSiteWithMetadata, object>(graphFiles.Count);
-        var tasks = graphFiles.Select(file => ProcessHistoryAsync(file, baseSiteAddress, httpClient, tracer, fileSuccessResults));
+        var tasks = graphFiles.Select(file => ProcessHistoryAsync(file, baseSiteAddress, httpClient, logger, fileSuccessResults));
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
 
@@ -108,7 +108,7 @@ public static class GraphFileInfoListExtensions
         DocumentSiteWithMetadata fileToUpdate,
         string baseSiteAddress,
         SecureSPThrottledHttpClient httpClient,
-        ILogger tracer,
+        ILogger logger,
         Dictionary<DocumentSiteWithMetadata, object> results)
     {
         await _rateLimiter.WaitAsync().ConfigureAwait(false);
@@ -118,7 +118,7 @@ public static class GraphFileInfoListExtensions
 
             try
             {
-                using var analyticsResponse = await httpClient.GetAsyncWithThrottleRetries(url, tracer).ConfigureAwait(false);
+                using var analyticsResponse = await httpClient.GetAsyncWithThrottleRetries(url, logger).ConfigureAwait(false);
                 var analyticsResponseBody = await analyticsResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 analyticsResponse.EnsureSuccessStatusCode();
@@ -136,14 +136,14 @@ public static class GraphFileInfoListExtensions
                     ? SiteFileAnalysisState.TransientError
                     : SiteFileAnalysisState.FatalError;
 
-                tracer.LogError(ex, "Unhandled exception");
-                tracer.LogError($"Got HTTP exception {ex.Message} getting version data for drive item {fileToUpdate.GraphItemId}");
+                logger.LogError(ex, "Unhandled exception");
+                logger.LogError($"Got HTTP exception {ex.Message} getting version data for drive item {fileToUpdate.GraphItemId}");
             }
             catch (Exception ex)
             {
                 fileToUpdate.State = SiteFileAnalysisState.FatalError;
-                tracer.LogError(ex, "Unhandled exception");
-                tracer.LogError($"Got general exception {ex.Message} getting version data for drive item {fileToUpdate.GraphItemId}");
+                logger.LogError(ex, "Unhandled exception");
+                logger.LogError($"Got general exception {ex.Message} getting version data for drive item {fileToUpdate.GraphItemId}");
             }
         }
         finally

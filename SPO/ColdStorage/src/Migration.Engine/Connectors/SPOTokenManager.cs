@@ -6,11 +6,11 @@ using Migration.Engine.Utils;
 using Microsoft.Extensions.Logging;
 namespace Migration.Engine.Connectors;
 
-public class SPOTokenManager(Config config, string siteUrl, ILogger tracer)
+public class SPOTokenManager(Config config, string siteUrl, ILogger logger)
 {
     private readonly Config _config = config;
     private readonly string _siteUrl = siteUrl;
-    private readonly ILogger _tracer = tracer;
+    private readonly ILogger _logger = logger;
     private AuthenticationResult? _contextAuthResult = null;
     protected ClientContext? _context = null;
 
@@ -22,8 +22,8 @@ public class SPOTokenManager(Config config, string siteUrl, ILogger tracer)
     {
         if (_contextAuthResult == null || _contextAuthResult.ExpiresOn < DateTime.Now.AddMinutes(-5))
         {
-            _tracer.LogInformation($"Refreshing SPO access token...");
-            _context = await AuthUtils.GetClientContext(_config, _siteUrl, _tracer, (AuthenticationResult auth) => _contextAuthResult = auth);
+            _logger.LogInformation($"Refreshing SPO access token...");
+            _context = await AuthUtils.GetClientContext(_config, _siteUrl, _logger, (AuthenticationResult auth) => _contextAuthResult = auth);
             await EnsureContextWebIsLoaded(_context);
 
             if (newTokenCallback != null)
@@ -52,7 +52,7 @@ public class SPOTokenManager(Config config, string siteUrl, ILogger tracer)
         {
             spClient.Load(spClient.Web);
             spClient.Load(spClient.Site, s => s.Url);
-            await spClient.ExecuteQueryAsyncWithThrottleRetries(_tracer);
+            await spClient.ExecuteQueryAsyncWithThrottleRetries(_logger);
         }
     }
 }

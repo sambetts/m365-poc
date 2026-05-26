@@ -28,7 +28,7 @@ public class DocumentSiteWithMetadata : DriveItemSharePointFileInfo
 }
 
 // https://docs.microsoft.com/en-us/graph/api/resources/itemactivitystat?view=graph-rest-1.0
-public class ItemAnalyticsRepsonse
+public class ItemAnalyticsResponse
 {
 
     [JsonPropertyName("incompleteData")]

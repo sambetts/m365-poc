@@ -37,7 +37,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
             // Send msg to migrate file
             var sbMsg = new ServiceBusMessage(System.Text.Json.JsonSerializer.Serialize(sharePointFileInfo));
             await _sbSender.SendMessageAsync(sbMsg);
-            _tracer.LogWarning($"+'{sharePointFileInfo.FullSharePointUrl}'...");
+            _logger.LogWarning($"+'{sharePointFileInfo.FullSharePointUrl}'...");
         }
     }
 
@@ -72,19 +72,19 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
     public async Task<long> MigrateFromSharePointToBlobStorage(BaseSharePointFileInfo fileToMigrate, IConfidentialClientApplication app)
     {
         // Download from SP to local
-        var downloader = new SharePointFileDownloader(app, _config, _tracer);
+        var downloader = new SharePointFileDownloader(app, _config, _logger);
         var tempFileNameAndSize = await downloader.DownloadFileToTempDir(fileToMigrate);
 
         // Upload local file to az blob
         Exception? uploadError = null;
-        var blobUploader = new BlobStorageUploader(_config, _tracer);
+        var blobUploader = new BlobStorageUploader(_config, _logger);
         try
         {
             await blobUploader.UploadFileToAzureBlob(tempFileNameAndSize.Item1, fileToMigrate);
         }
         catch (Exception ex)
         {
-            _tracer.LogInformation($"Got errror {ex.Message} uploading file '{tempFileNameAndSize.Item1}' to blob storage. Ignoring.");
+            _logger.LogInformation($"Got errror {ex.Message} uploading file '{tempFileNameAndSize.Item1}' to blob storage. Ignoring.");
             uploadError = ex;
         }
 
@@ -95,7 +95,7 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
         }
         catch (Exception ex)
         {
-            _tracer.LogWarning($"Got errror '{ex.Message}' cleaning temp file '{tempFileNameAndSize.Item1}'. Ignoring.");
+            _logger.LogWarning($"Got errror '{ex.Message}' cleaning temp file '{tempFileNameAndSize.Item1}'. Ignoring.");
         }
 
         // Having cleaned up, throw our own exception so service-bus message is retried later

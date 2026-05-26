@@ -18,7 +18,7 @@ namespace Web.Controllers;
 [Route("[controller]")]
 public class AppConfigurationController(SPOColdStorageDbContext context, Config config, ILogger<AppConfigurationController> logger) : ControllerBase
 {
-    private readonly ILogger<AppConfigurationController> _tracer = logger;
+    private readonly ILogger<AppConfigurationController> _logger = logger;
     private readonly SPOColdStorageDbContext _context = context;
     private readonly Config _config = config;
 
@@ -97,11 +97,11 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
         // Verify auth works with 1st item
         try
         {
-            await AuthUtils.GetClientContext(_config, targets[0].RootURL, _tracer, null);
+            await AuthUtils.GetClientContext(_config, targets[0].RootURL, _logger, null);
         }
         catch (Exception ex)
         {
-            _tracer.LogCritical(ex, "Error validating authentication to SharePoint Online");
+            _logger.LogCritical(ex, "Error validating authentication to SharePoint Online");
             return BadRequest($"Got '{ex.Message}' trying to get a token for SPO authentication. Check service configuration.");
         }
 
@@ -114,13 +114,13 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
         {
             try
             {
-                var siteContext = await AuthUtils.GetClientContext(_config, target.RootURL, _tracer, null);
+                var siteContext = await AuthUtils.GetClientContext(_config, target.RootURL, _logger, null);
                 siteContext.Load(siteContext.Web);
                 await siteContext.ExecuteQueryAsync();
             }
             catch (Exception ex)
             {
-                _tracer.LogError(ex, $"Error validating site '{target.RootURL}'");
+                _logger.LogError(ex, $"Error validating site '{target.RootURL}'");
                 return BadRequest($"Got '{ex.Message}' validating SPO site URL '{target}'. It's not a valid SharePoint site-collection URL?");
             }
 

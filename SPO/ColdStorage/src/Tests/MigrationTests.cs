@@ -23,16 +23,16 @@ public class MigrationTests : AbstractTest
     public async Task GetDriveItemAnalyticsTests()
     {
         var app = await AuthUtils.GetNewClientApp(_config!);
-        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _tracer);
+        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _logger);
 
         // Upload a test file to SP
         var targetList = ctx.Web.Lists.GetByTitle("Documents");
 
         var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-        var newItemId = await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
+        var newItemId = await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _logger);
 
         // Update contents
-        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + "v2"), _tracer);
+        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + "v2"), _logger);
 
         var uploaded = targetList.GetItemByUniqueId(newItemId);
 
@@ -51,12 +51,12 @@ public class MigrationTests : AbstractTest
         var graphFiles = driveItemValues.Select(d => new DocumentSiteWithMetadata { DriveId = uploaded.File.VroomDriveID, GraphItemId = d.Id ?? string.Empty });
         graphFileInfoList.AddRange(graphFiles);
 
-        var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _tracer);
+        var batchAnalytics = await graphFileInfoList.GetDriveItemsAnalytics(_config!.DevConfig.DefaultSharePointSite, httpClient, _logger);
         Assert.Equal(graphFiles.Count(), batchAnalytics.UpdateResults.Count);
 
         var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v =>
         {
-            var analytics = v as ItemAnalyticsRepsonse;
+            var analytics = v as ItemAnalyticsResponse;
             return analytics?.AccessStats != null && analytics.AccessStats.ActionCount > 0;
         }).ToList();
     }
@@ -67,10 +67,10 @@ public class MigrationTests : AbstractTest
     [Fact(Skip = SkipReason)]
     public async Task SharePointFileMigrationTests()
     {
-        var migrator = new SharePointFileMigrator(_config!, _tracer);
+        var migrator = new SharePointFileMigrator(_config!, _logger);
 
         var app = await AuthUtils.GetNewClientApp(_config!);
-        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _tracer);
+        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _logger);
 
         // Upload a test file to SP
         var targetList = ctx.Web.Lists.GetByTitle("Documents");
@@ -78,11 +78,11 @@ public class MigrationTests : AbstractTest
         await ctx.ExecuteQueryAsync();
 
         var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
+        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _logger);
 
         // Discover file in SP with crawler
-        var spConnector = new SPOSiteCollectionLoader(_config, _config!.DevConfig.DefaultSharePointSite, _tracer);
-        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _tracer);
+        var spConnector = new SPOSiteCollectionLoader(_config, _config!.DevConfig.DefaultSharePointSite, _logger);
+        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _logger);
         var allResults = await crawler.CrawlList(new SPOListLoader(targetList, spConnector), new ListFolderConfig(), null);
 
         // Check it's the right file
@@ -112,17 +112,17 @@ public class MigrationTests : AbstractTest
     [Fact(Skip = SkipReason)]
     public async Task SharePointFileNeedsMigratingTests()
     {
-        var migrator = new SharePointFileMigrator(_config!, _tracer);
+        var migrator = new SharePointFileMigrator(_config!, _logger);
 
         var app = await AuthUtils.GetNewClientApp(_config!);
-        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _tracer);
+        var ctx = await AuthUtils.GetClientContext(app, _config!.BaseServerAddress, _config!.DevConfig.DefaultSharePointSite, _logger);
 
         // Upload a test file to SP
         var targetList = ctx.Web.Lists.GetByTitle("Documents");
         ctx.Load(targetList, t => t.Id, t => t.Title);
 
         var fileTitle = $"unit-test file {DateTime.Now.Ticks}.txt";
-        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _tracer);
+        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS), _logger);
 
         // Prepare for file migration
         var discoveredFile = await GetFromIndex(fileTitle, targetList);
@@ -142,7 +142,7 @@ public class MigrationTests : AbstractTest
         Assert.False(needsMigratingPostMigration);
 
         // Update file with new content and recrawl
-        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + " + extra data"), _tracer);
+        await targetList.SaveFile(ctx, fileTitle, System.Text.Encoding.UTF8.GetBytes(FILE_CONTENTS + " + extra data"), _logger);
         discoveredFile = await GetFromIndex(fileTitle, targetList);
 
         // Now the file's been updated, it should need a new migration
@@ -160,9 +160,9 @@ public class MigrationTests : AbstractTest
 
     async Task<BaseSharePointFileInfo?> GetFromIndex(string fileTitle, Microsoft.SharePoint.Client.List targetList)
     {
-        var spConnector = new SPOSiteCollectionLoader(_config!, _config!.DevConfig.DefaultSharePointSite, _tracer);
+        var spConnector = new SPOSiteCollectionLoader(_config!, _config!.DevConfig.DefaultSharePointSite, _logger);
 
-        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _tracer);
+        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _logger);
         var allResults = await crawler.CrawlList(new SPOListLoader(targetList, spConnector), new ListFolderConfig(), null);
         var discoveredFile = allResults.FilesFound.Where(r => r.ServerRelativeFilePath.Contains(fileTitle)).FirstOrDefault();
         return discoveredFile;
@@ -179,7 +179,7 @@ public class MigrationTests : AbstractTest
         };
         var app = await AuthUtils.GetNewClientApp(_config);
 
-        var m = new SharePointFileDownloader(app, _config!, _tracer);
+        var m = new SharePointFileDownloader(app, _config!, _logger);
         await m.DownloadFileToTempDir(testMsg);
     }
 
@@ -197,7 +197,7 @@ public class MigrationTests : AbstractTest
         System.IO.File.WriteAllText(tempFileName, FILE_CONTENTS);
 
         // Upload - shouldn't exist in destination
-        var m = new BlobStorageUploader(_config!, _tracer);
+        var m = new BlobStorageUploader(_config!, _logger);
         await m.UploadFileToAzureBlob(tempFileName, testMsg);
 
         // Write same file again. Should also work.

@@ -6,12 +6,12 @@ using Migration.Engine.Utils;
 using Microsoft.Extensions.Logging;
 namespace Migration.Engine.Connectors;
 
-public abstract class BaseSharePointConnector(SPOTokenManager tokenManager, ILogger tracer)
+public abstract class BaseSharePointConnector(SPOTokenManager tokenManager, ILogger logger)
 {
     private readonly SPOTokenManager tokenManager = tokenManager;
-    private readonly ILogger tracer = tracer;
+    private readonly ILogger logger = logger;
 
-    public ILogger Tracer => tracer;
+    public ILogger Logger => logger;
     public SPOTokenManager TokenManager => tokenManager;
 }
 

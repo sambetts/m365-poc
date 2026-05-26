@@ -6,7 +6,7 @@ namespace Migration.Engine.Utils;
 
 public static class CSOMExtensions
 {
-    public static async Task ExecuteQueryAsyncWithThrottleRetries(this ClientContext clientContext, ILogger tracer)
+    public static async Task ExecuteQueryAsyncWithThrottleRetries(this ClientContext clientContext, ILogger logger)
     {
         int retryAttempts = 0;
         int backoffIntervalSeconds = 1;
@@ -70,7 +70,7 @@ public static class CSOMExtensions
                     }
 
                     // Trace standard throttling message
-                    tracer.LogWarning($"{Constants.THROTTLE_ERROR} executing CSOM request. Sleeping for {retryAfterInterval} seconds.");
+                    logger.LogWarning($"{Constants.THROTTLE_ERROR} executing CSOM request. Sleeping for {retryAfterInterval} seconds.");
 
                     // Delay for the requested seconds
                     await Task.Delay(retryAfterInterval * 1000);
@@ -87,7 +87,7 @@ public static class CSOMExtensions
 
         // Track error & throw exception
         var givingUpMsgBody = $"Maximum retry attempts {Constants.MAX_SPO_API_RETRIES} has been attempted.";
-        tracer.LogError($"{Constants.THROTTLE_ERROR} executing CSOM request. {givingUpMsgBody}");
+        logger.LogError($"{Constants.THROTTLE_ERROR} executing CSOM request. {givingUpMsgBody}");
         throw new Exception($"Error executing CSOM request. {givingUpMsgBody}");
 
     }

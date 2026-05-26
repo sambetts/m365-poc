@@ -8,7 +8,7 @@ namespace Tests;
 
 public class MockCrawlTests
 {
-    private readonly ILogger _tracer = NullLogger.Instance;
+    private readonly ILogger _logger = NullLogger.Instance;
     private readonly List<SharePointFileInfoWithList> _foundFiles = [];
 
     [Fact]
@@ -18,7 +18,7 @@ public class MockCrawlTests
         const int PAGES = 5;
         var loader = new MockSiteLoader(PAGE_COUNT, PAGES);
 
-        var crawl = new SiteListsAndLibrariesCrawler<int?>(loader, _tracer);
+        var crawl = new SiteListsAndLibrariesCrawler<int?>(loader, _logger);
         await crawl.StartSiteCrawl(new SiteListFilterConfig(),
             (SharePointFileInfoWithList foundFile) => Crawler_SharePointFileFound(foundFile),
             () => CrawlComplete());

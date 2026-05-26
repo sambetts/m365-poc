@@ -6,7 +6,7 @@ namespace Migration.Engine.SnapshotBuilder;
 public class BackgroundUpdate
 {
     /// <summary>
-    /// Value is either DriveItemVersionInfo or ItemAnalyticsRepsonse
+    /// Value is either DriveItemVersionInfo or ItemAnalyticsResponse
     /// </summary>
     public Dictionary<DocumentSiteWithMetadata, object> UpdateResults { get; set; } = [];
 }

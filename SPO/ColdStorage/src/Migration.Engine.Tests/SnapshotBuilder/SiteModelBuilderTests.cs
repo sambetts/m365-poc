@@ -18,7 +18,7 @@ public class SiteModelBuilderTests
 
     private readonly IConfiguration _mockConfig;
     private readonly Config _config;
-    private readonly ILogger _tracer = NullLogger.Instance;
+    private readonly ILogger _logger = NullLogger.Instance;
     private readonly TargetMigrationSite _testSite;
     private readonly TestFileAnalyticsAdapter _testAdapter;
 
@@ -84,7 +84,7 @@ public class SiteModelBuilderTests
     public void Constructor_WithValidParameters_CreatesInstance()
     {
         // Arrange & Act
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Assert
         builder.Should().NotBeNull();
@@ -94,7 +94,7 @@ public class SiteModelBuilderTests
     public void Constructor_WithNullAdapter_CreatesDefaultGraphAdapter()
     {
         // Arrange & Act
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, null);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, null);
 
         // Assert
         builder.Should().NotBeNull();
@@ -104,7 +104,7 @@ public class SiteModelBuilderTests
     public async Task Build_WithoutCallback_ReturnsModel()
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         var result = await builder.Build();
@@ -118,7 +118,7 @@ public class SiteModelBuilderTests
     public void Build_WithInvalidBatchSize_ThrowsArgumentOutOfRangeException()
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         Func<Task> act = async () => await builder.Build(0, null, null);
@@ -131,11 +131,11 @@ public class SiteModelBuilderTests
     public async Task Build_WithTestAdapter_CallsAdapterMethods()
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
         _testAdapter.ResetCounters();
 
         // Configure test data
-        _testAdapter.SetAnalyticsData("test-item-1", new ItemAnalyticsRepsonse.AnalyticsItemActionStat
+        _testAdapter.SetAnalyticsData("test-item-1", new ItemAnalyticsResponse.AnalyticsItemActionStat
         {
             ActionCount = 10,
             ActorCount = 5
@@ -163,7 +163,7 @@ public class SiteModelBuilderTests
     public void BackgroundMetaTasksAll_ReturnsEnumerable()
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         var tasks = builder.BackgroundMetaTasksAll;
@@ -180,7 +180,7 @@ public class SiteModelBuilderTests
     public async Task Build_WithDifferentBatchSizes_Succeeds(int batchSize)
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         var result = await builder.Build(batchSize, null, null);
@@ -193,7 +193,7 @@ public class SiteModelBuilderTests
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Arrange
-        var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         Action act = () =>
@@ -211,7 +211,7 @@ public class SiteModelBuilderTests
     public async Task Build_CalledMultipleTimes_ReturnsSameModel()
     {
         // Arrange
-        using var builder = new SiteModelBuilder(_config, _tracer, _testSite, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, _testSite, _testAdapter);
 
         // Act
         var result1 = await builder.Build();
@@ -232,7 +232,7 @@ public class SiteModelBuilderTests
         };
 
         // Act
-        using var builder = new SiteModelBuilder(_config, _tracer, siteWithFilter, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, siteWithFilter, _testAdapter);
 
         // Assert
         builder.Should().NotBeNull();
@@ -249,7 +249,7 @@ public class SiteModelBuilderTests
         };
 
         // Act & Assert - should not throw
-        using var builder = new SiteModelBuilder(_config, _tracer, siteWithInvalidFilter, _testAdapter);
+        using var builder = new SiteModelBuilder(_config, _logger, siteWithInvalidFilter, _testAdapter);
         builder.Should().NotBeNull();
     }
 }

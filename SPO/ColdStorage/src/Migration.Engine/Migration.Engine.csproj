@@ -5,16 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<Compile Remove="Model\**" />
-	<EmbeddedResource Remove="Model\**" />
-	<None Remove="Model\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-	<None Remove="SQL\MergeStagingFiles.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
 	<EmbeddedResource Include="SQL\MergeStagingFiles.sql" />
   </ItemGroup>
 

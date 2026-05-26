@@ -25,11 +25,11 @@ public class AuthUtils
         return _cachedCert;
 
     }
-    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger tracer)
+    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger logger)
     {
-        return await GetClientContext(siteUrl, tenantId, clientId, clientSecret, keyVaultUrl, baseServerAddress, tracer, null);
+        return await GetClientContext(siteUrl, tenantId, clientId, clientSecret, keyVaultUrl, baseServerAddress, logger, null);
     }
-    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger tracer, Action<AuthenticationResult>? authResultDelegate)
+    public async static Task<ClientContext> GetClientContext(string siteUrl, string tenantId, string clientId, string clientSecret, string keyVaultUrl, string baseServerAddress, ILogger logger, Action<AuthenticationResult>? authResultDelegate)
     {
         if (string.IsNullOrEmpty(siteUrl))
         {
@@ -75,11 +75,11 @@ public class AuthUtils
         };
 
         ctx.Load(ctx.Web);
-        await ctx.ExecuteQueryAsyncWithThrottleRetries(tracer);
+        await ctx.ExecuteQueryAsyncWithThrottleRetries(logger);
 
         return ctx;
     }
-    public async static Task<ClientContext> GetClientContext(IConfidentialClientApplication app, string baseServerAddress, string siteUrl, ILogger tracer)
+    public async static Task<ClientContext> GetClientContext(IConfidentialClientApplication app, string baseServerAddress, string siteUrl, ILogger logger)
     {
         var result = await app.AuthForSharePointOnline(baseServerAddress);
 
@@ -91,7 +91,7 @@ public class AuthUtils
         };
 
         ctx.Load(ctx.Web);
-        await ctx.ExecuteQueryAsyncWithThrottleRetries(tracer);
+        await ctx.ExecuteQueryAsyncWithThrottleRetries(logger);
 
         return ctx;
     }
@@ -107,10 +107,10 @@ public class AuthUtils
         return app;
     }
 
-    public static async Task<ClientContext> GetClientContext(Config config, string siteUrl, ILogger tracer, Action<AuthenticationResult>? authResultDelegate)
+    public static async Task<ClientContext> GetClientContext(Config config, string siteUrl, ILogger logger, Action<AuthenticationResult>? authResultDelegate)
     {
         return await GetClientContext(siteUrl, config.AzureAdConfig.TenantId!, config.AzureAdConfig.ClientID!,
-            config.AzureAdConfig.Secret!, config.KeyVaultUrl, config.BaseServerAddress, tracer, authResultDelegate);
+            config.AzureAdConfig.Secret!, config.KeyVaultUrl, config.BaseServerAddress, logger, authResultDelegate);
     }
 
     public static async Task<IConfidentialClientApplication> GetNewClientApp(Config config)

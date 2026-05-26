@@ -10,7 +10,7 @@ namespace Migration.Engine.Tests.Adapters;
 /// </summary>
 public class TestFileAnalyticsAdapter : IFileAnalyticsProvider
 {
-    private readonly Dictionary<string, ItemAnalyticsRepsonse.AnalyticsItemActionStat> _analyticsData = [];
+    private readonly Dictionary<string, ItemAnalyticsResponse.AnalyticsItemActionStat> _analyticsData = [];
     private readonly Dictionary<string, DriveItemVersionInfo> _versionData = [];
     private readonly HashSet<string> _skipFiles = [];
     private int _analyticsCallCount;
@@ -35,7 +35,7 @@ public class TestFileAnalyticsAdapter : IFileAnalyticsProvider
     /// <summary>
     /// Configures analytics data for a specific file.
     /// </summary>
-    public void SetAnalyticsData(string graphItemId, ItemAnalyticsRepsonse.AnalyticsItemActionStat stats)
+    public void SetAnalyticsData(string graphItemId, ItemAnalyticsResponse.AnalyticsItemActionStat stats)
     {
         _analyticsData[graphItemId] = stats;
     }
@@ -78,14 +78,14 @@ public class TestFileAnalyticsAdapter : IFileAnalyticsProvider
         {
             if (_analyticsData.TryGetValue(file.GraphItemId, out var stats))
             {
-                var response = new ItemAnalyticsRepsonse { AccessStats = stats };
+                var response = new ItemAnalyticsResponse { AccessStats = stats };
                 results[file] = response;
                 file.State = SiteFileAnalysisState.Complete;
             }
             else
             {
                 // Default empty analytics
-                var response = new ItemAnalyticsRepsonse { AccessStats = new ItemAnalyticsRepsonse.AnalyticsItemActionStat() };
+                var response = new ItemAnalyticsResponse { AccessStats = new ItemAnalyticsResponse.AnalyticsItemActionStat() };
                 results[file] = response;
                 file.State = SiteFileAnalysisState.Complete;
             }

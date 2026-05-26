@@ -39,13 +39,13 @@ public class SharePointFileDownloader : BaseComponent
         // Write to temp file
         var tempFileName = GetTempFileNameAndCreateDir(sharePointFile);
 
-        _tracer.LogDebug($"Downloading '{sharePointFile.FullSharePointUrl}'...");
+        _logger.LogDebug($"Downloading '{sharePointFile.FullSharePointUrl}'...");
         var url = $"{sharePointFile.WebUrl}/_api/web/GetFileByServerRelativeUrl('{sharePointFile.ServerRelativeFilePath}')/OpenBinaryStream";
 
         long fileSize = 0;
 
         // Get response but don't buffer full content (which will buffer overlflow for large files)
-        using (var response = await _client.GetAsyncWithThrottleRetries(url, HttpCompletionOption.ResponseHeadersRead, _tracer))
+        using (var response = await _client.GetAsyncWithThrottleRetries(url, HttpCompletionOption.ResponseHeadersRead, _logger))
         {
             using var streamToReadFrom = await response.Content.ReadAsStreamAsync();
             using var streamToWriteTo = File.Open(tempFileName, FileMode.Create);
@@ -53,7 +53,7 @@ public class SharePointFileDownloader : BaseComponent
             fileSize = streamToWriteTo.Length;
         }
 
-        _tracer.LogDebug($"Wrote {fileSize:N0} bytes to '{tempFileName}'.");
+        _logger.LogDebug($"Wrote {fileSize:N0} bytes to '{tempFileName}'.");
 
         // Return file name & size
         return (tempFileName, fileSize);

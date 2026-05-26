@@ -4,7 +4,7 @@ using Entities.DBEntities;
 using Migration.Engine.Adapters;
 using Migration.Engine.Connectors;
 using Migration.Engine.Utils;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Models;
 using Microsoft.SharePoint.Client;
 using System.Collections.Concurrent;
@@ -53,7 +53,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             }
             catch (Exception ex)
             {
-                _tracer.LogWarning($"Couldn't deserialise filter JSon for site '{site.RootURL}': {ex.Message}");
+                _logger.LogWarning($"Couldn't deserialise filter JSon for site '{site.RootURL}': {ex.Message}");
             }
         }
 
@@ -99,16 +99,16 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             ClientContext? ctx = null;
             try
             {
-                ctx = await AuthUtils.GetClientContext(_config, _site.RootURL, _tracer, null).ConfigureAwait(false);
+                ctx = await AuthUtils.GetClientContext(_config, _site.RootURL, _logger, null).ConfigureAwait(false);
             }
             catch (System.Net.WebException ex)
             {
-                _tracer.LogError($"ERROR: '{ex.Message}' reading site {_site.RootURL}");
+                _logger.LogError($"ERROR: '{ex.Message}' reading site {_site.RootURL}");
                 return _model;
             }
 
-            var spConnector = new SPOSiteCollectionLoader(_config, _site.RootURL, _tracer);
-            var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _tracer);
+            var spConnector = new SPOSiteCollectionLoader(_config, _site.RootURL, _logger);
+            var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _logger);
 
             // Begin and block until all files crawled
             _model.Started = DateTime.Now;
@@ -119,7 +119,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             await crawler.StartSiteCrawl(_siteFilterConfig, (SharePointFileInfoWithList foundFile) => Crawler_SharePointFileFound(foundFile, batchSize, newFilesCallback),
                 () => CrawlComplete(newFilesCallback)).ConfigureAwait(false);
 
-            _tracer.LogInformation($"STAGE 1/2: Finished crawling site files. Waiting for background update tasks to finish...");
+            _logger.LogInformation($"STAGE 1/2: Finished crawling site files. Waiting for background update tasks to finish...");
             await Task.WhenAll(BackgroundMetaTasksAll).ConfigureAwait(false);
 
             var filesToGetAnalysisFor = true;
@@ -150,7 +150,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             _model.InvalidateCaches();
             _model.Finished = DateTime.Now;
             var ts = _model.Finished.Value.Subtract(_model.Started);
-            _tracer.LogInformation($"STAGE 2/2: Finished getting metadata for site files. All done in {ts.TotalMinutes:N2} minutes.");
+            _logger.LogInformation($"STAGE 2/2: Finished getting metadata for site files. All done in {ts.TotalMinutes:N2} minutes.");
         }
 
         return _model;
@@ -228,7 +228,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
 
         // Compile results as they come
         var versionUpdates = new Dictionary<DriveItemSharePointFileInfo, DriveItemVersionInfo>();
-        var analyticsUpdates = new Dictionary<DriveItemSharePointFileInfo, ItemAnalyticsRepsonse.AnalyticsItemActionStat>();
+        var analyticsUpdates = new Dictionary<DriveItemSharePointFileInfo, ItemAnalyticsResponse.AnalyticsItemActionStat>();
 
         await Task.WhenAll(backgroundTasksThisChunk).ConfigureAwait(false);
 
@@ -240,9 +240,9 @@ public class SiteModelBuilder : BaseComponent, IDisposable
                 {
                     versionUpdates.Add(stat.Key, (DriveItemVersionInfo)stat.Value);
                 }
-                else if (stat.Value is ItemAnalyticsRepsonse)
+                else if (stat.Value is ItemAnalyticsResponse)
                 {
-                    analyticsUpdates.Add(stat.Key, ((ItemAnalyticsRepsonse)stat.Value).AccessStats ?? new ItemAnalyticsRepsonse.AnalyticsItemActionStat());
+                    analyticsUpdates.Add(stat.Key, ((ItemAnalyticsResponse)stat.Value).AccessStats ?? new ItemAnalyticsResponse.AnalyticsItemActionStat());
                 }
             }
         }
