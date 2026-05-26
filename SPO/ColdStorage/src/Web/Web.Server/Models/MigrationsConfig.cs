@@ -1,4 +1,4 @@
-namespace SPO.ColdStorage.Web.Models;
+namespace Web.Models;
 
 public class MigrationsConfig
 {

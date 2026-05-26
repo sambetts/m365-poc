@@ -5,7 +5,7 @@ The SPO Cold Storage solution uses SQL Server with Entity Framework Core for dat
 
 ## Database Context
 - **DbContext Class**: `SPOColdStorageDbContext`
-- **Location**: `SPO.ColdStorage.Entities\SPOColdStorageDbContext.cs`
+- **Location**: `Entities\SPOColdStorageDbContext.cs`
 - **Provider**: SQL Server with retry-on-failure enabled
 - **Command Timeout**: 12 hours (configured for long-running operations)
 
@@ -338,19 +338,19 @@ ORDER BY f.url;
 ### Creating Migrations
 ```bash
 # From the solution root
-Add-Migration -Name "MigrationName" -Project "SPO.ColdStorage.Entities" -StartupProject "SPO.ColdStorage.Tests" -Context SPOColdStorageDbContext
+Add-Migration -Name "MigrationName" -Project "Entities" -StartupProject "Tests" -Context SPOColdStorageDbContext
 ```
 
 ### Applying Migrations
 ```bash
 # The application automatically applies migrations on startup
 # Or manually:
-Update-Database -Project "SPO.ColdStorage.Entities" -StartupProject "SPO.ColdStorage.Tests" -Context SPOColdStorageDbContext
+Update-Database -Project "Entities" -StartupProject "Tests" -Context SPOColdStorageDbContext
 ```
 
 ### Generating Migration Script
 ```bash
-Script-Migration -Project "SPO.ColdStorage.Entities" -StartupProject "SPO.ColdStorage.Tests" -From "PreviousMigration" -Context SPOColdStorageDbContext
+Script-Migration -Project "Entities" -StartupProject "Tests" -From "PreviousMigration" -Context SPOColdStorageDbContext
 ```
 
 ## Database Initialization

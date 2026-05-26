@@ -14,8 +14,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\..\SPO.ColdStorage.Entities\SPO.ColdStorage.Entities.csproj" />
-	<ProjectReference Include="..\..\SPO.ColdStorage.Migration.Engine\SPO.ColdStorage.Migration.Engine.csproj" />
+	<ProjectReference Include="..\..\Entities\Entities.csproj" />
+	<ProjectReference Include="..\..\Migration.Engine\Migration.Engine.csproj" />
 	<ProjectReference Include="..\web.client\web.client.esproj">
 	  <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 	  <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>

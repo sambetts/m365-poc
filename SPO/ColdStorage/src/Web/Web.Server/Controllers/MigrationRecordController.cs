@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SPO.ColdStorage.Entities;
-using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Entities.DBEntities;
+using Entities;
+using Entities.Configuration;
+using Entities.DBEntities;
 
-namespace SPO.ColdStorage.Web.Controllers;
+namespace Web.Controllers;
 
 [Microsoft.AspNetCore.Authorization.Authorize]
 [ApiController]

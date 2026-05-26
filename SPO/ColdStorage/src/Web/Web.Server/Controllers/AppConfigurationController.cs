@@ -3,13 +3,13 @@ using Azure.Storage.Sas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SPO.ColdStorage.Entities;
-using SPO.ColdStorage.Entities.Configuration;
-using SPO.ColdStorage.Migration.Engine;
-using SPO.ColdStorage.Models;
-using SPO.ColdStorage.Web.Models;
+using Entities;
+using Entities.Configuration;
+using Migration.Engine;
+using Models;
+using Web.Models;
 
-namespace SPO.ColdStorage.Web.Controllers;
+namespace Web.Controllers;
 /// <summary>
 /// Handles React app requests for app configuration
 /// </summary>

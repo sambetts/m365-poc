@@ -2,8 +2,8 @@ using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
-using SPO.ColdStorage.Entities;
-using SPO.ColdStorage.Entities.Configuration;
+using Entities;
+using Entities.Configuration;
 
 namespace Web.Server;
 
