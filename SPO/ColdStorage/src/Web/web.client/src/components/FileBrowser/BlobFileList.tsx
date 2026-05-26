@@ -13,7 +13,9 @@ interface FileListProps {
 interface FileListState {
     blobItems: BlobItem[] | null,
     currentDirs: string[] | null,
-    storagePrefix: string
+    storagePrefix: string,
+    isLoading: boolean,
+    listError: string | null
 }
 
 export class BlobFileList extends Component<FileListProps, FileListState> {
@@ -21,13 +23,15 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
     constructor(props: FileListProps)
     {
         super(props);
-        this.state = { blobItems: null, currentDirs: null, storagePrefix: ""};
+        this.state = { blobItems: null, currentDirs: null, storagePrefix: "", isLoading: false, listError: null };
     }
 
     componentDidMount()
     {
         if (this.props.client) {
-            this.listFiles("");
+            this.listFiles("").catch((err) => {
+                console.error('Initial blob listing failed.', err);
+            });
         }
     }
 
@@ -37,7 +41,9 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
             this.props.navToFolderCallback(clickedPrefix);
         }
 
-        this.listFiles(clickedPrefix);
+        this.listFiles(clickedPrefix).catch((err) => {
+            console.error('Folder navigation listing failed.', err);
+        });
     }
 
     getDirName(fullName: string): string {
@@ -60,13 +66,17 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
     }
     setNewPath(newPath: string) {
         this.setState({storagePrefix: newPath});
-        this.listFiles(newPath);
+        this.listFiles(newPath).catch((err) => {
+            console.error('Breadcrumb navigation listing failed.', err);
+        });
     }
 
     async listFiles(prefix: string) {
 
         let dirs: string[] = [];
         let blobs: BlobItem[] = [];
+
+        this.setState({ isLoading: true, listError: null });
 
         try {
             let iter = this.props.client.listBlobsByHierarchy("/", { prefix: prefix });
@@ -79,10 +89,17 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
                 }
             }
 
-            this.setState({ blobItems: blobs, currentDirs: dirs });
+            this.setState({ blobItems: blobs, currentDirs: dirs, isLoading: false, listError: null });
 
             return Promise.resolve();
-        } catch (error) {
+        } catch (error: any) {
+            const message = error?.message ?? String(error);
+            const status = error?.statusCode ?? error?.status;
+            const friendly = status === 403 || status === 401
+                ? `Access denied (HTTP ${status}) when listing the container. Check that your account has the Storage Blob Data Reader role.`
+                : `Failed to list blobs: ${message}`;
+            console.error('Blob listing failed.', error);
+            this.setState({ isLoading: false, listError: friendly, blobItems: [], currentDirs: [] });
             return Promise.reject(error);
         }
     }
@@ -153,7 +170,28 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
 
                 {/* File List Content */}
                 <div className="file-list-content">
-                    {!hasItems && (
+                    {this.state.listError && (
+                        <div className="list-error" role="alert">
+                            <strong>Could not list files.</strong>
+                            <p>{this.state.listError}</p>
+                            <button
+                                type="button"
+                                className="error-retry-button"
+                                onClick={() => this.listFiles(this.state.storagePrefix).catch(() => { /* handled in state */ })}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {this.state.isLoading && !this.state.listError && (
+                        <div className="loading-container small">
+                            <div className="loading-spinner"></div>
+                            <p>Loading files...</p>
+                        </div>
+                    )}
+
+                    {!this.state.isLoading && !this.state.listError && !hasItems && (
                         <div className="empty-folder">
                             <svg className="empty-folder-icon" width="48" height="48" viewBox="0 0 48 48" fill="currentColor">
                                 <path d="M6 10a4 4 0 0 1 4-4h8.586a2 2 0 0 1 1.414.586l2.828 2.828A2 2 0 0 0 24.242 10H38a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V10z"/>
