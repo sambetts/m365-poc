@@ -122,67 +122,33 @@ public class SiteModelBuilder : BaseComponent, IDisposable
     }
 
     /// <summary>
-    /// Build using Graph Drive API with delta query support (fastest, most efficient)
+    /// Build using Graph Drive API with delta query support (fastest, most efficient).
+    /// GraphDriveSnapshotBuilder fills _model directly via model.AddFile() and wraps
+    /// each file in DocumentSiteWithMetadata so analytics collection picks them up.
     /// </summary>
     private async Task BuildWithGraphDriveApi(int batchSize, Action<List<SharePointFileInfoWithList>>? newFilesCallback, Action<List<DocumentSiteWithMetadata>>? filesUpdatedCallback)
     {
         try
         {
+            _model.Started = DateTime.UtcNow;
+
             var driveBuilder = new GraphDriveSnapshotBuilder(_config, _site.RootURL, _logger);
-            var snapshot = await driveBuilder.BuildSnapshotAsync();
 
-            // Merge snapshot into our model
-            _model.Started = snapshot.Started;
-            _model.Finished = snapshot.Finished;
-            
-            foreach (var file in snapshot.AllFiles)
+            // Fill OUR model directly (no merging, no cache issues)
+            await driveBuilder.BuildSnapshotAsync(_model, batchSize, newFilesCallback).ConfigureAwait(false);
+
+            _logger.LogInformation($"STAGE 1/2: Drive crawl complete. Files found: {_model.AllFiles.Count}");
+
+            // STAGE 2: Collect analytics (access counts) and version history per file
+            if (_analyticsProvider != null && _model.AllFiles.Count > 0)
             {
-                // Convert DriveItemSharePointFileInfo to DocumentSiteWithMetadata for analytics support
-                if (file is DriveItemSharePointFileInfo driveFile)
-                {
-                    var docWithMetadata = new DocumentSiteWithMetadata(driveFile)
-                    {
-                        State = SiteFileAnalysisState.AnalysisPending
-                    };
-                    _model.AllFiles.Add(docWithMetadata);
-                    
-                    // Trigger callback for batch processing
-                    if (newFilesCallback != null && _model.AllFiles.Count % batchSize == 0)
-                    {
-                        var batch = _model.AllFiles.Skip(_model.AllFiles.Count - batchSize).Take(batchSize).Cast<SharePointFileInfoWithList>().ToList();
-                        newFilesCallback(batch);
-                    }
-                }
-                else if (file is SharePointFileInfoWithList fileWithList)
-                {
-                    _model.AllFiles.Add(fileWithList);
-                    
-                    // Trigger callback for batch processing
-                    if (newFilesCallback != null && _model.AllFiles.Count % batchSize == 0)
-                    {
-                        var batch = _model.AllFiles.Skip(_model.AllFiles.Count - batchSize).Take(batchSize).Cast<SharePointFileInfoWithList>().ToList();
-                        newFilesCallback(batch);
-                    }
-                }
-            }
-
-            // Process any remaining files
-            if (newFilesCallback != null && _model.AllFiles.Count % batchSize != 0)
-            {
-                var remaining = _model.AllFiles.Skip((_model.AllFiles.Count / batchSize) * batchSize).Cast<SharePointFileInfoWithList>().ToList();
-                newFilesCallback(remaining);
-            }
-
-            _logger.LogInformation($"Graph Drive API scan complete. Files found: {_model.AllFiles.Count}");
-
-            // Note: Drive API provides basic metadata directly
-            // For advanced analytics (access counts), we still need the analytics provider
-            if (_analyticsProvider != null)
-            {
-                _logger.LogInformation("Getting analytics for files...");
-                // Run background tasks for analytics
+                _logger.LogInformation("STAGE 2/2: Collecting analytics & version history for files...");
                 _ = Task.Run(StartAnalysisStatsUpdates);
                 await WaitForAnalysisCompletion(batchSize, filesUpdatedCallback).ConfigureAwait(false);
+            }
+            else
+            {
+                _model.Finished = DateTime.UtcNow;
             }
         }
         catch (Exception ex)

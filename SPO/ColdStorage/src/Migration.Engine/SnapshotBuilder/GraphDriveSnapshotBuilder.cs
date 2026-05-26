@@ -37,12 +37,19 @@ public class GraphDriveSnapshotBuilder
     }
 
     /// <summary>
-    /// Build a snapshot of the site using Drive API
-    /// Automatically uses delta query if previous scan exists
+    /// Build a snapshot of the site using Drive API and fill the provided model.
+    /// Automatically uses delta query if previous scan exists.
+    /// Files are wrapped in DocumentSiteWithMetadata so they trigger analytics collection.
     /// </summary>
-    public async Task<SiteSnapshotModel> BuildSnapshotAsync()
+    public async Task BuildSnapshotAsync(
+        SiteSnapshotModel model,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback)
     {
-        var model = new SiteSnapshotModel { Started = DateTime.UtcNow };
+        if (model.Started == default || model.Started == DateTime.MinValue)
+        {
+            model.Started = DateTime.UtcNow;
+        }
 
         try
         {
@@ -56,22 +63,40 @@ public class GraphDriveSnapshotBuilder
             var drives = await GetDrivesAsync();
             _logger.LogInformation($"Found {drives.Count} drive(s)");
 
+            // Buffer of files for batch callbacks
+            var fileBuffer = new List<SharePointFileInfoWithList>();
+
             // Process each drive
             foreach (var drive in drives)
             {
-                await ProcessDriveAsync(drive, model);
+                await ProcessDriveAsync(drive, model, batchSize, newFilesCallback, fileBuffer);
             }
 
-            model.Finished = DateTime.UtcNow;
-            var duration = model.Finished.Value - model.Started;
-            _logger.LogInformation($"Snapshot complete. Duration: {duration.TotalMinutes:F2} minutes. Files found: {model.AllFiles.Count}");
+            // Flush remaining buffered files
+            if (fileBuffer.Count > 0 && newFilesCallback != null)
+            {
+                newFilesCallback(new List<SharePointFileInfoWithList>(fileBuffer));
+                fileBuffer.Clear();
+            }
+
+            _logger.LogInformation($"Drive crawl complete. Files found: {model.AllFiles.Count}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error building snapshot for {_siteUrl}");
             throw;
         }
+    }
 
+    /// <summary>
+    /// Build a standalone snapshot (creates its own model).
+    /// Kept for backwards compatibility.
+    /// </summary>
+    public async Task<SiteSnapshotModel> BuildSnapshotAsync()
+    {
+        var model = new SiteSnapshotModel { Started = DateTime.UtcNow };
+        await BuildSnapshotAsync(model, 100, null);
+        model.Finished = DateTime.UtcNow;
         return model;
     }
 
@@ -119,16 +144,30 @@ public class GraphDriveSnapshotBuilder
     }
 
     /// <summary>
-    /// Process a drive - uses delta query if available, full scan otherwise
+    /// Process a drive - uses delta query if available, full scan otherwise.
+    /// Creates ONE shared DocLib per drive and adds files via model.AddFile().
     /// </summary>
-    private async Task ProcessDriveAsync(Drive drive, SiteSnapshotModel model)
+    private async Task ProcessDriveAsync(
+        Drive drive,
+        SiteSnapshotModel model,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback,
+        List<SharePointFileInfoWithList> fileBuffer)
     {
         if (drive.Id == null) return;
 
         _logger.LogInformation($"Processing drive: {drive.Name} ({drive.DriveType})");
 
+        // Create ONE DocLib for this drive (shared by all files in the drive)
+        var docLib = new DocLib
+        {
+            Title = drive.Name ?? "Unknown",
+            DriveId = drive.Id,
+            ServerRelativeUrl = ExtractServerRelativePath(drive.WebUrl ?? string.Empty)
+        };
+
         using var db = new SPOColdStorageDbContext(_config);
-        
+
         // Check for existing delta token
         var deltaToken = await db.DriveDeltaTokens
             .Where(d => d.DriveId == drive.Id)
@@ -138,35 +177,40 @@ public class GraphDriveSnapshotBuilder
         {
             // First scan - full crawl with delta token
             _logger.LogInformation($"First scan of drive {drive.Name} - performing full crawl");
-            await FullDriveScanAsync(drive, model, db);
+            await FullDriveScanAsync(drive, docLib, model, db, batchSize, newFilesCallback, fileBuffer);
         }
         else
         {
-            // Incremental scan using delta query
-            _logger.LogInformation($"Incremental scan of drive {drive.Name} using delta token (last scan: {deltaToken.LastScanDate})");
-            await IncrementalDriveScanAsync(drive, model, db, deltaToken);
+            // Incremental scan
+            _logger.LogInformation($"Incremental scan of drive {drive.Name} (last scan: {deltaToken.LastScanDate})");
+            await IncrementalDriveScanAsync(drive, docLib, model, db, deltaToken, batchSize, newFilesCallback, fileBuffer);
         }
     }
 
     /// <summary>
     /// Full scan of drive with delta token for future incremental updates
     /// </summary>
-    private async Task FullDriveScanAsync(Drive drive, SiteSnapshotModel model, SPOColdStorageDbContext db)
+    private async Task FullDriveScanAsync(
+        Drive drive,
+        DocLib docLib,
+        SiteSnapshotModel model,
+        SPOColdStorageDbContext db,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback,
+        List<SharePointFileInfoWithList> fileBuffer)
     {
         if (drive.Id == null) return;
 
         try
         {
-            // Get all items recursively
-            var result = await CrawlDriveItemsRecursiveAsync(drive.Id, "", model);
+            var result = await CrawlDriveItemsRecursiveAsync(drive.Id, "", docLib, model, batchSize, newFilesCallback, fileBuffer);
 
-            // For now, store a placeholder token (delta API might need different approach)
             var deltaTokenEntity = new DriveDeltaToken
             {
                 DriveId = drive.Id,
                 SiteId = _siteId!,
                 SiteUrl = _siteUrl,
-                DeltaToken = DateTime.UtcNow.Ticks.ToString(), // Timestamp-based for now
+                DeltaToken = DateTime.UtcNow.Ticks.ToString(),
                 LastScanDate = DateTime.UtcNow,
                 FileCount = result.filesFound,
                 TotalSize = result.totalSize
@@ -184,20 +228,28 @@ public class GraphDriveSnapshotBuilder
     }
 
     /// <summary>
-    /// Recursively crawl all items in a drive
+    /// Recursively crawl all items in a drive.
+    /// Each discovered file is wrapped in DocumentSiteWithMetadata (State=AnalysisPending)
+    /// and added via model.AddFile() so the analytics workflow picks it up.
     /// </summary>
-    private async Task<(int filesFound, long totalSize)> CrawlDriveItemsRecursiveAsync(string driveId, string itemPath, SiteSnapshotModel model)
+    private async Task<(int filesFound, long totalSize)> CrawlDriveItemsRecursiveAsync(
+        string driveId,
+        string itemPath,
+        DocLib docLib,
+        SiteSnapshotModel model,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback,
+        List<SharePointFileInfoWithList> fileBuffer)
     {
         int filesFound = 0;
         long totalSize = 0;
-        
+
         try
         {
             DriveItemCollectionResponse? items;
-            
+
             if (string.IsNullOrEmpty(itemPath))
             {
-                // Root level
                 items = await _graphClient.Drives[driveId].Items["root"].Children.GetAsync(config =>
                 {
                     config.QueryParameters.Top = 5000;
@@ -206,17 +258,12 @@ public class GraphDriveSnapshotBuilder
             }
             else
             {
-                // Subfolder
                 items = await _graphClient.Drives[driveId].Items[itemPath].Children.GetAsync(config =>
                 {
                     config.QueryParameters.Top = 5000;
                     config.QueryParameters.Select = new[] { "id", "name", "size", "file", "folder", "lastModifiedDateTime", "createdDateTime", "lastModifiedBy", "webUrl", "parentReference" };
                 });
             }
-
-            // Get drive info for DocLib
-            var driveInfo = await _graphClient.Drives[driveId].GetAsync();
-            if (driveInfo == null) return (filesFound, totalSize);
 
             while (items != null)
             {
@@ -226,29 +273,35 @@ public class GraphDriveSnapshotBuilder
                     {
                         if (item.Folder != null)
                         {
-                            // Recurse into folder
                             if (item.Id != null)
                             {
-                                var subResult = await CrawlDriveItemsRecursiveAsync(driveId, item.Id, model);
+                                var subResult = await CrawlDriveItemsRecursiveAsync(driveId, item.Id, docLib, model, batchSize, newFilesCallback, fileBuffer);
                                 filesFound += subResult.filesFound;
                                 totalSize += subResult.totalSize;
                             }
                         }
                         else if (item.File != null)
                         {
-                            // Process file
-                            var fileInfo = ConvertDriveItemToFileInfo(item, driveInfo);
-                            if (fileInfo != null)
+                            var doc = ConvertDriveItemToDocumentSiteWithMetadata(item, docLib);
+                            if (doc != null)
                             {
-                                model.AllFiles.Add(fileInfo);
+                                // Add via model.AddFile so it's stored in the DocLib's Files list (source of truth)
+                                model.AddFile(doc, docLib);
+                                fileBuffer.Add(doc);
                                 filesFound++;
                                 totalSize += item.Size ?? 0;
+
+                                // Flush buffer in batches
+                                if (fileBuffer.Count >= batchSize && newFilesCallback != null)
+                                {
+                                    newFilesCallback(new List<SharePointFileInfoWithList>(fileBuffer));
+                                    fileBuffer.Clear();
+                                }
                             }
                         }
                     }
                 }
 
-                // Handle pagination
                 if (!string.IsNullOrEmpty(items.OdataNextLink))
                 {
                     items = await _graphClient.Drives[driveId].Items["root"].Children.WithUrl(items.OdataNextLink).GetAsync();
@@ -268,21 +321,25 @@ public class GraphDriveSnapshotBuilder
     }
 
     /// <summary>
-    /// Incremental scan using stored delta token
-    /// For now, does a modified-since comparison
+    /// Incremental scan using stored delta token (timestamp-based for now)
     /// </summary>
-    private async Task IncrementalDriveScanAsync(Drive drive, SiteSnapshotModel model, SPOColdStorageDbContext db, DriveDeltaToken storedToken)
+    private async Task IncrementalDriveScanAsync(
+        Drive drive,
+        DocLib docLib,
+        SiteSnapshotModel model,
+        SPOColdStorageDbContext db,
+        DriveDeltaToken storedToken,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback,
+        List<SharePointFileInfoWithList> fileBuffer)
     {
         if (drive.Id == null) return;
 
         try
         {
-            // For incremental, we compare timestamps
             var lastScan = storedToken.LastScanDate;
+            var result = await CrawlDriveItemsIncrementalAsync(drive.Id, "", docLib, model, lastScan, db, batchSize, newFilesCallback, fileBuffer);
 
-            var result = await CrawlDriveItemsIncrementalAsync(drive.Id, "", model, lastScan, db);
-
-            // Update token
             storedToken.DeltaToken = DateTime.UtcNow.Ticks.ToString();
             storedToken.LastScanDate = DateTime.UtcNow;
             if (result.filesAdded > 0 || result.filesModified > 0)
@@ -305,16 +362,25 @@ public class GraphDriveSnapshotBuilder
     /// <summary>
     /// Crawl drive items incrementally (only modified since last scan)
     /// </summary>
-    private async Task<(int filesAdded, int filesModified, long totalSize)> CrawlDriveItemsIncrementalAsync(string driveId, string itemPath, SiteSnapshotModel model, DateTime since, SPOColdStorageDbContext db)
+    private async Task<(int filesAdded, int filesModified, long totalSize)> CrawlDriveItemsIncrementalAsync(
+        string driveId,
+        string itemPath,
+        DocLib docLib,
+        SiteSnapshotModel model,
+        DateTime since,
+        SPOColdStorageDbContext db,
+        int batchSize,
+        Action<List<SharePointFileInfoWithList>>? newFilesCallback,
+        List<SharePointFileInfoWithList> fileBuffer)
     {
         int filesAdded = 0;
         int filesModified = 0;
         long totalSize = 0;
-        
+
         try
         {
             DriveItemCollectionResponse? items;
-            
+
             if (string.IsNullOrEmpty(itemPath))
             {
                 items = await _graphClient.Drives[driveId].Items["root"].Children.GetAsync(config =>
@@ -332,9 +398,6 @@ public class GraphDriveSnapshotBuilder
                 });
             }
 
-            var driveInfo = await _graphClient.Drives[driveId].GetAsync();
-            if (driveInfo == null) return (filesAdded, filesModified, totalSize);
-
             while (items != null)
             {
                 if (items.Value != null)
@@ -343,10 +406,9 @@ public class GraphDriveSnapshotBuilder
                     {
                         if (item.Folder != null)
                         {
-                            // Recurse into folder
                             if (item.Id != null)
                             {
-                                var subResult = await CrawlDriveItemsIncrementalAsync(driveId, item.Id, model, since, db);
+                                var subResult = await CrawlDriveItemsIncrementalAsync(driveId, item.Id, docLib, model, since, db, batchSize, newFilesCallback, fileBuffer);
                                 filesAdded += subResult.filesAdded;
                                 filesModified += subResult.filesModified;
                                 totalSize += subResult.totalSize;
@@ -354,17 +416,16 @@ public class GraphDriveSnapshotBuilder
                         }
                         else if (item.File != null)
                         {
-                            // Check if modified since last scan
                             if (item.LastModifiedDateTime?.UtcDateTime > since)
                             {
-                                var fileInfo = ConvertDriveItemToFileInfo(item, driveInfo);
-                                if (fileInfo != null)
+                                var doc = ConvertDriveItemToDocumentSiteWithMetadata(item, docLib);
+                                if (doc != null)
                                 {
-                                    model.AllFiles.Add(fileInfo);
+                                    model.AddFile(doc, docLib);
+                                    fileBuffer.Add(doc);
 
-                                    // Check if new or modified
                                     var existingFile = await db.Files
-                                        .Where(f => f.Url == fileInfo.ServerRelativeFilePath)
+                                        .Where(f => f.Url == doc.ServerRelativeFilePath)
                                         .FirstOrDefaultAsync();
 
                                     if (existingFile == null)
@@ -373,6 +434,12 @@ public class GraphDriveSnapshotBuilder
                                         filesModified++;
 
                                     totalSize += item.Size ?? 0;
+
+                                    if (fileBuffer.Count >= batchSize && newFilesCallback != null)
+                                    {
+                                        newFilesCallback(new List<SharePointFileInfoWithList>(fileBuffer));
+                                        fileBuffer.Clear();
+                                    }
                                 }
                             }
                         }
@@ -398,22 +465,22 @@ public class GraphDriveSnapshotBuilder
     }
 
     /// <summary>
-    /// Convert Graph DriveItem to our SharePointFileInfo model
+    /// Convert a Graph DriveItem directly into a DocumentSiteWithMetadata
+    /// pre-set to AnalysisPending so analytics collection runs.
     /// </summary>
-    private DriveItemSharePointFileInfo? ConvertDriveItemToFileInfo(DriveItem item, Drive drive)
+    private DocumentSiteWithMetadata? ConvertDriveItemToDocumentSiteWithMetadata(DriveItem item, DocLib docLib)
     {
         try
         {
             if (item.File == null || item.Name == null)
                 return null;
 
-            // Extract metadata
             var fileUrl = item.WebUrl ?? string.Empty;
             var serverRelativePath = ExtractServerRelativePath(fileUrl);
             var parentPath = item.ParentReference?.Path ?? string.Empty;
             var dirPath = ExtractDirectoryPath(parentPath);
 
-            return new DriveItemSharePointFileInfo
+            var driveItem = new DriveItemSharePointFileInfo
             {
                 ServerRelativeFilePath = serverRelativePath,
                 FileSize = item.Size ?? 0,
@@ -425,13 +492,13 @@ public class GraphDriveSnapshotBuilder
                 WebUrl = _siteUrl,
                 SiteUrl = _siteUrl,
                 GraphItemId = item.Id ?? string.Empty,
-                DriveId = drive.Id ?? string.Empty,
-                List = new DocLib
-                {
-                    Title = drive.Name ?? "Unknown",
-                    DriveId = drive.Id ?? string.Empty,
-                    ServerRelativeUrl = ExtractServerRelativePath(drive.WebUrl ?? string.Empty)
-                }
+                DriveId = docLib.DriveId,
+                List = docLib   // shared DocLib instance
+            };
+
+            return new DocumentSiteWithMetadata(driveItem)
+            {
+                State = SiteFileAnalysisState.AnalysisPending
             };
         }
         catch (Exception ex)
