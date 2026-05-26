@@ -7,7 +7,7 @@ using Migration.Engine.SnapshotBuilder;
 using Models;
 
 using Microsoft.Extensions.Logging;
-namespace Migration.Engine.Utils.Extentions;
+namespace Migration.Engine.Utils.Extensions;
 
 public static class SnapshotBuilderExtensions
 {

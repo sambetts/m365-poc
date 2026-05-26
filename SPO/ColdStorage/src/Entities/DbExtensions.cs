@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Entities;
 
-public static class DbExtentions
+public static class DbExtensions
 {
 
     public static async Task<SPFile> GetDbFileForFileInfo(this BaseSharePointFileInfo fileMigrated, SPOColdStorageDbContext db)

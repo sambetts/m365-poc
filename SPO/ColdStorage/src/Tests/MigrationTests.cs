@@ -56,7 +56,7 @@ public class MigrationTests : AbstractTest
 
         var filesWithAnalytics = batchAnalytics.UpdateResults.Select(d => d.Value).Where(v =>
         {
-            var analytics = v as ItemAnalyticsRepsonse;
+            var analytics = v as ItemAnalyticsResponse;
             return analytics?.AccessStats != null && analytics.AccessStats.ActionCount > 0;
         }).ToList();
     }

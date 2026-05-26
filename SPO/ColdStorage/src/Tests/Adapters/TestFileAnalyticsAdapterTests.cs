@@ -13,7 +13,7 @@ public class TestFileAnalyticsAdapterTests
     {
         // Arrange
         var adapter = new TestFileAnalyticsAdapter();
-        var expectedStats = new ItemAnalyticsRepsonse.AnalyticsItemActionStat
+        var expectedStats = new ItemAnalyticsResponse.AnalyticsItemActionStat
         {
             ActionCount = 100,
             ActorCount = 50
@@ -37,7 +37,7 @@ public class TestFileAnalyticsAdapterTests
         // Assert
         result.Should().NotBeNull();
         result.UpdateResults.Should().ContainKey(file);
-        var response = result.UpdateResults[file] as ItemAnalyticsRepsonse;
+        var response = result.UpdateResults[file] as ItemAnalyticsResponse;
         response.Should().NotBeNull();
         response!.AccessStats.Should().NotBeNull();
         response.AccessStats!.ActionCount.Should().Be(100);
@@ -223,9 +223,9 @@ public class TestFileAnalyticsAdapterTests
     {
         // Arrange
         var adapter = new TestFileAnalyticsAdapter();
-        adapter.SetAnalyticsData("id-1", new ItemAnalyticsRepsonse.AnalyticsItemActionStat { ActionCount = 10 });
-        adapter.SetAnalyticsData("id-2", new ItemAnalyticsRepsonse.AnalyticsItemActionStat { ActionCount = 20 });
-        adapter.SetAnalyticsData("id-3", new ItemAnalyticsRepsonse.AnalyticsItemActionStat { ActionCount = 30 });
+        adapter.SetAnalyticsData("id-1", new ItemAnalyticsResponse.AnalyticsItemActionStat { ActionCount = 10 });
+        adapter.SetAnalyticsData("id-2", new ItemAnalyticsResponse.AnalyticsItemActionStat { ActionCount = 20 });
+        adapter.SetAnalyticsData("id-3", new ItemAnalyticsResponse.AnalyticsItemActionStat { ActionCount = 30 });
 
         var files = new List<DocumentSiteWithMetadata>
         {

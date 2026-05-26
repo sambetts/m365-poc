@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Entities;
 using Migration.Engine.SnapshotBuilder;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Models;
 using Xunit;
 

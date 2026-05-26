@@ -135,7 +135,7 @@ public class SiteModelBuilderTests
         _testAdapter.ResetCounters();
 
         // Configure test data
-        _testAdapter.SetAnalyticsData("test-item-1", new ItemAnalyticsRepsonse.AnalyticsItemActionStat
+        _testAdapter.SetAnalyticsData("test-item-1", new ItemAnalyticsResponse.AnalyticsItemActionStat
         {
             ActionCount = 10,
             ActorCount = 5

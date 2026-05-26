@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Entities;
 using Entities.Configuration;
 using Entities.DBEntities;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Migration.Engine.Utils.Http;
 using Models;
 

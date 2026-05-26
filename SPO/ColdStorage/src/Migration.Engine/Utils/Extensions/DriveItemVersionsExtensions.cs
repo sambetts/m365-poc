@@ -1,6 +1,6 @@
 using Models;
 
-namespace Migration.Engine.Utils.Extentions;
+namespace Migration.Engine.Utils.Extensions;
 
 public static class DriveItemVersionsExtensions
 {

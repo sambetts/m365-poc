@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Migration.Engine.SnapshotBuilder;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Models;
 
 namespace LoadGenerator;

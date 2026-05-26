@@ -4,7 +4,7 @@ using Entities.DBEntities;
 using Migration.Engine.Adapters;
 using Migration.Engine.Connectors;
 using Migration.Engine.Utils;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Models;
 using Microsoft.SharePoint.Client;
 using System.Collections.Concurrent;
@@ -228,7 +228,7 @@ public class SiteModelBuilder : BaseComponent, IDisposable
 
         // Compile results as they come
         var versionUpdates = new Dictionary<DriveItemSharePointFileInfo, DriveItemVersionInfo>();
-        var analyticsUpdates = new Dictionary<DriveItemSharePointFileInfo, ItemAnalyticsRepsonse.AnalyticsItemActionStat>();
+        var analyticsUpdates = new Dictionary<DriveItemSharePointFileInfo, ItemAnalyticsResponse.AnalyticsItemActionStat>();
 
         await Task.WhenAll(backgroundTasksThisChunk).ConfigureAwait(false);
 
@@ -240,9 +240,9 @@ public class SiteModelBuilder : BaseComponent, IDisposable
                 {
                     versionUpdates.Add(stat.Key, (DriveItemVersionInfo)stat.Value);
                 }
-                else if (stat.Value is ItemAnalyticsRepsonse)
+                else if (stat.Value is ItemAnalyticsResponse)
                 {
-                    analyticsUpdates.Add(stat.Key, ((ItemAnalyticsRepsonse)stat.Value).AccessStats ?? new ItemAnalyticsRepsonse.AnalyticsItemActionStat());
+                    analyticsUpdates.Add(stat.Key, ((ItemAnalyticsResponse)stat.Value).AccessStats ?? new ItemAnalyticsResponse.AnalyticsItemActionStat());
                 }
             }
         }

@@ -51,7 +51,7 @@ public static class GraphFileInfoListExtensions
                 var analyticsResponseBody = await analyticsResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                 analyticsResponse.EnsureSuccessStatusCode();
-                var activitiesResponse = JsonSerializer.Deserialize<ItemAnalyticsRepsonse>(analyticsResponseBody) ?? new ItemAnalyticsRepsonse();
+                var activitiesResponse = JsonSerializer.Deserialize<ItemAnalyticsResponse>(analyticsResponseBody) ?? new ItemAnalyticsResponse();
                 fileToUpdate.State = SiteFileAnalysisState.Complete;
 
                 lock (results)

@@ -13,8 +13,8 @@ public class ValuesController : Controller
     }
 
     [HttpGet("/_api/v2.0/drives/{driveId}/items/{graphItemId}/analytics/allTime")]
-    public ItemAnalyticsRepsonse GetAnalytics(string driveId, string graphItemId)
+    public ItemAnalyticsResponse GetAnalytics(string driveId, string graphItemId)
     {
-        return new ItemAnalyticsRepsonse { };
+        return new ItemAnalyticsResponse { };
     }
 }

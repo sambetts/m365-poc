@@ -3,7 +3,7 @@ using Entities;
 using Entities.Configuration;
 using Migration.Engine.SnapshotBuilder;
 using Migration.Engine.Utils;
-using Migration.Engine.Utils.Extentions;
+using Migration.Engine.Utils.Extensions;
 using Migration.Engine.Utils.Http;
 using Models;
 
