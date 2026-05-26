@@ -28,11 +28,11 @@ public class SharePointContentIndexer : BaseComponent
     public SharePointContentIndexer(Config config, ILogger ILogger) : base(config, ILogger)
     {
         var sbConnectionProps = ServiceBusConnectionStringProperties.Parse(_config.ConnectionStrings.ServiceBus);
-        _tracer.LogWarning($"Sending new SharePoint files to migrate to service-bus '{sbConnectionProps.Endpoint}'.");
+        _logger.LogWarning($"Sending new SharePoint files to migrate to service-bus '{sbConnectionProps.Endpoint}'.");
 
         // Create BlobServiceClient with appropriate authentication based on connection string type
         _blobServiceClient = BlobServiceClientFactory.Create(_config.ConnectionStrings.Storage, _config);
-        _sharePointFileMigrator = new SharePointFileMigrator(config, _tracer);
+        _sharePointFileMigrator = new SharePointFileMigrator(config, _logger);
     }
 
     #endregion
@@ -52,7 +52,7 @@ public class SharePointContentIndexer : BaseComponent
         {
             // 403: No permission to create container (assume it exists)
             // 409: Container already exists
-            _tracer.LogInformation($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}");
+            _logger.LogInformation($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}");
 
             // Verify we can at least access the container
             // Note: ExistsAsync also requires permissions, so handle 403 here too
@@ -67,13 +67,13 @@ public class SharePointContentIndexer : BaseComponent
             {
                 // Service principal lacks RBAC permissions to check container existence
                 // Assume container exists and log warning
-                _tracer.LogWarning($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.");
+                _logger.LogWarning($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.");
             }
         }
 
         using var db = new SPOColdStorageDbContext(this._config);
         var sitesToMigrate = await db.TargetSharePointSites.ToListAsync();
-        _tracer.LogWarning($"Found {sitesToMigrate.Count} site-collections to migrate.");
+        _logger.LogWarning($"Found {sitesToMigrate.Count} site-collections to migrate.");
         foreach (var s in sitesToMigrate)
         {
             SiteListFilterConfig? siteFilterConfig = null;
@@ -85,7 +85,7 @@ public class SharePointContentIndexer : BaseComponent
                 }
                 catch (Exception ex)
                 {
-                    _tracer.LogInformation($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}");
+                    _logger.LogInformation($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}");
                 }
             }
 
@@ -98,13 +98,13 @@ public class SharePointContentIndexer : BaseComponent
 
     async Task StartSiteMigration(string siteUrl, SiteListFilterConfig siteFolderConfig)
     {
-        var ctx = await AuthUtils.GetClientContext(_config, siteUrl, _tracer, null);
+        var ctx = await AuthUtils.GetClientContext(_config, siteUrl, _logger, null);
 
-        _tracer.LogInformation($"Scanning site-collection '{siteUrl}'...");
+        _logger.LogInformation($"Scanning site-collection '{siteUrl}'...");
 
-        var spConnector = new SPOSiteCollectionLoader(_config, siteUrl, _tracer);
+        var spConnector = new SPOSiteCollectionLoader(_config, siteUrl, _logger);
 
-        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _tracer);
+        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _logger);
         await crawler.StartSiteCrawl(siteFolderConfig, Crawler_SharePointFileFound, null);
     }
 

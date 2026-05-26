@@ -6,7 +6,7 @@ using Models;
 using Microsoft.Extensions.Logging;
 namespace Migration.Engine.Connectors;
 
-public class SPOSiteCollectionLoader(Config config, string siteUrl, ILogger tracer) : BaseSharePointConnector(new SPOTokenManager(config, siteUrl, tracer), tracer), ISiteCollectionLoader<ListItemCollectionPosition>
+public class SPOSiteCollectionLoader(Config config, string siteUrl, ILogger logger) : BaseSharePointConnector(new SPOTokenManager(config, siteUrl, logger), logger), ISiteCollectionLoader<ListItemCollectionPosition>
 {
     public async Task<List<IWebLoader<ListItemCollectionPosition>>> GetWebs()
     {
@@ -16,7 +16,7 @@ public class SPOSiteCollectionLoader(Config config, string siteUrl, ILogger trac
         var rootWeb = spClient.Web;
         await TokenManager.EnsureContextWebIsLoaded(spClient);
         spClient.Load(rootWeb.Webs);
-        await spClient.ExecuteQueryAsyncWithThrottleRetries(Tracer);
+        await spClient.ExecuteQueryAsyncWithThrottleRetries(Logger);
 
         webs.Add(new SPOWebLoader(spClient.Web, spClient, this));
 

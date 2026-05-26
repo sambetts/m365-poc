@@ -12,7 +12,7 @@ public abstract class AbstractTest : IAsyncLifetime
     protected const string FILE_CONTENTS = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor";
 
     protected Config? _config;
-    protected ILogger _tracer = NullLogger.Instance;
+    protected ILogger _logger = NullLogger.Instance;
 
     public async ValueTask InitializeAsync()
     {

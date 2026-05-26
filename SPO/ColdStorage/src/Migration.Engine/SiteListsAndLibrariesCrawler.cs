@@ -7,11 +7,11 @@ namespace Migration.Engine;
 /// <summary>
 /// Finds files in a SharePoint site collection
 /// </summary>
-public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConnector, ILogger tracer)
+public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConnector, ILogger logger)
 {
     #region Constructors & Privates
 
-    private readonly ILogger _tracer = tracer;
+    private readonly ILogger _logger = logger;
     private readonly ISiteCollectionLoader<T> _crawlConnector = crawlConnector;
 
     #endregion
@@ -40,7 +40,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
             }
             else
             {
-                _tracer.LogError($"Skipping list '{list.Title}'");
+                _logger.LogError($"Skipping list '{list.Title}'");
             }
         }
     }
@@ -62,8 +62,8 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
             }
             catch (ServerException ex)
             {
-                _tracer.LogInformation($"Error reading list '{parentList.Title}'");
-                _tracer.LogError(ex.Message);
+                _logger.LogInformation($"Error reading list '{parentList.Title}'");
+                _logger.LogError(ex.Message);
                 return listResultsAll;
             }
             token = listPage.NextPageToken;
@@ -84,7 +84,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
                     listResultsAll.IgnoredFiles++;
                 }
             }
-            _tracer.LogInformation($"Loaded {listPage.FilesFound.Count:N0} files and {listPage.FoldersFound.Count:N0} folders from list '{parentList.Title}' on page {pageCount}...");
+            _logger.LogInformation($"Loaded {listPage.FilesFound.Count:N0} files and {listPage.FoldersFound.Count:N0} folders from list '{parentList.Title}' on page {pageCount}...");
 
             allFolders.AddRange(listPage.FoldersFound);
 
@@ -92,7 +92,7 @@ public class SiteListsAndLibrariesCrawler<T>(ISiteCollectionLoader<T> crawlConne
         }
         if (pageCount > 1)
         {
-            _tracer.LogInformation($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count:N0} files in scope, " +
+            _logger.LogInformation($"List '{parentList.Title}' totals: {listResultsAll.FilesFound.Count:N0} files in scope, " +
                 $"{listResultsAll.IgnoredFiles:N0} files ignored, and {listResultsAll.FoldersFound.Count:N0} folders");
         }
 

@@ -38,7 +38,7 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
         {
             _listDef = spClientList.Web.Lists.GetById(this.ListId);
             spClientList.Load(_listDef, l => l.BaseType, l => l.ItemCount, l => l.RootFolder, list => list.Title);
-            await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
+            await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Logger);
         }
 
         // List items
@@ -89,12 +89,12 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
 
         try
         {
-            await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
+            await spClientList.ExecuteQueryAsyncWithThrottleRetries(Parent.Logger);
         }
         catch (System.Net.WebException ex)
         {
-            Parent.Tracer.LogError(ex, "Unhandled exception");
-            Parent.Tracer.LogError($"Got error reading list: {ex.Message}.");
+            Parent.Logger.LogError(ex, "Unhandled exception");
+            Parent.Logger.LogError($"Got error reading list: {ex.Message}.");
         }
 
         // Remember position, if more than 5000 items are in the list
@@ -125,7 +125,7 @@ public class SPOListLoader(List list, BaseSharePointConnector baseSharePointConn
                         }
                         catch (ServerObjectNullReferenceException)
                         {
-                            Parent.Tracer.LogInformation($"WARNING: Couldn't get Drive info for list {_listDef.Title} on item {itemUrl}. Ignoring.");
+                            Parent.Logger.LogInformation($"WARNING: Couldn't get Drive info for list {_listDef.Title} on item {itemUrl}. Ignoring.");
                             break;
                         }
                     }

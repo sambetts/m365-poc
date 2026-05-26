@@ -26,7 +26,7 @@ public class BlobStorageUploader : BaseComponent
             this._containerClient = _blobServiceClient.GetBlobContainerClient(_config.BlobContainerName);
         }
 
-        _tracer.LogDebug($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...");
+        _logger.LogDebug($"Uploading '{msg.ServerRelativeFilePath}' to blob storage...");
         using var fs = File.OpenRead(localTempFileName);
         var fileRef = _containerClient.GetBlobClient(msg.ServerRelativeFilePath);
         var fileExists = await fileRef.ExistsAsync();
@@ -48,7 +48,7 @@ public class BlobStorageUploader : BaseComponent
             if (!match)
                 await fileRef.UploadAsync(fs, true);
             else
-                _tracer.LogDebug($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.");
+                _logger.LogDebug($"Skipping '{msg.ServerRelativeFilePath}' as destination hash is identical to local file.");
         }
         else
             await _containerClient.UploadBlobAsync(msg.ServerRelativeFilePath, fs);

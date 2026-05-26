@@ -12,7 +12,7 @@ namespace Migration.Engine.Utils.Extensions;
 public static class SnapshotBuilderExtensions
 {
     private static readonly SemaphoreSlim ss = new(1, 1);
-    public static async Task InsertFilesAsync(this List<SharePointFileInfoWithList> files, Config config, StagingFilesMigrator stagingFilesMigrator, ILogger tracer)
+    public static async Task InsertFilesAsync(this List<SharePointFileInfoWithList> files, Config config, StagingFilesMigrator stagingFilesMigrator, ILogger logger)
     {
         await ss.WaitAsync();
 
@@ -40,7 +40,7 @@ public static class SnapshotBuilderExtensions
                         }
                         else
                         {
-                            tracer.LogWarning($"Warning: found invalid file '{insertedFile.FullSharePointUrl}'. Ignoring");
+                            logger.LogWarning($"Warning: found invalid file '{insertedFile.FullSharePointUrl}'. Ignoring");
                         }
                     }
                     await db.StagingFiles.AddRangeAsync(stagingFiles);
@@ -55,8 +55,8 @@ public static class SnapshotBuilderExtensions
             }
             catch (SqlException ex)
             {
-                tracer.LogError(ex, "Unhandled exception");
-                tracer.LogCritical($"Got fatal SQL error saving file info block to SQL: {ex.Message}");
+                logger.LogError(ex, "Unhandled exception");
+                logger.LogCritical($"Got fatal SQL error saving file info block to SQL: {ex.Message}");
             }
         }
         finally

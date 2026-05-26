@@ -16,7 +16,7 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
         var lists = new List<IListLoader<ListItemCollectionPosition>>();
 
         _clientContext.Load(SPWeb.Lists);
-        await _clientContext.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
+        await _clientContext.ExecuteQueryAsyncWithThrottleRetries(Parent.Logger);
 
         foreach (var list in SPWeb.Lists)
         {
@@ -24,12 +24,12 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
             try
             {
                 _clientContext.Load(list, l => l.IsSystemList);
-                await _clientContext.ExecuteQueryAsyncWithThrottleRetries(Parent.Tracer);
+                await _clientContext.ExecuteQueryAsyncWithThrottleRetries(Parent.Logger);
                 listReadSuccess = true;
             }
             catch (System.Net.WebException ex)
             {
-                Parent.Tracer.LogInformation($"Got exception '{ex.Message}' loading data for list ID '{list.Id}' - not configured to analyse.");
+                Parent.Logger.LogInformation($"Got exception '{ex.Message}' loading data for list ID '{list.Id}' - not configured to analyse.");
             }
 
             if (listReadSuccess)
@@ -37,12 +37,12 @@ public class SPOWebLoader(Web sPWeb, ClientContext clientContext, BaseSharePoint
                 // Do not search through system or hidden lists
                 if (!list.Hidden && !list.IsSystemList)
                 {
-                    Parent.Tracer.LogInformation($"Found '{list.Title}'...");
+                    Parent.Logger.LogInformation($"Found '{list.Title}'...");
                     lists.Add(new SPOListLoader(list, Parent));
                 }
                 else
                 {
-                    Parent.Tracer.LogInformation($"Ignoring system/hidden list '{list.Title}'.");
+                    Parent.Logger.LogInformation($"Ignoring system/hidden list '{list.Title}'.");
                 }
             }
         }

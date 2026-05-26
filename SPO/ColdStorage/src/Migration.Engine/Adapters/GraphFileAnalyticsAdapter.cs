@@ -19,19 +19,19 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
     private readonly Config _config;
     private readonly string _siteUrl;
     private readonly SecureSPThrottledHttpClient _httpClient;
-    private readonly ILogger _tracer;
+    private readonly ILogger _logger;
     private readonly SPOColdStorageDbContext _db;
 
     public GraphFileAnalyticsAdapter(
         Config config,
         string siteUrl,
-        ILogger tracer)
+        ILogger logger)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _siteUrl = siteUrl ?? throw new ArgumentNullException(nameof(siteUrl));
-        _tracer = tracer ?? throw new ArgumentNullException(nameof(tracer));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        _httpClient = new SecureSPThrottledHttpClient(_config, true, _tracer);
+        _httpClient = new SecureSPThrottledHttpClient(_config, true, _logger);
         _db = new SPOColdStorageDbContext(_config);
     }
 
@@ -42,12 +42,12 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
     {
         if (files is List<DocumentSiteWithMetadata> list)
         {
-            return list.GetDriveItemsAnalytics(_siteUrl, _httpClient, _tracer);
+            return list.GetDriveItemsAnalytics(_siteUrl, _httpClient, _logger);
         }
 
         // Convert to List for extension method compatibility
         var fileList = files.ToList();
-        return fileList.GetDriveItemsAnalytics(_siteUrl, _httpClient, _tracer);
+        return fileList.GetDriveItemsAnalytics(_siteUrl, _httpClient, _logger);
     }
 
     /// <inheritdoc/>
@@ -57,12 +57,12 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
     {
         if (files is List<DocumentSiteWithMetadata> list)
         {
-            return list.GetDriveItemsHistory(_siteUrl, _httpClient, _tracer);
+            return list.GetDriveItemsHistory(_siteUrl, _httpClient, _logger);
         }
 
         // Convert to List for extension method compatibility
         var fileList = files.ToList();
-        return fileList.GetDriveItemsHistory(_siteUrl, _httpClient, _tracer);
+        return fileList.GetDriveItemsHistory(_siteUrl, _httpClient, _logger);
     }
 
     /// <inheritdoc/>
@@ -81,7 +81,7 @@ public class GraphFileAnalyticsAdapter : IFileAnalyticsProvider, IDisposable
             var cutoffDate = DateTime.Now.AddHours(-skipHours);
             if (existingFile.AnalysisCompleted.Value > cutoffDate)
             {
-                _tracer.LogInformation($"Skipping analysis for {fileInfo.ServerRelativeFilePath} - already analyzed at {existingFile.AnalysisCompleted.Value}");
+                _logger.LogInformation($"Skipping analysis for {fileInfo.ServerRelativeFilePath} - already analyzed at {existingFile.AnalysisCompleted.Value}");
                 return true;
             }
         }

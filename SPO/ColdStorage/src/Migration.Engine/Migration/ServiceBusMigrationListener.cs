@@ -52,7 +52,7 @@ public class ServiceBusMigrationListener : BaseComponent
             _receiver.ProcessErrorAsync += ErrorHandler;
 
             // Start processing SB messages
-            _tracer.LogError($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
+            _logger.LogError($"Listening on service-bus '{_sbClient.FullyQualifiedNamespace}' for new files to migrate.");
             await _receiver.StartProcessingAsync();
 
             // Block infinitely
@@ -76,7 +76,7 @@ public class ServiceBusMigrationListener : BaseComponent
         var msg = System.Text.Json.JsonSerializer.Deserialize<BaseSharePointFileInfo>(body);
         if (msg != null && msg.IsValidInfo)
         {
-            _tracer.LogInformation($"Started migration for: {msg.ServerRelativeFilePath}");
+            _logger.LogInformation($"Started migration for: {msg.ServerRelativeFilePath}");
 
             // Message completed on success.
             await StartFileMigrationAsync(msg, args);
@@ -86,13 +86,13 @@ public class ServiceBusMigrationListener : BaseComponent
                 _filesProcessedFromQueue++;
                 if (_filesProcessedFromQueue % REPORT_QUEUE_LENGTH_EVERY == 0)
                 {
-                    _tracer.LogInformation($"{_filesProcessedFromQueue} files processed...");
+                    _logger.LogInformation($"{_filesProcessedFromQueue} files processed...");
                 }
             }
         }
         else
         {
-            _tracer.LogInformation($"Received unrecognised message: '{body}'. Sending to dead-letter queue.");
+            _logger.LogInformation($"Received unrecognised message: '{body}'. Sending to dead-letter queue.");
             await args.DeadLetterMessageAsync(args.Message);
         }
     }
@@ -100,8 +100,8 @@ public class ServiceBusMigrationListener : BaseComponent
     // Handle any errors when receiving SB messages
     Task ErrorHandler(ProcessErrorEventArgs args)
     {
-        _tracer.LogError(args.Exception.Message);
-        _tracer.LogError(args.Exception, "Unhandled exception");
+        _logger.LogError(args.Exception.Message);
+        _logger.LogError(args.Exception, "Unhandled exception");
         return Task.CompletedTask;
     }
 
@@ -110,14 +110,14 @@ public class ServiceBusMigrationListener : BaseComponent
         string thisFileRef = sharePointFileToMigrate.FullSharePointUrl;
         if (_ignoreDownloads.Contains(thisFileRef))
         {
-            _tracer.LogWarning($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.");
+            _logger.LogWarning($"Already currently importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Won't do it twice this session.");
             return;
         }
 
         _ignoreDownloads.Add(thisFileRef);
 
         // Begin migration on common class
-        using var sharePointFileMigrator = new SharePointFileMigrator(_config, _tracer);
+        using var sharePointFileMigrator = new SharePointFileMigrator(_config, _logger);
         // Find/create SP context
         var app = await AuthUtils.GetNewClientApp(_config);
 
@@ -131,8 +131,8 @@ public class ServiceBusMigrationListener : BaseComponent
         }
         catch (Exception ex)
         {
-            _tracer.LogError(ex, "Unhandled exception");
-            _tracer.LogError($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again");
+            _logger.LogError(ex, "Unhandled exception");
+            _logger.LogError($"ERROR: Got fatal error '{ex.Message}' importing file '{sharePointFileToMigrate.FullSharePointUrl}'. Will try again");
 
             await sharePointFileMigrator.SaveErrorForFileMigrationToSql(ex, sharePointFileToMigrate);
 #if DEBUG
@@ -144,7 +144,7 @@ public class ServiceBusMigrationListener : BaseComponent
             // Import done/failed - remove from list of current imports
             if (!_ignoreDownloads.TryTake(out thisFileRef!))
             {
-                _tracer.LogWarning($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.");
+                _logger.LogWarning($"Error removing file '{sharePointFileToMigrate.FullSharePointUrl}' from list of concurrent operations. Not sure what to do.");
             }
         }
 
@@ -154,13 +154,13 @@ public class ServiceBusMigrationListener : BaseComponent
             try
             {
                 await args.CompleteMessageAsync(args.Message);
-                _tracer.LogInformation($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize:N0} bytes) migrated succesfully.");
+                _logger.LogInformation($"'{sharePointFileToMigrate.ServerRelativeFilePath}' ({migratedFileSize:N0} bytes) migrated succesfully.");
 
             }
             catch (ServiceBusException ex)
             {
-                base._tracer.LogError(ex, "Unhandled exception");
-                base._tracer.LogInformation("Couldn't complete SB message: " + ex.Message);
+                base._logger.LogError(ex, "Unhandled exception");
+                base._logger.LogInformation("Couldn't complete SB message: " + ex.Message);
 #if DEBUG
                 throw;
 #endif
