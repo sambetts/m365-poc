@@ -137,8 +137,23 @@ public class SiteModelBuilder : BaseComponent, IDisposable
             
             foreach (var file in snapshot.AllFiles)
             {
-                // Only add SharePointFileInfoWithList items
-                if (file is SharePointFileInfoWithList fileWithList)
+                // Convert DriveItemSharePointFileInfo to DocumentSiteWithMetadata for analytics support
+                if (file is DriveItemSharePointFileInfo driveFile)
+                {
+                    var docWithMetadata = new DocumentSiteWithMetadata(driveFile)
+                    {
+                        State = SiteFileAnalysisState.AnalysisPending
+                    };
+                    _model.AllFiles.Add(docWithMetadata);
+                    
+                    // Trigger callback for batch processing
+                    if (newFilesCallback != null && _model.AllFiles.Count % batchSize == 0)
+                    {
+                        var batch = _model.AllFiles.Skip(_model.AllFiles.Count - batchSize).Take(batchSize).Cast<SharePointFileInfoWithList>().ToList();
+                        newFilesCallback(batch);
+                    }
+                }
+                else if (file is SharePointFileInfoWithList fileWithList)
                 {
                     _model.AllFiles.Add(fileWithList);
                     
