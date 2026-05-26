@@ -96,10 +96,17 @@ public class SiteModelBuilder : BaseComponent, IDisposable
 
         if (!_model.Finished.HasValue)
         {
-            // Determine which connector to use based on configuration
-            var useGraphConnector = _config.AzureAdConfig.UseClientSecretAuth;  // Default Graph for ClientSecret mode
+            // Determine which approach to use based on configuration
+            // Priority: Drive API > Graph Connectors > CSOM
+            var useGraphDriveApi = _config.AzureAdConfig.UseClientSecretAuth;  // Default to Drive API for ClientSecret
+            var useGraphConnector = false;  // Can be enabled via future config option
             
-            if (useGraphConnector)
+            if (useGraphDriveApi)
+            {
+                _logger.LogInformation("Using Graph Drive API (optimal performance with delta query support)");
+                await BuildWithGraphDriveApi(batchSize, newFilesCallback, filesUpdatedCallback).ConfigureAwait(false);
+            }
+            else if (useGraphConnector)
             {
                 _logger.LogInformation("Using Graph API connector (no SharePoint CSOM permissions required)");
                 await BuildWithGraphConnector(batchSize, newFilesCallback, filesUpdatedCallback).ConfigureAwait(false);
@@ -112,6 +119,61 @@ public class SiteModelBuilder : BaseComponent, IDisposable
         }
 
         return _model;
+    }
+
+    /// <summary>
+    /// Build using Graph Drive API with delta query support (fastest, most efficient)
+    /// </summary>
+    private async Task BuildWithGraphDriveApi(int batchSize, Action<List<SharePointFileInfoWithList>>? newFilesCallback, Action<List<DocumentSiteWithMetadata>>? filesUpdatedCallback)
+    {
+        try
+        {
+            var driveBuilder = new GraphDriveSnapshotBuilder(_config, _site.RootURL, _logger);
+            var snapshot = await driveBuilder.BuildSnapshotAsync();
+
+            // Merge snapshot into our model
+            _model.Started = snapshot.Started;
+            _model.Finished = snapshot.Finished;
+            
+            foreach (var file in snapshot.AllFiles)
+            {
+                // Only add SharePointFileInfoWithList items
+                if (file is SharePointFileInfoWithList fileWithList)
+                {
+                    _model.AllFiles.Add(fileWithList);
+                    
+                    // Trigger callback for batch processing
+                    if (newFilesCallback != null && _model.AllFiles.Count % batchSize == 0)
+                    {
+                        var batch = _model.AllFiles.Skip(_model.AllFiles.Count - batchSize).Take(batchSize).Cast<SharePointFileInfoWithList>().ToList();
+                        newFilesCallback(batch);
+                    }
+                }
+            }
+
+            // Process any remaining files
+            if (newFilesCallback != null && _model.AllFiles.Count % batchSize != 0)
+            {
+                var remaining = _model.AllFiles.Skip((_model.AllFiles.Count / batchSize) * batchSize).Cast<SharePointFileInfoWithList>().ToList();
+                newFilesCallback(remaining);
+            }
+
+            _logger.LogInformation($"Graph Drive API scan complete. Files found: {_model.AllFiles.Count}");
+
+            // Note: Drive API provides basic metadata directly
+            // For advanced analytics (access counts), we still need the analytics provider
+            if (_analyticsProvider != null)
+            {
+                _logger.LogInformation("Getting analytics for files...");
+                // Run background tasks for analytics
+                _ = Task.Run(StartAnalysisStatsUpdates);
+                await WaitForAnalysisCompletion(batchSize, filesUpdatedCallback).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"ERROR: '{ex.Message}' reading site {_site.RootURL} with Graph Drive API");
+        }
     }
 
     /// <summary>
