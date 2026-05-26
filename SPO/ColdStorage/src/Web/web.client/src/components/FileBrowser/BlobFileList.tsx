@@ -8,22 +8,85 @@ interface FileListProps {
     navToFolderCallback?: Function;
     accessToken: string,
     client: ContainerClient,
-    storageInfo: StorageInfo
+    storageInfo: StorageInfo,
+    storageTokenSummary?: string | null
 }
 interface FileListState {
     blobItems: BlobItem[] | null,
     currentDirs: string[] | null,
     storagePrefix: string,
     isLoading: boolean,
-    listError: string | null
+    listError: string | null,
+    listErrorDetail: string | null
 }
+
+const getStorageErrorCode = (error: any): string | null => {
+    return (
+        error?.details?.errorCode ??
+        error?.code ??
+        error?.response?.parsedHeaders?.errorCode ??
+        error?.response?.headers?.get?.('x-ms-error-code') ??
+        null
+    );
+};
+
+const buildStorageErrorMessage = (error: any): { friendly: string; detail: string } => {
+    const status: number | undefined = error?.statusCode ?? error?.status;
+    const code = getStorageErrorCode(error);
+    const requestId =
+        error?.details?.requestId ??
+        error?.response?.headers?.get?.('x-ms-request-id') ??
+        null;
+    const rawMessage: string = error?.message ?? String(error);
+
+    let friendly: string;
+    switch (code) {
+        case 'AuthorizationFailure':
+        case 'AuthorizationPermissionMismatch':
+            friendly =
+                `Storage rejected the request (${code}). The signed-in user's token does not grant data-plane access ` +
+                `to this container. Confirm: (1) the user has 'Storage Blob Data Reader' (or higher) on the storage account or container, ` +
+                `(2) the access token was issued for scope 'https://storage.azure.com/user_impersonation', ` +
+                `and (3) any cached token from before the role/scope was granted has been refreshed (sign out and back in).`;
+            break;
+        case 'AuthenticationFailed':
+        case 'InvalidAuthenticationInfo':
+            friendly =
+                `Storage could not authenticate the request (${code}). The bearer token is missing, malformed, or has the wrong audience. ` +
+                `Ensure the token was acquired with the storage scope.`;
+            break;
+        case 'AuthorizationSourceIPMismatch':
+        case 'AuthorizationResourceTypeMismatch':
+        case 'AuthorizationServiceMismatch':
+        case 'AuthorizationProtocolMismatch':
+            friendly = `Storage rejected the request (${code}).`;
+            break;
+        default:
+            if (status === 401) {
+                friendly = `Storage returned HTTP 401 Unauthorized. The token is missing, expired, or has the wrong audience.`;
+            } else if (status === 403) {
+                friendly = `Storage returned HTTP 403 Forbidden. The signed-in user lacks the required RBAC role on this resource (e.g. 'Storage Blob Data Reader').`;
+            } else {
+                friendly = `Failed to list blobs: ${rawMessage}`;
+            }
+    }
+
+    const detailParts = [
+        status !== undefined ? `HTTP status: ${status}` : null,
+        code ? `x-ms-error-code: ${code}` : null,
+        requestId ? `x-ms-request-id: ${requestId}` : null,
+        `message: ${rawMessage}`
+    ].filter(Boolean) as string[];
+
+    return { friendly, detail: detailParts.join('\n') };
+};
 
 export class BlobFileList extends Component<FileListProps, FileListState> {
 
     constructor(props: FileListProps)
     {
         super(props);
-        this.state = { blobItems: null, currentDirs: null, storagePrefix: "", isLoading: false, listError: null };
+        this.state = { blobItems: null, currentDirs: null, storagePrefix: "", isLoading: false, listError: null, listErrorDetail: null };
     }
 
     componentDidMount()
@@ -76,7 +139,7 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
         let dirs: string[] = [];
         let blobs: BlobItem[] = [];
 
-        this.setState({ isLoading: true, listError: null });
+        this.setState({ isLoading: true, listError: null, listErrorDetail: null });
 
         try {
             let iter = this.props.client.listBlobsByHierarchy("/", { prefix: prefix });
@@ -89,17 +152,22 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
                 }
             }
 
-            this.setState({ blobItems: blobs, currentDirs: dirs, isLoading: false, listError: null });
+            this.setState({ blobItems: blobs, currentDirs: dirs, isLoading: false, listError: null, listErrorDetail: null });
 
             return Promise.resolve();
         } catch (error: any) {
-            const message = error?.message ?? String(error);
-            const status = error?.statusCode ?? error?.status;
-            const friendly = status === 403 || status === 401
-                ? `Access denied (HTTP ${status}) when listing the container. Check that your account has the Storage Blob Data Reader role.`
-                : `Failed to list blobs: ${message}`;
+            const { friendly, detail } = buildStorageErrorMessage(error);
+            const fullDetail = this.props.storageTokenSummary
+                ? `${detail}\n\n--- Storage token claims ---\n${this.props.storageTokenSummary}`
+                : detail;
             console.error('Blob listing failed.', error);
-            this.setState({ isLoading: false, listError: friendly, blobItems: [], currentDirs: [] });
+            this.setState({
+                isLoading: false,
+                listError: friendly,
+                listErrorDetail: fullDetail,
+                blobItems: [],
+                currentDirs: []
+            });
             return Promise.reject(error);
         }
     }
@@ -174,6 +242,12 @@ export class BlobFileList extends Component<FileListProps, FileListState> {
                         <div className="list-error" role="alert">
                             <strong>Could not list files.</strong>
                             <p>{this.state.listError}</p>
+                            {this.state.listErrorDetail && (
+                                <details className="error-details list-error-details">
+                                    <summary>Technical details</summary>
+                                    <pre>{this.state.listErrorDetail}</pre>
+                                </details>
+                            )}
                             <button
                                 type="button"
                                 className="error-retry-button"

@@ -15,6 +15,45 @@
   font-size: 14px;
 }
 
+/* Storage connection info banner */
+.storage-connection-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background-color: #f3f9fd;
+  border: 1px solid #c7e0f4;
+  border-radius: 2px;
+  font-size: 12px;
+  color: var(--spo-text-primary);
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.storage-connection-icon {
+  color: var(--spo-primary);
+  flex-shrink: 0;
+}
+
+.storage-connection-label {
+  color: var(--spo-text-secondary);
+}
+
+.storage-connection-account,
+.storage-connection-container {
+  font-family: Consolas, "Courier New", monospace;
+  font-weight: 600;
+  color: var(--spo-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storage-connection-separator {
+  color: var(--spo-text-secondary);
+}
+
 .file-browser-content {
   margin-top: 20px;
 }
@@ -136,6 +175,20 @@
   margin: 6px 0 10px 0;
   color: #a4262c;
   font-size: 13px;
+}
+
+.list-error-details {
+  margin-bottom: 10px;
+}
+
+.list-error-details summary {
+  color: #a4262c;
+}
+
+.list-error-details pre {
+  background-color: #ffffff;
+  border-color: #f1707b;
+  color: #323130;
 }
 
 /* File Explorer - Windows Style */

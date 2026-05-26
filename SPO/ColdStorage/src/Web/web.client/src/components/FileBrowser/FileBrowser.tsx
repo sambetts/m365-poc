@@ -23,6 +23,55 @@ const describeError = (e: unknown): string => {
   try { return JSON.stringify(e); } catch { return String(e); }
 };
 
+const getStorageAccountName = (accountUri: string | undefined | null): string | null => {
+  if (!accountUri) return null;
+  try {
+    const host = new URL(accountUri).hostname;
+    // e.g. myaccount.blob.core.windows.net  -> "myaccount"
+    //      myaccount.dfs.core.windows.net   -> "myaccount"
+    const first = host.split('.')[0];
+    return first || null;
+  } catch {
+    return null;
+  }
+};
+
+// Decode a JWT (no signature verification — for diagnostic display only).
+const decodeJwtPayload = (jwt: string): Record<string, any> | null => {
+  try {
+    const parts = jwt.split('.');
+    if (parts.length < 2) return null;
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = decodeURIComponent(
+      atob(padded)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+};
+
+const summarizeStorageToken = (jwt: string): string => {
+  const payload = decodeJwtPayload(jwt);
+  if (!payload) return 'Token: <could not decode>';
+  const expIso = payload.exp ? new Date(payload.exp * 1000).toISOString() : 'n/a';
+  return [
+    `aud:    ${payload.aud ?? '<missing>'}`,
+    `iss:    ${payload.iss ?? '<missing>'}`,
+    `scp:    ${payload.scp ?? '<missing>'}`,
+    `roles:  ${Array.isArray(payload.roles) ? payload.roles.join(', ') : '<none>'}`,
+    `appid:  ${payload.appid ?? payload.azp ?? '<missing>'}`,
+    `tid:    ${payload.tid ?? '<missing>'}`,
+    `oid:    ${payload.oid ?? '<missing>'}`,
+    `upn:    ${payload.upn ?? payload.unique_name ?? payload.preferred_username ?? '<missing>'}`,
+    `exp:    ${expIso}`
+  ].join('\n');
+};
+
 export const FileBrowser: React.FC<{ token: string }> = (props) => {
 
   const [client, setClient] = React.useState<ContainerClient | null>(null);
@@ -53,7 +102,11 @@ export const FileBrowser: React.FC<{ token: string }> = (props) => {
 
     const request = {
       ...storageRequest,
-      account: accounts[0]
+      account: accounts[0],
+      // Always pull a fresh token from AAD so that any newly-granted RBAC roles
+      // or consented scopes are reflected in the claims (cached tokens do NOT
+      // get retroactively updated when roles change).
+      forceRefresh: true
     };
 
     setPhase('acquiring-token');
@@ -61,12 +114,14 @@ export const FileBrowser: React.FC<{ token: string }> = (props) => {
 
     instance.acquireTokenSilent(request)
       .then((response) => {
+        console.log('Storage token acquired. Decoded claims:\n' + summarizeStorageToken(response.accessToken));
         setStorageToken(response.accessToken);
       })
       .catch((silentError) => {
         console.warn('Silent storage token acquisition failed, falling back to popup.', silentError);
         instance.acquireTokenPopup(request)
           .then((response) => {
+            console.log('Storage token acquired via popup. Decoded claims:\n' + summarizeStorageToken(response.accessToken));
             setStorageToken(response.accessToken);
           })
           .catch((popupError) => {
@@ -139,6 +194,23 @@ export const FileBrowser: React.FC<{ token: string }> = (props) => {
           <p className="file-browser-description">
             Browse and access files that have been moved into Azure Blob cold storage.
           </p>
+          {serviceConfiguration?.storageInfo?.accountURI && (
+            <div className="storage-connection-info" aria-label="Storage connection">
+              <svg className="storage-connection-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                <path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6" />
+              </svg>
+              <span className="storage-connection-label">Connected to</span>
+              <span className="storage-connection-account">
+                {getStorageAccountName(serviceConfiguration.storageInfo.accountURI) ?? serviceConfiguration.storageInfo.accountURI}
+              </span>
+              <span className="storage-connection-separator">/</span>
+              <span className="storage-connection-container">
+                {serviceConfiguration.storageInfo.containerName}
+              </span>
+            </div>
+          )}
         </div>
 
         {phase === 'ready' && client && serviceConfiguration ? (
@@ -147,6 +219,7 @@ export const FileBrowser: React.FC<{ token: string }> = (props) => {
               client={client}
               accessToken={props.token}
               storageInfo={serviceConfiguration.storageInfo}
+              storageTokenSummary={storageToken ? summarizeStorageToken(storageToken) : null}
             />
           </div>
         ) : phase === 'error' ? (
