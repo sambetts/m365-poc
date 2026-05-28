@@ -1,12 +1,13 @@
+using Azure.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
 using Entities;
 using Entities.Configuration;
 using Entities.DBEntities;
 using Migration.Engine.Utils.Extensions;
-using Migration.Engine.Utils.Http;
 using Models;
 
-using Microsoft.Extensions.Logging;
 namespace Migration.Engine.SnapshotBuilder;
 
 public class TenantModelBuilder(Config config, ILogger ILogger) : BaseComponent(config, ILogger)
@@ -25,26 +26,52 @@ public class TenantModelBuilder(Config config, ILogger ILogger) : BaseComponent(
 
         if (sitesToAnalyse.Count == 0)
         {
-            // Analyse all site-collections
-            var url = $"https://graph.microsoft.com/beta/sites";
-            var httpClient = new GraphThrottledHttpClient(_config, false, _logger);
-
-            var sites = await httpClient.LoadGraphPageable<SiteCollectionsResult, SiteCollection>(url, _logger);
+            // No explicit targets - enumerate all tenant site-collections via Graph
+            var credential = new ClientSecretCredential(
+                _config.AzureAdConfig.TenantId,
+                _config.AzureAdConfig.ClientID,
+                _config.AzureAdConfig.Secret);
+            var graphClient = new GraphServiceClient(credential);
 
             var defaultSitesAll = new List<TargetMigrationSite>();
-            if (sites != null)
+            var sitesResponse = await graphClient.Sites.GetAllSites.GetAsGetAllSitesGetResponseAsync(rc =>
             {
-                foreach (var sp in sites)
+                rc.QueryParameters.Select = ["id", "webUrl"];
+            });
+
+            while (sitesResponse != null)
+            {
+                if (sitesResponse.Value != null)
                 {
-                    defaultSitesAll.Add(new TargetMigrationSite { RootURL = sp.WebUrl });
+                    foreach (var sp in sitesResponse.Value)
+                    {
+                        if (!string.IsNullOrEmpty(sp.WebUrl))
+                        {
+                            defaultSitesAll.Add(new TargetMigrationSite { RootURL = sp.WebUrl });
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(sitesResponse.OdataNextLink))
+                {
+                    sitesResponse = await graphClient.Sites.GetAllSites
+                        .WithUrl(sitesResponse.OdataNextLink)
+                        .GetAsGetAllSitesGetResponseAsync();
+                }
+                else
+                {
+                    break;
                 }
             }
 
+            _logger.LogWarning($"No explicit targets configured. Analysing all {defaultSitesAll.Count} site-collections found in tenant.");
             await AnalyseSites(defaultSitesAll);
         }
         else
+        {
             _logger.LogWarning($"Taking snapshot of {sitesToAnalyse.Count} site(s):");
-        await AnalyseSites(sitesToAnalyse);
+            await AnalyseSites(sitesToAnalyse);
+        }
     }
 
     async Task AnalyseSites(IEnumerable<TargetMigrationSite> sitesToAnalyse)
@@ -58,7 +85,7 @@ public class TenantModelBuilder(Config config, ILogger ILogger) : BaseComponent(
 
     private async Task<SiteSnapshotModel> StartSiteAnalysisAsync(TargetMigrationSite site)
     {
-        var s = new SiteModelBuilder(base._config, base._logger, site);
+        using var s = new SiteModelBuilder(base._config, base._logger, site);
 
         var siteModel = await s.Build(100,
             async filesDiscovered => await filesDiscovered.InsertFilesAsync(_config, _stagingFilesMigrator, _logger),
@@ -119,5 +146,4 @@ public class TenantModelBuilder(Config config, ILogger ILogger) : BaseComponent(
         New,
         Updated
     }
-
 }

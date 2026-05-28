@@ -1,21 +1,20 @@
-using Azure.Identity;
-using Azure.Core;
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.SharePoint.Client;
 using Entities;
 using Entities.Configuration;
-using Migration.Engine.Connectors;
 using Migration.Engine.Migration;
+using Migration.Engine.SnapshotBuilder;
 using Migration.Engine.Utils;
 using Models;
 
 using Microsoft.Extensions.Logging;
 namespace Migration.Engine;
+
 /// <summary>
-/// Finds files to migrate in a SharePoint site-collection
+/// Finds files to migrate in a SharePoint site-collection via Microsoft Graph drives
+/// and queues each one as a Service Bus message for the migrator to process.
 /// </summary>
 public class SharePointContentIndexer : BaseComponent
 {
@@ -50,12 +49,8 @@ public class SharePointContentIndexer : BaseComponent
         }
         catch (Azure.RequestFailedException ex) when (ex.Status == 403 || ex.Status == 409)
         {
-            // 403: No permission to create container (assume it exists)
-            // 409: Container already exists
             _logger.LogInformation($"Container '{_config.BlobContainerName}' not created (may already exist or insufficient permissions): {ex.Message}");
 
-            // Verify we can at least access the container
-            // Note: ExistsAsync also requires permissions, so handle 403 here too
             try
             {
                 if (!await _containerClient.ExistsAsync())
@@ -65,8 +60,6 @@ public class SharePointContentIndexer : BaseComponent
             }
             catch (Azure.RequestFailedException existsEx) when (existsEx.Status == 403)
             {
-                // Service principal lacks RBAC permissions to check container existence
-                // Assume container exists and log warning
                 _logger.LogWarning($"Cannot verify container '{_config.BlobContainerName}' existence due to insufficient permissions. Assuming container exists. Please ensure service principal has 'Storage Blob Data Contributor' role assigned.");
             }
         }
@@ -76,43 +69,35 @@ public class SharePointContentIndexer : BaseComponent
         _logger.LogWarning($"Found {sitesToMigrate.Count} site-collections to migrate.");
         foreach (var s in sitesToMigrate)
         {
-            SiteListFilterConfig? siteFilterConfig = null;
-            if (!string.IsNullOrEmpty(s.FilterConfigJson))
-            {
-                try
-                {
-                    siteFilterConfig = SiteListFilterConfig.FromJson(s.FilterConfigJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogInformation($"Couldn't deserialise filter JSon for site '{s.RootURL}': {ex.Message}");
-                }
-            }
-
-            // Instantiate "allow all" config if none can be found in the DB
-            siteFilterConfig ??= new SiteListFilterConfig();
-
-            await StartSiteMigration(s.RootURL, siteFilterConfig);
+            await StartSiteMigration(s.RootURL);
         }
     }
 
-    async Task StartSiteMigration(string siteUrl, SiteListFilterConfig siteFolderConfig)
+    async Task StartSiteMigration(string siteUrl)
     {
-        var ctx = await AuthUtils.GetClientContext(_config, siteUrl, _logger, null);
+        _logger.LogInformation($"Scanning site-collection '{siteUrl}' via Graph drives API...");
 
-        _logger.LogInformation($"Scanning site-collection '{siteUrl}'...");
+        var snapshotModel = new SiteSnapshotModel { Started = DateTime.UtcNow };
+        var driveBuilder = new GraphDriveSnapshotBuilder(_config, siteUrl, _logger);
 
-        var spConnector = new SPOSiteCollectionLoader(_config, siteUrl, _logger);
-
-        var crawler = new SiteListsAndLibrariesCrawler<ListItemCollectionPosition>(spConnector, _logger);
-        await crawler.StartSiteCrawl(siteFolderConfig, Crawler_SharePointFileFound, null);
+        // GraphDriveSnapshotBuilder fires a sync Action<>; queue each batch on the same thread
+        // (queueing is just blob check + Service Bus enqueue, so synchronous waits are acceptable).
+        await driveBuilder.BuildSnapshotAsync(snapshotModel, 100,
+            batch => QueueFilesAsync(batch).GetAwaiter().GetResult());
     }
 
-    /// <summary>
-    /// Crawler found a relevant file
-    /// </summary>
-    private async Task Crawler_SharePointFileFound(BaseSharePointFileInfo foundFileInfo)
+    async Task QueueFilesAsync(List<SharePointFileInfoWithList> batch)
     {
-        await _sharePointFileMigrator.QueueSharePointFileMigrationIfNeeded(foundFileInfo, _containerClient!);
+        foreach (var file in batch)
+        {
+            if (file is DriveItemSharePointFileInfo driveItemFile)
+            {
+                await _sharePointFileMigrator.QueueSharePointFileMigrationIfNeeded(driveItemFile, _containerClient!);
+            }
+            else
+            {
+                _logger.LogWarning($"Skipping file '{file.FullSharePointUrl}' - not a Graph drive item, cannot be migrated.");
+            }
+        }
     }
 }

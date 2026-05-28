@@ -73,8 +73,8 @@ public class ServiceBusMigrationListener : BaseComponent
     async Task MessageHandler(ProcessMessageEventArgs args)
     {
         string body = args.Message.Body.ToString();
-        var msg = System.Text.Json.JsonSerializer.Deserialize<BaseSharePointFileInfo>(body);
-        if (msg != null && msg.IsValidInfo)
+        var msg = System.Text.Json.JsonSerializer.Deserialize<DriveItemSharePointFileInfo>(body);
+        if (msg != null && msg.IsValidInfo && !string.IsNullOrEmpty(msg.DriveId) && !string.IsNullOrEmpty(msg.GraphItemId))
         {
             _logger.LogInformation($"Started migration for: {msg.ServerRelativeFilePath}");
 
@@ -105,7 +105,7 @@ public class ServiceBusMigrationListener : BaseComponent
         return Task.CompletedTask;
     }
 
-    private async Task StartFileMigrationAsync(BaseSharePointFileInfo sharePointFileToMigrate, ProcessMessageEventArgs args)
+    private async Task StartFileMigrationAsync(DriveItemSharePointFileInfo sharePointFileToMigrate, ProcessMessageEventArgs args)
     {
         string thisFileRef = sharePointFileToMigrate.FullSharePointUrl;
         if (_ignoreDownloads.Contains(thisFileRef))
@@ -118,15 +118,13 @@ public class ServiceBusMigrationListener : BaseComponent
 
         // Begin migration on common class
         using var sharePointFileMigrator = new SharePointFileMigrator(_config, _logger);
-        // Find/create SP context
-        var app = await AuthUtils.GetNewClientApp(_config);
 
         long migratedFileSize = 0;
         bool success = false;
         try
         {
-            // Start migration
-            migratedFileSize = await sharePointFileMigrator.MigrateFromSharePointToBlobStorage(sharePointFileToMigrate, app);
+            // Start migration via Graph
+            migratedFileSize = await sharePointFileMigrator.MigrateFromSharePointToBlobStorage(sharePointFileToMigrate);
             success = true;
         }
         catch (Exception ex)

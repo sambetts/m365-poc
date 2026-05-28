@@ -85,7 +85,6 @@ public class DbContextFactory : IDesignTimeDbContextFactory<SPOColdStorageDbCont
     {
         var c = new List<KeyValuePair<string, string>>
         {
-            new KeyValuePair<string, string>("KeyVaultUrl", "Unit testing"),
             new KeyValuePair<string, string>("BaseServerAddress", "Unit testing"),
             new KeyValuePair<string, string>("ConnectionStrings:SQLConnectionString", "Server=(localdb)\\mssqllocaldb;Database=SPOColdStorageDbContextDev;Trusted_Connection=True;MultipleActiveResultSets=true")
         };

@@ -1,7 +1,6 @@
 using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Identity.Client;
 using Entities;
 using Entities.Configuration;
 using Entities.DBEntities;
@@ -27,14 +26,15 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
     }
 
     /// <summary>
-    /// Queue file for migrator to pick-up & migrate
+    /// Queue file for migrator to pick-up & migrate. Requires a <see cref="DriveItemSharePointFileInfo"/>
+    /// so the downstream migrator can locate the file via Graph drives/{driveId}/items/{itemId}.
     /// </summary>
-    public async Task QueueSharePointFileMigrationIfNeeded(BaseSharePointFileInfo sharePointFileInfo, BlobContainerClient containerClient)
+    public async Task QueueSharePointFileMigrationIfNeeded(DriveItemSharePointFileInfo sharePointFileInfo, BlobContainerClient containerClient)
     {
         bool needsMigrating = await DoesSharePointFileNeedMigrating(sharePointFileInfo, containerClient);
         if (needsMigrating)
         {
-            // Send msg to migrate file
+            // Send msg to migrate file - serialise as DriveItemSharePointFileInfo so DriveId & GraphItemId travel with the message
             var sbMsg = new ServiceBusMessage(System.Text.Json.JsonSerializer.Serialize(sharePointFileInfo));
             await _sbSender.SendMessageAsync(sbMsg);
             _logger.LogWarning($"+'{sharePointFileInfo.FullSharePointUrl}'...");
@@ -67,12 +67,12 @@ public class SharePointFileMigrator : BaseComponent, IDisposable
     }
 
     /// <summary>
-    /// Download from SP and upload to blob-storage
+    /// Download from SP via Graph and upload to blob-storage.
     /// </summary>
-    public async Task<long> MigrateFromSharePointToBlobStorage(BaseSharePointFileInfo fileToMigrate, IConfidentialClientApplication app)
+    public async Task<long> MigrateFromSharePointToBlobStorage(DriveItemSharePointFileInfo fileToMigrate)
     {
-        // Download from SP to local
-        var downloader = new SharePointFileDownloader(app, _config, _logger);
+        // Download from SP to local via Graph drives API
+        var downloader = new SharePointFileDownloader(_config, _logger);
         var tempFileNameAndSize = await downloader.DownloadFileToTempDir(fileToMigrate);
 
         // Upload local file to az blob

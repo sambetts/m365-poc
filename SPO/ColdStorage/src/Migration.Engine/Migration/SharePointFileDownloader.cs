@@ -1,61 +1,61 @@
-using Microsoft.Identity.Client;
+using Azure.Identity;
 using Entities.Configuration;
-using Migration.Engine.Utils;
-using Migration.Engine.Utils.Http;
-using Models;
-using System.Net.Http.Headers;
-
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
+using Models;
+
 namespace Migration.Engine.Migration;
+
 /// <summary>
-/// Downloads files from SharePoint to local file-system
+/// Downloads files from SharePoint Online to local file-system using Microsoft Graph drives API.
+/// Streams content chunk-wise so files larger than 2 GB are safe.
 /// </summary>
 public class SharePointFileDownloader : BaseComponent
 {
-    private readonly IConfidentialClientApplication _app;
-    private readonly SecureSPThrottledHttpClient _client;
-    public SharePointFileDownloader(IConfidentialClientApplication app, Config config, ILogger ILogger) : base(config, ILogger)
+    private readonly GraphServiceClient _graphClient;
+
+    public SharePointFileDownloader(Config config, ILogger ILogger) : base(config, ILogger)
     {
-        _app = app;
-        _client = new SecureSPThrottledHttpClient(config, true, ILogger);
+        var credential = new ClientSecretCredential(
+            _config.AzureAdConfig.TenantId,
+            _config.AzureAdConfig.ClientID,
+            _config.AzureAdConfig.Secret);
 
-        var productValue = new ProductInfoHeaderValue("SPOColdStorageMigration", "1.0");
-        var commentValue = new ProductInfoHeaderValue("(+https://github.com/sambetts/SPOColdStorage)");
-
-        _client.DefaultRequestHeaders.UserAgent.Add(productValue);
-        _client.DefaultRequestHeaders.UserAgent.Add(commentValue);
+        _graphClient = new GraphServiceClient(credential);
     }
 
     /// <summary>
-    /// Download file & return temp file-name + size
+    /// Download file via Graph drive item content endpoint and return temp file-name + size.
     /// </summary>
-    /// <returns>Temp file-path and size</returns>
-    /// <remarks>
-    /// Uses manual HTTP calls as CSOM doesn't work with files > 2gb. 
-    /// This routine writes 2mb chunks at a time to a temp file from HTTP response.
-    /// </remarks>
-    public async Task<(string, long)> DownloadFileToTempDir(BaseSharePointFileInfo sharePointFile)
+    public async Task<(string, long)> DownloadFileToTempDir(DriveItemSharePointFileInfo sharePointFile)
     {
-        // Write to temp file
+        if (string.IsNullOrEmpty(sharePointFile.DriveId) || string.IsNullOrEmpty(sharePointFile.GraphItemId))
+        {
+            throw new InvalidOperationException($"DriveId and GraphItemId are required to download '{sharePointFile.FullSharePointUrl}'.");
+        }
+
         var tempFileName = GetTempFileNameAndCreateDir(sharePointFile);
 
-        _logger.LogDebug($"Downloading '{sharePointFile.FullSharePointUrl}'...");
-        var url = $"{sharePointFile.WebUrl}/_api/web/GetFileByServerRelativeUrl('{sharePointFile.ServerRelativeFilePath}')/OpenBinaryStream";
+        _logger.LogDebug($"Downloading '{sharePointFile.FullSharePointUrl}' via Graph drives/{sharePointFile.DriveId}/items/{sharePointFile.GraphItemId}...");
 
-        long fileSize = 0;
-
-        // Get response but don't buffer full content (which will buffer overlflow for large files)
-        using (var response = await _client.GetAsyncWithThrottleRetries(url, HttpCompletionOption.ResponseHeadersRead, _logger))
+        long fileSize;
+        using (var sourceStream = await _graphClient.Drives[sharePointFile.DriveId]
+            .Items[sharePointFile.GraphItemId]
+            .Content
+            .GetAsync())
         {
-            using var streamToReadFrom = await response.Content.ReadAsStreamAsync();
+            if (sourceStream == null)
+            {
+                throw new InvalidOperationException($"Graph returned no content stream for '{sharePointFile.FullSharePointUrl}'.");
+            }
+
             using var streamToWriteTo = File.Open(tempFileName, FileMode.Create);
-            await streamToReadFrom.CopyToAsync(streamToWriteTo);
+            await sourceStream.CopyToAsync(streamToWriteTo);
             fileSize = streamToWriteTo.Length;
         }
 
         _logger.LogDebug($"Wrote {fileSize:N0} bytes to '{tempFileName}'.");
 
-        // Return file name & size
         return (tempFileName, fileSize);
     }
 

@@ -1,11 +1,12 @@
+using Azure.Identity;
 using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Graph;
 using Entities;
 using Entities.Configuration;
-using Migration.Engine;
 using Models;
 using Web.Models;
 
@@ -52,16 +53,6 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
         };
     }
 
-    // GET: AppConfiguration/GetSharePointToken
-    [HttpGet("[action]")]
-    public async Task<string> GetSharePointToken()
-    {
-        var app = await AuthUtils.GetNewClientApp(_config);
-
-        var result = await app.AuthForSharePointOnline(_config.BaseServerAddress);
-        return result.AccessToken;
-    }
-
     // GET: AppConfiguration/GetGetMigrationTargets
     [HttpGet("[action]")]
     public async Task<ActionResult<IEnumerable<SiteListFilterConfig>>> GetMigrationTargets()
@@ -75,10 +66,9 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
     }
 
     /// <summary>
-    /// Set migration config
+    /// Set migration config. Validates that the configured app registration can reach each
+    /// site via Microsoft Graph (Sites.Read.All).
     /// </summary>
-    /// <param name="targets">List of sites + site config</param>
-    /// <returns></returns>
     // POST: AppConfiguration/SetMigrationTargets
     [HttpPost("[action]")]
     public async Task<ActionResult> SetMigrationTargets(List<SiteListFilterConfig> targets)
@@ -94,34 +84,44 @@ public class AppConfigurationController(SPOColdStorageDbContext context, Config 
                 return BadRequest("Invalid config data");
             }
         }
-        // Verify auth works with 1st item
+
+        // Build Graph client up front - validates app registration is reachable
+        GraphServiceClient graphClient;
         try
         {
-            await AuthUtils.GetClientContext(_config, targets[0].RootURL, _logger, null);
+            var credential = new ClientSecretCredential(
+                _config.AzureAdConfig.TenantId,
+                _config.AzureAdConfig.ClientID,
+                _config.AzureAdConfig.Secret);
+            graphClient = new GraphServiceClient(credential);
         }
         catch (Exception ex)
         {
-            _logger.LogCritical(ex, "Error validating authentication to SharePoint Online");
-            return BadRequest($"Got '{ex.Message}' trying to get a token for SPO authentication. Check service configuration.");
+            _logger.LogCritical(ex, "Error initialising Microsoft Graph client");
+            return BadRequest($"Got '{ex.Message}' initialising Microsoft Graph client. Check service configuration.");
         }
 
         // Remove old target configuration & set new
         var oldTargetSites = await _context.TargetSharePointSites.ToListAsync();
         _context.TargetSharePointSites.RemoveRange(oldTargetSites);
 
-        // Verify each site exists
+        // Verify each site exists via Graph (using {hostname}:{site-path} syntax)
         foreach (var target in targets)
         {
             try
             {
-                var siteContext = await AuthUtils.GetClientContext(_config, target.RootURL, _logger, null);
-                siteContext.Load(siteContext.Web);
-                await siteContext.ExecuteQueryAsync();
+                var uri = new Uri(target.RootURL);
+                var graphSiteRef = $"{uri.Host}:{uri.AbsolutePath}";
+                var site = await graphClient.Sites[graphSiteRef].GetAsync();
+                if (site == null || string.IsNullOrEmpty(site.Id))
+                {
+                    return BadRequest($"Site '{target.RootURL}' could not be resolved via Microsoft Graph.");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error validating site '{target.RootURL}'");
-                return BadRequest($"Got '{ex.Message}' validating SPO site URL '{target}'. It's not a valid SharePoint site-collection URL?");
+                return BadRequest($"Got '{ex.Message}' validating SPO site URL '{target.RootURL}'. It's not a valid SharePoint site-collection URL or the app registration lacks Graph 'Sites.Read.All' permission?");
             }
 
             var dbObj = new Entities.DBEntities.TargetMigrationSite(target);

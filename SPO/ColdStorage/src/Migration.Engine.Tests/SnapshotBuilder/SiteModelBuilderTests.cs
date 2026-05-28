@@ -65,7 +65,6 @@ public class SiteModelBuilderTests
         _mockConfig["BaseServerAddress"].Returns("https://test.com");
         _mockConfig["DBConnectionString"].Returns("Server=test;Database=test");
         _mockConfig["InstrumentationKey"].Returns("test-key");
-        _mockConfig["KeyVaultUrl"].Returns("https://test.vault.azure.net");
         _mockConfig["StorageConnectionString"].Returns("DefaultEndpointsProtocol=https;AccountName=test;AccountKey=test");
         _mockConfig["BlobContainerName"].Returns("test-container");
 

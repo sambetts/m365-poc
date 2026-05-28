@@ -37,6 +37,13 @@ public abstract class BaseConfig
                         prop.SetValue(this, intVal);
                     }
                 }
+                else if (prop.PropertyType == typeof(bool))
+                {
+                    if (bool.TryParse(configVal, out var boolVal))
+                    {
+                        prop.SetValue(this, boolVal);
+                    }
+                }
                 else
                 {
                     prop.SetValue(this, configVal);
